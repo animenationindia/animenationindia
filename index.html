@@ -79,11 +79,16 @@
         .social-icon{
             width:45px;height:45px;background:rgba(255,255,255,.1);
             border-radius:50%;display:flex;align-items:center;justify-content:center;
-            color:var(--text-light);transition:.3s;position:relative;overflow:hidden
+            color:var(--text-light);transition:.3s;position:relative;overflow:hidden;
+            font-size:1.1rem;font-weight:600;
         }
         .social-icon:hover{
             background:var(--primary-yellow);color:var(--dark-bg);
             transform:translateY(-3px) scale(1.1);box-shadow:var(--shadow)
+        }
+        .threads-icon{
+            font-family:'Poppins',sans-serif;
+            font-size:.95rem;
         }
         .mobile-menu-btn{display:none;flex-direction:column;gap:5px;cursor:pointer}
         .hamburger{width:25px;height:3px;background:var(--primary-yellow);border-radius:3px;transition:.3s}
@@ -192,7 +197,7 @@
         .modal-poster{width:100%;height:500px;object-fit:cover}
         .modal-body{
             padding:2.5rem;
-            display:grid;grid-template-columns:1fr 1fr;gap:3.5rem
+            display:grid;grid-template-columns:1.2fr 0.8fr;gap:3.5rem
         }
         .detail-list{list-style:none}
         .detail-item{
@@ -238,7 +243,6 @@
         .scroll-to-top.show{display:flex}
         .scroll-to-top:hover{transform:scale(1.1);box-shadow:var(--shadow-hover)}
 
-        /* Tablet & small screens */
         @media (max-width: 992px){
             .nav-container{padding:0 1.25rem;}
             .main-content{margin-top:90px;padding:0 1.25rem;}
@@ -247,9 +251,9 @@
             .hero-subtitle{font-size:1.05rem;}
             .anime-poster{height:320px;}
             .carousel-poster{height:360px;}
+            .modal-body{grid-template-columns:1fr 1fr;gap:2.5rem;}
         }
 
-        /* Mobile phones */
         @media(max-width:768px){
             .nav-menu{
                 display:none;position:absolute;top:100%;left:0;right:0;
@@ -274,7 +278,6 @@
             .modal-body{grid-template-columns:1fr;gap:2rem}
         }
 
-        /* very small phones */
         @media (max-width: 480px){
             .hero-title{font-size:1.9rem;}
             .hero-section{padding:2.5rem 1rem;}
@@ -305,8 +308,8 @@
                 <a href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="social-icon" target="_blank" rel="noopener">
                     <i class="fab fa-instagram"></i>
                 </a>
-                <a href="https://www.threads.net/@animenationindia" class="social-icon" target="_blank" rel="noopener">
-                    <i class="fab fa-threads"></i>
+                <a href="https://www.threads.net/@animenationindia" class="social-icon threads-icon" target="_blank" rel="noopener">
+                    T
                 </a>
                 <a href="https://youtube.com" class="social-icon" target="_blank" rel="noopener">
                     <i class="fab fa-youtube"></i>
@@ -406,12 +409,12 @@
                     Have questions or suggestions? We'd love to hear from you!
                 </p>
                 <div style="font-size:1.5rem;color:var(--primary-yellow);margin-bottom:2rem;background:rgba(255,215,0,.1);padding:1.5rem;border-radius:20px;border-left:5px solid var(--primary-yellow);">
-                    📧 animenationindia.global@gmail.com
+                    📧 shouvikdaswork@gmail.com
                 </div>
                 <form id="contactForm" style="max-width:600px;margin:0 auto;">
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem;">
                         <input type="text" placeholder="Your Name *" required style="width:100%;padding:1.2rem;border-radius:15px;border:none;background:rgba(255,255,255,.08);color:var(--text-light);">
-                        <input type="email" placeholder="Your Email *" required style="width:100%;padding:1.2rem;border-radius:15px;border:none;background:rgba(255,255,0,0.08);background:rgba(255,255,255,.08);color:var(--text-light);">
+                        <input type="email" placeholder="Your Email *" required style="width:100%;padding:1.2rem;border-radius:15px;border:none;background:rgba(255,255,255,.08);color:var(--text-light);">
                     </div>
                     <div style="margin-bottom:2.5rem;">
                         <textarea rows="6" placeholder="Your Message *" required style="width:100%;padding:1.2rem;border-radius:15px;border:none;background:rgba(255,255,255,.08);color:var(--text-light);resize:vertical;font-family:inherit;"></textarea>
@@ -433,8 +436,12 @@
             </div>
             <img id="modalPoster" class="modal-poster" src="" alt="">
             <div class="modal-body">
-                <ul class="detail-list" id="modalDetails"></ul>
-                <div id="modalSynopsis"></div>
+                <div>
+                    <ul class="detail-list" id="modalDetails"></ul>
+                    <div id="modalShort"></div>
+                    <div id="modalSynopsis"></div>
+                    <div id="modalExternal"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -451,14 +458,14 @@
             <a href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="social-icon" target="_blank" rel="noopener">
                 <i class="fab fa-instagram"></i>
             </a>
-            <a href="https://www.threads.net/@animenationindia" class="social-icon" target="_blank" rel="noopener">
-                <i class="fab fa-threads"></i>
+            <a href="https://www.threads.net/@animenationindia" class="social-icon threads-icon" target="_blank" rel="noopener">
+                T
             </a>
             <a href="https://youtube.com" class="social-icon" target="_blank" rel="noopener">
                 <i class="fab fa-youtube"></i>
             </a>
         </div>
-        <p style="color:var(--text-muted);font-size:.95rem;">© 2020 Anime Nation India. All rights reserved.</p>
+        <p style="color:var(--text-muted);font-size:.95rem;">© 2025 Anime Nation India. All rights reserved.</p>
     </footer>
 
     <script>
@@ -495,6 +502,8 @@
                     status
                     startDate { year }
                     studios(isMain: true) { nodes { name } }
+                    siteUrl
+                    description(asHtml: false)
                   }
                 }
               }
@@ -515,13 +524,14 @@
                     title: m.title.english || m.title.romaji,
                     genre: m.genres.join(", "),
                     poster: m.coverImage.large,
-                    synopsis: "Trending anime from AniList.",
+                    synopsis: m.description ? m.description.replace(/<[^>]*>/g,'') : "Trending anime from AniList.",
                     status: (m.status || "ONGOING").toLowerCase().includes("finish") ? "Completed" : "Ongoing",
                     episodes: m.episodes || 0,
                     rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : "8.0",
                     releaseDate: m.startDate.year || "",
                     studio: (m.studios.nodes[0] && m.studios.nodes[0].name) || "Unknown",
-                    category: "action"
+                    category: "action",
+                    externalUrl: m.siteUrl || ""
                 }));
 
                 animeData.splice(0, animeData.length, ...mapped);
@@ -602,6 +612,8 @@
                     status
                     startDate { year }
                     studios(isMain: true) { nodes { name } }
+                    siteUrl
+                    description(asHtml: false)
                   }
                 }
               }
@@ -622,13 +634,14 @@
                     title: m.title.english || m.title.romaji,
                     genre: m.genres.join(", "),
                     poster: m.coverImage.large,
-                    synopsis: "Search result from AniList.",
+                    synopsis: m.description ? m.description.replace(/<[^>]*>/g,'') : "Search result from AniList.",
                     status: (m.status || "ONGOING").toLowerCase().includes("finish") ? "Completed" : "Ongoing",
                     episodes: m.episodes || 0,
                     rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : "8.0",
                     releaseDate: m.startDate.year || "",
                     studio: (m.studios.nodes[0] && m.studios.nodes[0].name) || "Unknown",
-                    category: "action"
+                    category: "action",
+                    externalUrl: m.siteUrl || ""
                 }));
 
                 if (!mapped.length) {
@@ -774,17 +787,16 @@
                         </div>
                     </div>
                 `;
-                return;
+            } else {
+                calendarDay.innerHTML = calendarData.map(i=>{
+                    const icon=i.type==="new"?"✨":i.type==="final"?"🏆":"🔄";
+                    return `<div class="release-item">
+                        <div class="release-time">${icon} ${i.time}</div>
+                        <div style="font-weight:600;margin-bottom:.5rem;color:var(--text-light);">${i.title}</div>
+                        <div style="color:var(--primary-yellow);font-size:.95rem;font-weight:500;">${i.status}</div>
+                    </div>`;
+                }).join('');
             }
-
-            calendarDay.innerHTML = calendarData.map(i=>{
-                const icon=i.type==="new"?"✨":i.type==="final"?"🏆":"🔄";
-                return `<div class="release-item">
-                    <div class="release-time">${icon} ${i.time}</div>
-                    <div style="font-weight:600;margin-bottom:.5rem;color:var(--text-light);">${i.title}</div>
-                    <div style="color:var(--primary-yellow);font-size:.95rem;font-weight:500;">${i.status}</div>
-                </div>`;
-            }).join('');
         }
 
         function renderNews(){
@@ -832,18 +844,37 @@
             document.getElementById('modalTitle').textContent=anime.title;
             const p=document.getElementById('modalPoster');
             p.src=anime.poster;p.alt=anime.title;
+
+            const short = anime.synopsis ? anime.synopsis.substring(0,180) + "..." : "Short story not available.";
+            document.getElementById('modalShort').innerHTML = `
+                <h3 style="margin:1.5rem 0 .8rem;color:var(--primary-yellow);font-size:1.2rem;">Short story</h3>
+                <p style="line-height:1.7;color:var(--text-muted);font-size:1.02rem;">${short}</p>
+            `;
+
             document.getElementById('modalSynopsis').innerHTML=`
-                <h3 style="margin-bottom:1.5rem;color:var(--primary-yellow);font-size:1.4rem;">📖 Synopsis</h3>
-                <p style="line-height:1.8;color:var(--text-muted);font-size:1.05rem;">${anime.synopsis}</p>`;
+                <h3 style="margin:1.5rem 0 .8rem;color:var(--primary-yellow);font-size:1.2rem;">Full synopsis</h3>
+                <p style="line-height:1.8;color:var(--text-muted);font-size:1.02rem;">${anime.synopsis}</p>`;
+
             document.getElementById('modalDetails').innerHTML=`
                 <li class="detail-item"><span class="detail-label">Status</span><span class="detail-value">${anime.status}</span></li>
                 <li class="detail-item"><span class="detail-label">Total Episodes</span><span class="detail-value">${(anime.episodes||0).toLocaleString()}</span></li>
                 <li class="detail-item"><span class="detail-label">Rating</span><span class="detail-value">${anime.rating}/10</span></li>
                 <li class="detail-item"><span class="detail-label">Release Year</span><span class="detail-value">${anime.releaseDate||""}</span></li>
                 <li class="detail-item"><span class="detail-label">Studio</span><span class="detail-value">${anime.studio||"Unknown"}</span></li>`;
+
+            const ext = anime.externalUrl ? anime.externalUrl : `https://anilist.co/anime/${anime.id}`;
+            document.getElementById('modalExternal').innerHTML = `
+                <a href="${ext}" target="_blank" rel="noopener"
+                   style="display:inline-flex;align-items:center;gap:.5rem;margin-top:1.5rem;padding:.9rem 1.6rem;border-radius:999px;background:linear-gradient(45deg,var(--primary-yellow),var(--yellow-dark));color:var(--dark-bg);font-weight:600;text-decoration:none;">
+                    More details on AniList
+                    <i class="fas fa-external-link-alt" style="font-size:.9rem;"></i>
+                </a>
+            `;
+
             animeModal.classList.add('active');
             document.body.style.overflow='hidden';
         }
+
         function closeModalHandler(){animeModal.classList.remove('active');document.body.style.overflow='';}
 
         function handleContactForm(e){
