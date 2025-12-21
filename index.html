@@ -3,1606 +3,2742 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Anime Nation India - Your Anime Streaming Hub</title>
+  <title>Anime Nation India – Live Anime Calendar & Streaming Info</title>
 
   <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+  <!-- Main Style -->
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}
+    *{margin:0;padding:0;box-sizing:border-box;}
+
     :root{
-      --primary-yellow:#FFD700;
-      --yellow-dark:#FFA500;
-      --neon-pink:#ff4ecd;
-      --neon-cyan:#00e5ff;
-      --dark-bg:#050510;
-      --dark-elevated:#111122;
-      --card-bg:#15152a;
-      --border-soft:#242446;
-      --text-light:#ffffff;
-      --text-muted:#b0b0d8;
-      --shadow:0 18px 45px rgba(0,0,0,0.55);
-      --shadow-hover:0 24px 55px rgba(0,0,0,0.75)
+      --primary:#ff4dd2;
+      --primary-soft:#ff9de6;
+      --accent:#ffd54a;
+      --bg-main:#050716;
+      --bg-elevated:#121326;
+      --bg-elevated-soft:#1a1c32;
+      --text-main:#ffffff;
+      --text-muted:#b8b8cf;
+      --danger:#ff4b6b;
+      --success:#3edfa4;
+      --shadow-soft:0 16px 38px rgba(0,0,0,.55);
+      --radius-xl:26px;
+      --glass:rgba(9,10,28,.92);
+      --border-soft:1px solid rgba(255,255,255,.06);
     }
+
     body{
       font-family:'Poppins',sans-serif;
-      background:
-        radial-gradient(circle at 0% 0%,rgba(255,78,205,.12) 0,transparent 55%),
-        radial-gradient(circle at 100% 100%,rgba(0,229,255,.13) 0,transparent 55%),
-        linear-gradient(135deg,#02020a 0%,#050510 45%,#08081a 100%);
-      color:var(--text-light);
+      background:radial-gradient(circle at top,#28124d 0,#050716 55%);
+      color:var(--text-main);
       line-height:1.6;
       overflow-x:hidden;
-      letter-spacing:.01em;
     }
 
+    a{color:inherit;text-decoration:none;}
+
+    /* ======= TOP HEADER ======= */
     .header{
-      position:fixed;top:0;left:0;right:0;
-      background:rgba(5,5,18,.92);
-      border-bottom:1px solid rgba(255,255,255,.04);
-      backdrop-filter:blur(26px);
+      position:fixed;
+      inset-inline:0;
+      top:0;
       z-index:1000;
+      background:linear-gradient(to bottom,rgba(5,7,22,.96),rgba(5,7,22,.82));
+      backdrop-filter:blur(14px);
+      border-bottom:var(--border-soft);
     }
-    .nav-container{
-      max-width:1380px;
+
+    .nav-wrap{
+      max-width:1320px;
       margin:0 auto;
+      padding:.85rem 1.75rem;
       display:flex;
-      justify-content:space-between;
       align-items:center;
-      padding:.7rem 2rem;
+      justify-content:space-between;
+      gap:1.5rem;
     }
-    .logo-section{display:flex;align-items:center;gap:.85rem;}
-    .logo{
-      width:54px;height:54px;
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:.9rem;
+    }
+
+    .brand-logo{
+      width:46px;
+      height:46px;
       border-radius:18px;
-      background:conic-gradient(from 210deg,var(--primary-yellow),var(--neon-pink),var(--neon-cyan),var(--primary-yellow));
-      padding:2px;
-      position:relative;
-      box-shadow:0 0 24px rgba(255,215,0,.55);
-    }
-    .logo-inner{
-      width:100%;height:100%;
-      border-radius:16px;
-      background:#050510;
+      background:radial-gradient(circle at 10% 0%,#ffe082, #ff4dd2 55%, #7c4dff 100%);
       display:flex;
       align-items:center;
       justify-content:center;
-      color:var(--primary-yellow);
-      font-size:1.5rem;
-    }
-    .site-meta{display:flex;flex-direction:column;gap:.1rem;}
-    .site-title{
-      font-family:'Space Grotesk',sans-serif;
-      font-size:1.4rem;
-      font-weight:700;
-      letter-spacing:.08em;
-      text-transform:uppercase;
-    }
-    .site-tagline{font-size:.72rem;color:var(--text-muted);}
-
-    .nav-menu{display:flex;list-style:none;gap:1.8rem;align-items:center;}
-    .nav-item{
-      color:var(--text-muted);
-      text-decoration:none;
-      font-weight:500;
-      font-size:.9rem;
-      padding:.4rem .9rem;
-      border-radius:999px;
-      transition:.25s;
-    }
-    .nav-item:hover,.nav-item.active{
-      background:rgba(255,255,255,.06);
-      color:var(--primary-yellow);
-    }
-
-    .social-icons{display:flex;gap:.7rem;align-items:center;}
-    .social-icon{
-      width:38px;height:38px;
-      border-radius:999px;
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.08);
-      display:flex;align-items:center;justify-content:center;
-      color:var(--text-light);transition:.25s;
-      font-size:.95rem;
-    }
-    .social-icon:hover{
-      background:linear-gradient(135deg,var(--primary-yellow),var(--yellow-dark));
-      color:#050510;
-      transform:translateY(-1px) scale(1.03);
-      box-shadow:0 0 18px rgba(255,215,0,.45);
-    }
-    .threads-icon{
-      font-family:'Space Grotesk',sans-serif;
-      font-size:.9rem;
-      font-weight:600;
-    }
-
-    .mobile-menu-btn{display:none;flex-direction:column;gap:5px;cursor:pointer}
-    .hamburger{width:24px;height:2.6px;background:var(--text-light);border-radius:2px;transition:.3s}
-
-    .main-content{
-      margin-top:90px;
-      padding:0 2rem 3rem;
-      max-width:1380px;
-      margin-left:auto;
-      margin-right:auto;
-    }
-
-    .hero-grid{
-      display:grid;
-      grid-template-columns:1.3fr 1fr;
-      gap:2.4rem;
-      align-items:stretch;
-      margin-top:2.3rem;
-    }
-    .hero-panel{
-      border-radius:28px;
-      background:
-        radial-gradient(circle at 0% 0%,rgba(255,215,0,.12) 0,transparent 60%),
-        radial-gradient(circle at 100% 100%,rgba(0,229,255,.1) 0,transparent 55%),
-        #101022;
-      padding:2.5rem 2.4rem;
+      color:#0c0418;
+      font-size:1.45rem;
+      font-weight:800;
+      box-shadow:0 0 0 2px rgba(255,255,255,.12),0 18px 40px rgba(0,0,0,.7);
       position:relative;
       overflow:hidden;
-      box-shadow:var(--shadow);
-    }
-    .hero-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:.45rem;
-      padding:.25rem .8rem;
-      border-radius:999px;
-      background:rgba(0,0,0,.45);
-      border:1px solid rgba(255,255,255,.12);
-      font-size:.8rem;
-      color:var(--text-muted);
-      margin-bottom:.9rem;
-    }
-    .hero-pill i{color:var(--primary-yellow);}
-    .hero-title{
-      font-family:'Space Grotesk',sans-serif;
-      font-size:clamp(2.3rem,4.3vw,3.1rem);
-      line-height:1.1;
-      margin-bottom:1rem;
-    }
-    .hero-title span{
-      background:linear-gradient(120deg,var(--primary-yellow),var(--neon-pink),var(--neon-cyan));
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-    }
-    .hero-subtitle{
-      font-size:1rem;
-      color:var(--text-muted);
-      max-width:620px;
-      margin-bottom:1.8rem;
-    }
-    .hero-actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:.9rem;
-      margin-bottom:1.8rem;
-    }
-    .btn-solid{
-      padding:.8rem 1.6rem;
-      border-radius:999px;
-      border:none;
-      background:linear-gradient(135deg,var(--primary-yellow),var(--yellow-dark));
-      color:#050510;
-      font-weight:600;
-      font-size:.9rem;
-      cursor:pointer;
-      display:inline-flex;align-items:center;gap:.45rem;
-      box-shadow:0 0 18px rgba(255,215,0,.35);
-    }
-    .btn-outline{
-      padding:.8rem 1.4rem;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(3,3,15,.9);
-      color:var(--text-light);
-      font-weight:500;
-      font-size:.9rem;
-      cursor:pointer;
-      display:inline-flex;align-items:center;gap:.45rem;
     }
 
-    .hero-stats{display:flex;flex-wrap:wrap;gap:1.6rem;margin-top:.4rem;}
-    .stat-card{min-width:120px;}
-    .stat-label{font-size:.78rem;color:var(--text-muted);}
-    .stat-number{font-size:1.7rem;font-weight:700;color:var(--primary-yellow);}
+    .brand-logo::after{
+      content:'';
+      position:absolute;
+      inset:-40%;
+      background:conic-gradient(from 0deg,rgba(255,255,255,.05),rgba(255,255,255,.45),rgba(255,255,255,0));
+      opacity:0;
+      transition:opacity .5s ease;
+      animation:haloPulse 4s linear infinite;
+    }
 
-    .now-playing-panel{
-      border-radius:28px;
-      background:rgba(5,5,18,.96);
-      border:1px solid rgba(255,255,255,.06);
-      box-shadow:var(--shadow);
+    .brand:hover .brand-logo::after{opacity:1;}
+
+    @keyframes haloPulse{
+      0%{transform:rotate(0deg);}
+      100%{transform:rotate(360deg);}
+    }
+
+    .brand-text{
       display:flex;
       flex-direction:column;
-      overflow:hidden;
+      gap:.1rem;
     }
-    .now-header{
-      padding:1rem 1.4rem;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      font-size:.9rem;
-    }
-    .now-header span:nth-child(2){
-      font-size:.75rem;
-      color:var(--text-muted);
-    }
-    .now-list{
-      padding:.9rem 1.1rem 1rem;
-      max-height:132px;
-      overflow:auto;
-    }
-    .now-item{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:.25rem 0;
-      font-size:.78rem;
-      color:var(--text-muted);
-    }
-    .now-item strong{color:var(--text-light);}
 
-    .hero-slider-wrap{
-      border-top:1px solid rgba(255,255,255,.06);
-      padding:1.1rem 1.2rem 1.2rem;
+    .brand-title{
+      font-weight:700;
+      letter-spacing:.04em;
+      font-size:1.2rem;
     }
-    .hero-slider{
-      position:relative;
-      border-radius:22px;
-      overflow:hidden;
-      background:var(--card-bg);
-      min-height:220px;
-    }
-    .slider-track{width:100%;height:100%;position:relative;}
-    .slider-item{
-      position:absolute;inset:0;
-      opacity:0;
-      transform:translateX(40px);
-      transition:opacity .6s ease,transform .6s ease;
-      display:grid;
-      grid-template-columns:1.4fr 1.3fr;
-    }
-    .slider-item.active{opacity:1;transform:translateX(0);}
-    .slider-poster-wrap{position:relative;overflow:hidden;}
-    .slider-poster{
-      width:100%;height:100%;min-height:220px;object-fit:cover;display:block;
-    }
-    .slider-overlay{
-      position:absolute;inset:0;
-      background:linear-gradient(90deg,rgba(5,5,18,.9) 0,rgba(5,5,18,.3) 55%,transparent 100%);
-    }
-    .slider-info{
-      padding:1.4rem 1.4rem 1.4rem 1.6rem;
-      display:flex;flex-direction:column;justify-content:center;gap:.6rem;
-    }
-    .slider-tag{
-      font-size:.75rem;
-      display:inline-flex;align-items:center;gap:.35rem;
-      text-transform:uppercase;letter-spacing:.09em;
-      color:var(--neon-cyan);
-    }
-    .slider-title{font-size:1.2rem;font-weight:600;}
-    .slider-meta{font-size:.8rem;color:var(--text-muted);}
-    .slider-genre-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.15rem;}
-    .slider-chip{
-      padding:.2rem .65rem;
-      border-radius:999px;
-      background:rgba(255,255,255,.07);
+
+    .brand-sub{
       font-size:.72rem;
-    }
-    .slider-buttons{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.4rem;}
-    .btn-mini{
-      padding:.55rem 1.1rem;
-      border-radius:999px;
-      border:none;
-      background:linear-gradient(135deg,var(--neon-pink),var(--neon-cyan));
-      color:#050510;
-      font-size:.78rem;
-      font-weight:600;
-      display:inline-flex;align-items:center;gap:.4rem;
-      cursor:pointer;
-    }
-    .btn-mini-ghost{
-      padding:.55rem 1.05rem;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(5,5,18,.9);
-      color:var(--text-light);
-      font-size:.78rem;
-      display:inline-flex;align-items:center;gap:.4rem;
-      cursor:pointer;
-    }
-    .slider-dots{
-      position:absolute;bottom:.7rem;left:50%;
-      transform:translateX(-50%);
-      display:flex;gap:.35rem;
-    }
-    .slider-dot{
-      width:7px;height:7px;border-radius:999px;
-      background:rgba(255,255,255,.3);
-      cursor:pointer;transition:.25s;
-    }
-    .slider-dot.active{width:18px;background:var(--primary-yellow);}
-
-    .search-section{margin:2.6rem 0 2.4rem;}
-    .search-bar-wrap{
-      max-width:1180px;margin:0 auto;
-      background:rgba(10,10,30,.95);
-      border-radius:20px;
-      padding:.7rem .85rem .7rem 1.1rem;
-      border:1px solid rgba(255,255,255,.12);
-      box-shadow:var(--shadow);
-      display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;
-    }
-    .search-main-input{display:flex;align-items:center;gap:.55rem;flex:1;min-width:220px;}
-    .search-main-input i{color:var(--primary-yellow);font-size:.95rem;margin-left:.35rem;}
-    .search-input{
-      width:100%;border:none;outline:none;
-      background:transparent;color:var(--text-light);
-      padding:.55rem .3rem;font-size:.92rem;
-    }
-    .search-input::placeholder{color:rgba(176,176,216,.7);}
-    .filter-chips{display:flex;flex-wrap:wrap;gap:.45rem;}
-    .filter-chip{
-      border-radius:999px;
-      padding:.4rem 1rem;
-      font-size:.78rem;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(255,255,255,.02);
       color:var(--text-muted);
-      cursor:pointer;
-      display:inline-flex;align-items:center;gap:.35rem;
-    }
-    .filter-chip i{font-size:.78rem;}
-    .filter-chip.active{
-      background:linear-gradient(135deg,var(--primary-yellow),var(--neon-pink));
-      border-color:transparent;
-      color:#050510;
-    }
-    .search-cta-btn{
-      padding:.7rem 1.4rem;
-      border-radius:999px;
-      border:none;
-      background:linear-gradient(135deg,var(--primary-yellow),var(--yellow-dark));
-      color:#050510;
-      font-weight:600;
-      font-size:.85rem;
-      cursor:pointer;
-      display:flex;align-items:center;gap:.35rem;
-      white-space:nowrap;
+      text-transform:uppercase;
+      letter-spacing:.18em;
     }
 
-    .section-title{
-      font-family:'Space Grotesk',sans-serif;
-      font-size:1.7rem;
-      font-weight:600;
-      margin-bottom:1.8rem;
-      display:flex;align-items:center;gap:.6rem;
+    .nav-menu{
+      display:flex;
+      list-style:none;
+      gap:1.3rem;
+      align-items:center;
     }
-    .section-title span{
-      background:linear-gradient(135deg,var(--primary-yellow),var(--neon-pink));
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    }
-    .section-sub{
+
+    .nav-link{
+      padding:.45rem .9rem;
+      border-radius:999px;
       font-size:.9rem;
       color:var(--text-muted);
+      position:relative;
+      transition:.25s ease;
+    }
+
+    .nav-link.active,
+    .nav-link:hover{
+      color:#040312;
+      background:linear-gradient(120deg,var(--primary),var(--accent));
+      box-shadow:0 10px 28px rgba(0,0,0,.65);
+      transform:translateY(-1px);
+    }
+
+    .nav-pill{
+      font-size:.75rem;
+      padding:.15rem .5rem;
+      border-radius:999px;
+      margin-left:.4rem;
+      background:rgba(255,255,255,.08);
+      color:var(--accent);
+      text-transform:uppercase;
+    }
+
+    .nav-right{
+      display:flex;
+      align-items:center;
+      gap:1.05rem;
+    }
+
+    .social-row{
+      display:flex;
+      gap:.6rem;
+    }
+
+    .social-btn{
+      width:36px;
+      height:36px;
+      border-radius:999px;
+      background:rgba(255,255,255,.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--text-muted);
+      font-size:.9rem;
+      border:1px solid rgba(255,255,255,.04);
+      transition:.3s ease;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .social-btn::before{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:radial-gradient(circle at 10% -10%,rgba(255,255,255,.7),transparent 55%);
+      opacity:0;
+      transition:opacity .4s ease;
+    }
+
+    .social-btn:hover{
+      color:#05010c;
+      background:linear-gradient(130deg,#ff9de6,#ffd54a);
+      box-shadow:0 12px 30px rgba(0,0,0,.7);
+      transform:translateY(-2px) scale(1.04);
+    }
+
+    .social-btn:hover::before{opacity:1;}
+
+    .threads-txt{font-size:.78rem;font-weight:600;}
+
+    .cta-login{
+      padding:.5rem 1.3rem;
+      border-radius:999px;
+      border:none;
+      background:transparent;
+      color:var(--text-main);
+      font-weight:600;
+      font-size:.86rem;
+      border:1px solid rgba(255,255,255,.18);
+      display:flex;
+      align-items:center;
+      gap:.45rem;
+      cursor:pointer;
+      transition:.3s ease;
+    }
+
+    .cta-login i{color:var(--accent);}
+
+    .cta-login:hover{
+      background:rgba(255,255,255,.06);
+      transform:translateY(-1px);
+    }
+
+    .btn-primary{
+      padding:.6rem 1.5rem;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-weight:700;
+      font-size:.9rem;
+      color:#070311;
+      background:linear-gradient(120deg,var(--primary),var(--accent));
+      box-shadow:0 14px 36px rgba(0,0,0,.8);
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      transition:.3s;
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-2px) scale(1.02);
+      filter:brightness(1.05);
+    }
+
+    .menu-toggle{
+      display:none;
+      flex-direction:column;
+      gap:.3rem;
+      cursor:pointer;
+    }
+
+    .menu-toggle span{
+      width:21px;
+      height:2px;
+      border-radius:999px;
+      background:var(--text-main);
+      transition:.3s;
+    }
+
+    /* ======= MAIN LAYOUT WRAPPER ======= */
+    .page-wrap{
+      max-width:1320px;
+      margin:0 auto;
+      padding:5.8rem 1.75rem 3.5rem;
+    }
+
+    /* ======= HERO GRID ======= */
+    .hero-grid{
+      display:grid;
+      grid-template-columns:minmax(0, 1.3fr) minmax(0, 1fr);
+      gap:2rem;
+      margin-top:1.8rem;
+      align-items:stretch;
+    }
+
+    .hero-left{
+      background:linear-gradient(145deg,rgba(255,77,210,.12),rgba(30,37,80,.85));
+      border-radius:32px;
+      padding:2.5rem 2.3rem;
+      box-shadow:var(--shadow-soft);
+      position:relative;
+      overflow:hidden;
+      border:var(--border-soft);
+    }
+
+    .hero-left::before{
+      content:'';
+      position:absolute;
+      width:380px;
+      height:380px;
+      border-radius:50%;
+      background:radial-gradient(circle,rgba(255,77,210,.26),transparent 70%);
+      top:-120px;
+      right:-120px;
+      filter:blur(4px);
+      opacity:.65;
+    }
+
+    .hero-kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:.5rem;
+      padding:.2rem .7rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.09);
+      font-size:.75rem;
+      color:var(--accent);
+      margin-bottom:1.1rem;
+    }
+
+    .hero-kicker span{
+      display:inline-flex;
+      align-items:center;
+      gap:.3rem;
+    }
+
+    .hero-title{
+      font-size:clamp(2.1rem,3.2vw,2.9rem);
+      line-height:1.15;
+      margin-bottom:1rem;
+    }
+
+    .hero-title-highlight{
+      background:linear-gradient(120deg,var(--primary-soft),#ffffff);
+      -webkit-background-clip:text;
+      color:transparent;
+    }
+
+    .hero-desc{
+      color:var(--text-muted);
+      font-size:.98rem;
+      max-width:560px;
       margin-bottom:1.6rem;
     }
 
-    .anime-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
-      gap:1.6rem;margin-bottom:3.5rem;
+    .hero-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.6rem;
+      margin-bottom:1.7rem;
     }
-    .anime-card{
-      background:var(--card-bg);
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.06);
+
+    .tag-pill{
+      padding:.25rem .65rem;
+      border-radius:999px;
+      font-size:.78rem;
+      background:rgba(0,0,0,.4);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--text-muted);
+    }
+
+    .hero-stats-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:1.2rem;
+      margin-bottom:1.8rem;
+    }
+
+    .stat-box{
+      padding:.85rem 1.1rem;
+      border-radius:20px;
+      background:rgba(5,7,26,.9);
+      border:1px solid rgba(255,255,255,.07);
+      min-width:120px;
+    }
+
+    .stat-label{
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.15em;
+      color:var(--text-muted);
+      margin-bottom:.25rem;
+    }
+
+    .stat-value{
+      font-size:1.18rem;
+      font-weight:700;
+    }
+
+    .stat-accent-success{color:var(--success);}
+    .stat-accent-danger{color:var(--danger);}
+    .stat-accent-main{color:var(--accent);}
+
+    .hero-cta-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.9rem;
+      align-items:center;
+    }
+
+    .hero-secondary{
+      display:flex;
+      align-items:center;
+      gap:.5rem;
+      font-size:.82rem;
+      color:var(--text-muted);
+    }
+
+    .hero-secondary i{color:var(--primary-soft);}
+
+    /* ======= SPOTLIGHT CARD ======= */
+    .spotlight-card{
+      position:relative;
+      border-radius:32px;
+      background:radial-gradient(circle at top,var(--bg-elevated-soft),var(--bg-elevated));
       overflow:hidden;
-      box-shadow:var(--shadow);
-      cursor:pointer;
+      box-shadow:var(--shadow-soft);
+      border:var(--border-soft);
       display:flex;
       flex-direction:column;
-      min-height:240px;
-      position:relative;
-      transition:transform .25s ease-out, box-shadow .25s ease-out, border-color .25s ease-out, background .25s ease-out;
+      min-height:0;
     }
-    .anime-card::before{
-      content:"";
+
+    .spotlight-media{
+      position:relative;
+      min-height:260px;
+      max-height:320px;
+      overflow:hidden;
+    }
+
+    .spotlight-img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transform:scale(1.02);
+      transition:transform .6s ease;
+    }
+
+    .spotlight-gradient{
       position:absolute;
       inset:0;
-      background:radial-gradient(circle at top left,rgba(255,215,0,.2),transparent 55%);
-      opacity:0;
-      pointer-events:none;
-      transition:opacity .25s ease-out;
-    }
-    .anime-card:hover{
-      transform:translate(6px,-6px);
-      box-shadow:0 18px 40px rgba(0,0,0,.7);
-      border-color:rgba(255,215,0,.85);
-      background:linear-gradient(135deg,rgba(255,215,0,.12),rgba(10,10,30,1));
-    }
-    .anime-card:hover::before{opacity:1;}
-    .anime-poster{
-      width:100%;height:210px;object-fit:cover;flex-shrink:0;
-    }
-    .carousel-poster{height:210px;}
-    .card-info{
-      padding:1.05rem 1rem 1rem;
-      display:flex;flex-direction:column;gap:.4rem;
-      flex:1;position:relative;z-index:1;
-    }
-    .anime-title{font-size:.95rem;font-weight:600;line-height:1.35;}
-    .anime-genre{color:var(--primary-yellow);font-weight:500;font-size:.77rem;}
-    .card-meta-row{
-      display:flex;justify-content:space-between;align-items:center;
-      font-size:.76rem;color:var(--text-muted);
-    }
-    .status-badge{
-      padding:.22rem .65rem;border-radius:999px;font-size:.7rem;
-      font-weight:600;text-transform:uppercase;display:inline-block;margin-top:.1rem
-    }
-    .status-ongoing{background:rgba(0,255,0,.19);color:#00ff80}
-    .status-completed{background:rgba(100,149,237,.2);color:#7ea9ff}
-    .status-upcoming{background:rgba(255,215,0,.3);color:var(--primary-yellow)}
-    .card-synopsis{
-      color:var(--text-muted);font-size:.76rem;margin-top:.25rem;
-      line-height:1.45;flex:1;
+      background:linear-gradient(to bottom,rgba(5,7,20,.05),rgba(5,7,20,1) 80%);
     }
 
-    .carousel-section{margin:3.2rem 0 2.6rem;}
-    .carousel{
-      display:flex;gap:1.4rem;overflow-x:auto;padding:.6rem .1rem 0;
-      scroll-behavior:smooth;scrollbar-width:none;
-    }
-    .carousel::-webkit-scrollbar{display:none;}
-
-    .calendar-section{
-      background:var(--dark-elevated);border-radius:24px;
-      padding:2.4rem 2.2rem;margin-bottom:4rem;
-      box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.08);
-      position:relative;overflow:hidden;
-    }
-    .calendar-section::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:3px;
-      background:linear-gradient(90deg,var(--primary-yellow),var(--neon-pink),var(--neon-cyan))
-    }
-    .calendar-info{
-      margin-bottom:1.7rem;padding:1.3rem 1.4rem;
-      background:rgba(10,10,35,.95);border-radius:18px;
-      border:1px solid rgba(255,255,255,.08);
-      font-size:.9rem;
-    }
-    .calendar-day{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-      gap:1.7rem
-    }
-    .release-item{
-      background:rgba(255,255,255,.03);padding:1.25rem;border-radius:16px;
-      border-left:4px solid var(--primary-yellow);transition:.3s
-    }
-    .release-item:hover{transform:translateX(8px);box-shadow:0 12px 26px rgba(0,0,0,.35)}
-    .release-time{color:var(--primary-yellow);font-weight:700;font-size:.98rem;margin-bottom:.4rem}
-
-    .section-shell{padding:3.5rem 0 0;}
-
-    .footer{
-      background:var(--dark-elevated);padding:3.6rem 2rem 2.4rem;
-      margin-top:4rem;text-align:center;position:relative;
-      border-top:1px solid rgba(255,255,255,.08);
-    }
-    .footer::before{
-      content:'';position:absolute;top:0;left:0;right:0;height:3px;
-      background:linear-gradient(90deg,var(--primary-yellow),var(--neon-pink),var(--neon-cyan))
-    }
-    .footer-links{
-      display:flex;justify-content:center;gap:3rem;
-      margin-bottom:2.4rem;flex-wrap:wrap
-    }
-    .footer-link{
-      color:var(--text-muted);text-decoration:none;font-weight:500;
-      padding:.35rem .9rem;border-radius:10px;transition:.25s;
-      font-size:.85rem;
-    }
-    .footer-link:hover{
-      color:var(--primary-yellow);background:rgba(255,215,0,.12);
-      transform:translateY(-2px)
+    .spotlight-badge{
+      position:absolute;
+      top:1rem;
+      left:1.1rem;
+      padding:.25rem .7rem;
+      border-radius:999px;
+      font-size:.74rem;
+      background:rgba(5,7,20,.78);
+      color:var(--accent);
+      border:1px solid rgba(255,255,255,.16);
+      display:flex;
+      align-items:center;
+      gap:.35rem;
     }
 
-    .scroll-to-top{
-      position:fixed;bottom:30px;right:30px;width:52px;height:52px;
-      background:linear-gradient(135deg,var(--primary-yellow),var(--neon-pink));
+    .spotlight-meta-row{
+      position:absolute;
+      bottom:1.1rem;
+      left:1.1rem;
+      right:1.1rem;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:.75rem;
+      z-index:2;
+    }
+
+    .spotlight-meta-left{max-width:70%;}
+
+    .spotlight-title{
+      font-size:1.35rem;
+      font-weight:700;
+      margin-bottom:.1rem;
+    }
+
+    .spotlight-sub{
+      font-size:.8rem;
+      color:var(--text-muted);
+    }
+
+    .spotlight-pill-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.45rem;
+      margin-top:.35rem;
+    }
+
+    .spotlight-pill{
+      padding:.18rem .6rem;
+      border-radius:999px;
+      font-size:.7rem;
+      background:rgba(0,0,0,.65);
+      border:1px solid rgba(255,255,255,.1);
+    }
+
+    .spotlight-meta-right{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:.35rem;
+      font-size:.78rem;
+    }
+
+    .spotlight-meta-right span{
+      display:flex;
+      align-items:center;
+      gap:.3rem;
+      color:var(--text-muted);
+    }
+
+    .spotlight-meta-right strong{color:var(--accent);}
+
+    .spotlight-body{
+      padding:1.4rem 1.5rem 1.5rem;
+      background:linear-gradient(to bottom,#0c0f25,#060716);
+      display:flex;
+      flex-direction:column;
+      gap:1rem;
+    }
+
+    .spotlight-desc{
+      font-size:.87rem;
+      color:var(--text-muted);
+      max-height:72px;
+      overflow:hidden;
+    }
+
+    .spotlight-chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.45rem;
+      font-size:.76rem;
+    }
+
+    .chip{
+      padding:.2rem .7rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.06);
+      color:var(--text-muted);
+    }
+
+    .spotlight-footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:.9rem;
+      font-size:.8rem;
+      color:var(--text-muted);
+    }
+
+    .spotlight-footer-right{
+      display:flex;
+      gap:.7rem;
+      align-items:center;
+    }
+
+    .pill-live{
+      padding:.18rem .6rem;
+      border-radius:999px;
+      background:rgba(62,223,164,.12);
+      color:var(--success);
+      display:inline-flex;
+      align-items:center;
+      gap:.3rem;
+      font-size:.72rem;
+    }
+
+    .pill-live-dot{
+      width:7px;
+      height:7px;
       border-radius:50%;
-      display:none;align-items:center;justify-content:center;
-      color:#050510;font-size:1.2rem;cursor:pointer;
-      box-shadow:var(--shadow);transition:.25s;z-index:100
+      background:var(--success);
+      box-shadow:0 0 0 4px rgba(62,223,164,.35);
     }
-    .scroll-to-top.show{display:flex}
-    .scroll-to-top:hover{transform:scale(1.07);box-shadow:var(--shadow-hover)}
 
-    @keyframes spin{to{transform:rotate(360deg)}}
+    .spotlight-card:hover .spotlight-img{
+      transform:scale(1.06);
+    }
 
-    .modal{
-      display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-      background:rgba(0,0,0,.92);z-index:2000;backdrop-filter:blur(15px);
-      align-items:center;justify-content:center;
+    /* ======= SEARCH BAR + FILTER ROW ======= */
+    .search-row{
+      margin-top:3rem;
+      margin-bottom:1.7rem;
+      display:flex;
+      flex-wrap:wrap;
+      gap:1rem;
+      align-items:center;
+      justify-content:space-between;
     }
-    .modal.active{display:flex;}
-    .modal-content{
-      background:var(--card-bg);border-radius:24px;
-      max-width:1000px;width:92%;max-height:92vh;
-      overflow-y:auto;box-shadow:var(--shadow-hover);
+
+    .search-input-wrap{
+      flex:1 1 260px;
+      display:flex;
+      align-items:center;
+      gap:.55rem;
+      padding:.55rem .95rem;
+      border-radius:999px;
+      background:rgba(8,10,30,.96);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 10px 30px rgba(0,0,0,.55);
     }
-    .modal-header{
-      padding:1.4rem 1.6rem;border-bottom:1px solid rgba(255,255,255,.12);
-      display:flex;justify-content:space-between;align-items:center;
-    }
-    .modal-header h2{font-size:1.3rem;}
-    .close-btn{
-      background:rgba(255,255,255,.08);border:none;font-size:1.7rem;
-      color:var(--text-muted);cursor:pointer;padding:.3rem .9rem;
-      border-radius:999px;transition:.25s;
-    }
-    .close-btn:hover{
-      background:var(--primary-yellow);color:#050510;
-      transform:rotate(90deg);
-    }
-    .modal-poster{
-      width:100%;height:360px;object-fit:cover;
-    }
-    .modal-body{
-      padding:1.6rem 1.6rem 2rem;
-    }
-    .detail-list{list-style:none;margin:0 0 1.4rem 0;padding:0;border-top:1px solid rgba(255,255,255,.08);}
-    .detail-item{
-      padding:1rem 0;border-bottom:1px solid rgba(255,255,255,.08);
-      display:flex;justify-content:space-between;align-items:center;
+
+    .search-input-wrap i{
+      color:var(--text-muted);
       font-size:.9rem;
     }
-    .detail-label{font-weight:600;color:var(--primary-yellow);}
-    .detail-value{font-weight:500;color:var(--text-light);}
 
-    .categories-list{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
-      gap:1rem 1.8rem;
-    }
-    .category-pill{
-      font-weight:600;
+    .search-input{
+      border:none;
+      outline:none;
+      background:transparent;
+      flex:1;
       font-size:.9rem;
+      color:var(--text-main);
+    }
+
+    .search-input::placeholder{color:#7b7ca0;}
+
+    .search-btn{
+      padding:.4rem .9rem;
+      border-radius:999px;
+      border:none;
       cursor:pointer;
-      background:linear-gradient(120deg,#a8ff78,#78ffd6);
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-      transition:transform .15s ease-out, filter .15s ease-out, color .15s ease-out, background .15s ease-out;
-      position:relative;
+      font-size:.8rem;
+      font-weight:600;
+      color:#050313;
+      background:linear-gradient(120deg,var(--primary-soft),var(--accent));
+      box-shadow:0 10px 25px rgba(0,0,0,.7);
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
     }
-    .category-pill::after{
+
+    .filter-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.6rem;
+      font-size:.78rem;
+    }
+
+    .filter-chip{
+      padding:.3rem .75rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.02);
+      border:1px solid rgba(255,255,255,.07);
+      color:var(--text-muted);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      transition:.2s;
+    }
+
+    .filter-chip.active,
+    .filter-chip:hover{
+      color:#050712;
+      background:linear-gradient(120deg,var(--primary-soft),var(--accent));
+      box-shadow:0 10px 25px rgba(0,0,0,.7);
+    }
+
+    /* ======= SECTION TITLE ======= */
+    .section-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      margin:2.3rem 0 1.1rem;
+    }
+
+    .section-title{
+      font-size:1.15rem;
+      font-weight:600;
+    }
+
+    .section-sub{
+      font-size:.8rem;
+      color:var(--text-muted);
+    }
+
+    /* ======= CAROUSEL ROW ======= */
+    .poster-row{
+      display:flex;
+      gap:1.4rem;
+      overflow-x:auto;
+      padding-bottom:.4rem;
+      scroll-snap-type:x mandatory;
+      scrollbar-width:none;
+    }
+    .poster-row::-webkit-scrollbar{display:none;}
+
+    .poster-card{
+      flex:0 0 210px;
+      scroll-snap-align:start;
+      border-radius:var(--radius-xl);
+      background:var(--bg-elevated);
+      overflow:hidden;
+      position:relative;
+      box-shadow:var(--shadow-soft);
+      border:var(--border-soft);
+      cursor:pointer;
+      transition:.35s;
+    }
+
+    .poster-img{
+      width:100%;
+      height:240px;
+      object-fit:cover;
+      display:block;
+    }
+
+    .poster-meta{
+      padding:.7rem .9rem .9rem;
+      font-size:.8rem;
+    }
+
+    .poster-title{
+      font-weight:600;
+      margin-bottom:.18rem;
+    }
+
+    .poster-cat{
+      font-size:.74rem;
+      color:var(--accent);
+    }
+
+    .poster-card:hover{
+      transform:translateY(-8px);
+      box-shadow:0 23px 55px rgba(0,0,0,.9);
+    }
+
+    .poster-card::before{
+      content:'';
+      position:absolute;
+      inset:-40%;
+      background:conic-gradient(from 0deg,rgba(255,255,255,.35),transparent,transparent);
+      mix-blend-mode:screen;
+      opacity:0;
+      transition:opacity .35s;
+    }
+
+    .poster-card:hover::before{opacity:.8;}
+
+    /* ======= ANIME GRID ======= */
+    .grid-wrap{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+      gap:1.6rem;
+      margin-top:.7rem;
+    }
+
+    .anime-card{
+      background:var(--bg-elevated);
+      border-radius:var(--radius-xl);
+      overflow:hidden;
+      border:var(--border-soft);
+      box-shadow:var(--shadow-soft);
+      position:relative;
+      cursor:pointer;
+      transition:.35s;
+    }
+
+    .anime-card-img{
+      width:100%;
+      height:260px;
+      object-fit:cover;
+      display:block;
+    }
+
+    .anime-card-body{
+      padding:1rem 1.05rem 1.1rem;
+      display:flex;
+      flex-direction:column;
+      gap:.35rem;
+      font-size:.83rem;
+    }
+
+    .anime-name{
+      font-weight:600;
+      font-size:.93rem;
+    }
+
+    .anime-meta-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.76rem;
+      color:var(--text-muted);
+    }
+
+    .badge-status{
+      padding:.15rem .55rem;
+      border-radius:999px;
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.11em;
+    }
+
+    .badge-ongoing{
+      background:rgba(62,223,164,.12);
+      color:var(--success);
+    }
+
+    .badge-completed{
+      background:rgba(129,212,250,.14);
+      color:#80d8ff;
+    }
+
+    .badge-upcoming{
+      background:rgba(255,213,74,.12);
+      color:var(--accent);
+    }
+
+    .anime-card:hover{
+      transform:translateY(-10px);
+      box-shadow:0 26px 60px rgba(0,0,0,.9);
+    }
+
+    .anime-card::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:radial-gradient(circle at top,rgba(255,255,255,.12),transparent 55%);
+      opacity:0;
+      mix-blend-mode:screen;
+      transition:opacity .35s;
+    }
+
+    .anime-card:hover::after{opacity:.9;}
+
+    /* ======= CALENDAR SECTION ======= */
+    .calendar-box{
+      margin-top:2.5rem;
+      padding:1.7rem 1.5rem 1.8rem;
+      border-radius:28px;
+      background:linear-gradient(150deg,#10132a,#161938);
+      border:var(--border-soft);
+      box-shadow:var(--shadow-soft);
+    }
+
+    .calendar-meta{
+      display:flex;
+      flex-wrap:wrap;
+      gap:1rem;
+      font-size:.8rem;
+      color:var(--text-muted);
+      margin-top:.7rem;
+      margin-bottom:1.3rem;
+    }
+
+    .calendar-meta strong{color:var(--accent);}
+
+    .calendar-tabs{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.55rem;
+      margin-bottom:1.4rem;
+    }
+
+    .tab-btn{
+      padding:.4rem 1.05rem;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-size:.8rem;
+      font-weight:600;
+      background:rgba(255,255,255,.06);
+      color:var(--text-muted);
+      transition:.25s;
+    }
+
+    .tab-btn.active{
+      background:linear-gradient(120deg,var(--primary-soft),var(--accent));
+      color:#050512;
+      box-shadow:0 12px 30px rgba(0,0,0,.9);
+    }
+
+    .schedule-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+      gap:1.2rem;
+    }
+
+    .schedule-card{
+      padding:1rem 1rem 1.05rem;
+      border-radius:20px;
+      background:rgba(3,5,18,.96);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow:0 14px 32px rgba(0,0,0,.8);
+      font-size:.82rem;
+      position:relative;
+      overflow:hidden;
+      transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+
+    .schedule-card::before{
       content:"";
       position:absolute;
-      left:0;bottom:-4px;
-      width:0;height:2px;
-      background:linear-gradient(90deg,var(--primary-yellow),var(--neon-pink));
-      transition:width .2s ease-out;
-    }
-    .category-pill:hover{
-      transform:translateY(-2px);
-      filter:brightness(1.2);
-    }
-    .category-pill.active{
-      -webkit-text-fill-color:unset;
-      color:var(--primary-yellow);
-    }
-    .category-pill.active::after{
-      width:100%;
+      inset:-20%;
+      background:radial-gradient(circle at top left, rgba(255,213,74,.35), transparent 65%);
+      opacity:0;
+      mix-blend-mode:screen;
+      transition:opacity .25s ease;
+      pointer-events:none;
     }
 
-    @media (max-width: 1180px){
-      .hero-grid{grid-template-columns:1.1fr .9fr;}
+    .schedule-card:hover{
+      transform:translate(6px,-6px);
+      box-shadow:0 24px 50px rgba(0,0,0,.95);
+      border-color:rgba(255,213,74,.7);
     }
-    @media (max-width: 1024px){
-      .hero-grid{grid-template-columns:1fr;}
-      .now-playing-panel{order:-1;}
+
+    .schedule-card:hover::before{
+      opacity:1;
     }
-    @media (max-width: 900px){
-      .nav-container{padding:0 .9rem;}
-      .main-content{margin-top:82px;padding:0 1.1rem 3rem;}
+
+    .schedule-time{
+      font-weight:600;
+      color:var(--accent);
+      margin-bottom:.3rem;
     }
-    @media (max-width: 768px){
-      .nav-menu{
-        display:none;position:absolute;top:100%;left:0;right:0;
-        background:rgba(5,5,18,.98);backdrop-filter:blur(22px);
-        flex-direction:column;padding:1.4rem 1.4rem 1.8rem;
-        gap:1rem;border-bottom:1px solid rgba(255,255,255,.06);
+
+    .schedule-title{
+      font-weight:600;
+      margin-bottom:.25rem;
+    }
+
+    .schedule-label{
+      font-size:.74rem;
+      color:var(--text-muted);
+    }
+
+    /* ======= ESTIMATED SCHEDULE WEEK VIEW ======= */
+    .est-wrap{
+      margin-top:1.8rem;
+      border-radius:26px;
+      background:linear-gradient(150deg,#090b1b,#121428);
+      border:var(--border-soft);
+      box-shadow:var(--shadow-soft);
+      padding:1.4rem 1.5rem 1.6rem;
+      display:none;
+    }
+    .est-wrap.active{display:block;}
+
+    .est-tabs{
+      display:flex;
+      gap:.9rem;
+      overflow-x:auto;
+      padding-bottom:.6rem;
+      scrollbar-width:none;
+    }
+    .est-tabs::-webkit-scrollbar{display:none;}
+
+    .est-day-btn{
+      min-width:120px;
+      padding:.75rem 1rem .65rem;
+      border-radius:18px;
+      border:none;
+      cursor:pointer;
+      background:rgba(255,255,255,.04);
+      color:var(--text-main);
+      font-size:.88rem;
+      font-weight:600;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:.15rem;
+      transition:.25s;
+    }
+    .est-day-btn span{
+      font-size:.72rem;
+      color:var(--text-muted);
+    }
+    .est-day-btn.active{
+      background:linear-gradient(120deg,var(--primary-soft),var(--accent));
+      color:#050313;
+      box-shadow:0 16px 40px rgba(0,0,0,.9);
+    }
+
+    .est-list{
+      margin-top:1.3rem;
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+
+    .est-row{
+      display:flex;
+      align-items:center;
+      padding:.7rem .1rem;
+      border-bottom:1px solid rgba(255,255,255,.04);
+      font-size:.86rem;
+      cursor:pointer;
+      transition:.2s;
+    }
+
+    .est-time{
+      width:70px;
+      flex-shrink:0;
+      color:var(--text-muted);
+    }
+
+    .est-title{
+      flex:1;
+    }
+
+    .est-ep{
+      width:90px;
+      text-align:right;
+      font-size:.8rem;
+      color:var(--text-muted);
+    }
+
+    .est-row:hover{
+      background:rgba(255,255,255,.03);
+    }
+
+    /* ======= NEWS SECTION ======= */
+    .news-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:1.4rem;
+      margin-top:.7rem;
+    }
+
+    .news-card{
+      background:var(--bg-elevated);
+      border-radius:22px;
+      padding:1rem 1.1rem 1.1rem;
+      border:var(--border-soft);
+      box-shadow:var(--shadow-soft);
+      font-size:.82rem;
+      cursor:pointer;
+      transition:.3s;
+    }
+
+    .news-card:hover{
+      transform:translateY(-6px);
+      box-shadow:0 20px 50px rgba(0,0,0,.9);
+    }
+
+    .news-tag{
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      color:var(--accent);
+      margin-bottom:.3rem;
+    }
+
+    .news-title{
+      font-weight:600;
+      margin-bottom:.3rem;
+    }
+
+    .news-meta{
+      font-size:.74rem;
+      color:var(--text-muted);
+      margin-bottom:.4rem;
+    }
+
+    .news-summary{
+      font-size:.8rem;
+      color:var(--text-muted);
+    }
+
+    /* ======= ABOUT & PRIVACY SECTION ======= */
+    .info-section{
+      margin-top:3rem;
+      padding:1.8rem 1.5rem 1.9rem;
+      border-radius:26px;
+      background:linear-gradient(140deg,#111328,#090919);
+      border:var(--border-soft);
+      box-shadow:var(--shadow-soft);
+      font-size:.9rem;
+      color:var(--text-muted);
+    }
+
+    .info-section h3{
+      font-size:1.05rem;
+      margin-bottom:.4rem;
+      color:#fff;
+    }
+
+    .info-section p{
+      margin-bottom:.7rem;
+    }
+
+    .ad-placeholder{
+      margin-top:1.4rem;
+      padding:1rem;
+      border-radius:18px;
+      border:1px dashed rgba(255,255,255,.25);
+      background:rgba(0,0,0,.4);
+      font-size:.8rem;
+      color:var(--text-muted);
+      text-align:center;
+    }
+
+    /* ======= FOOTER ======= */
+    .footer{
+      border-top:var(--border-soft);
+      background:#050716;
+      padding:2.7rem 1.75rem 2.1rem;
+      margin-top:3.2rem;
+    }
+
+    .footer-inner{
+      max-width:1320px;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      gap:1.6rem;
+      align-items:center;
+      text-align:center;
+    }
+
+    .footer-links{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.9rem;
+      font-size:.8rem;
+    }
+
+    .footer-link{
+      color:var(--text-muted);
+      padding:.25rem .55rem;
+      border-radius:999px;
+      transition:.2s;
+    }
+
+    .footer-link:hover{
+      color:var(--accent);
+      background:rgba(255,255,255,.04);
+    }
+
+    .footer-copy{
+      font-size:.76rem;
+      color:var(--text-muted);
+    }
+
+    /* ======= FLOATING SCROLL TOP ======= */
+    .scroll-top{
+      position:fixed;
+      right:1.6rem;
+      bottom:1.5rem;
+      width:46px;
+      height:46px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(120deg,var(--primary),var(--accent));
+      color:#050313;
+      border:none;
+      cursor:pointer;
+      z-index:900;
+      box-shadow:0 18px 40px rgba(0,0,0,.8);
+      transform:translateY(80px);
+      opacity:0;
+      pointer-events:none;
+      transition:.35s;
+    }
+
+    .scroll-top.visible{
+      transform:translateY(0);
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    /* ======= ANIME DETAILS MODAL ======= */
+    .anime-modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(3,4,15,.82);
+      backdrop-filter:blur(18px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:1200;
+    }
+
+    .anime-modal-backdrop.open{
+      display:flex;
+    }
+
+    .anime-modal{
+      max-width:900px;
+      width:100%;
+      margin:0 1.4rem;
+      background:linear-gradient(135deg,#121326,#050716);
+      border-radius:28px;
+      border:var(--border-soft);
+      box-shadow:0 28px 70px rgba(0,0,0,.95);
+      position:relative;
+      padding:1.4rem 1.6rem 1.6rem;
+    }
+
+    .modal-layout{
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) minmax(0, 1.6fr);
+      gap:1.4rem;
+    }
+
+    .modal-cover-wrap{
+      border-radius:22px;
+      overflow:hidden;
+      background:#000;
+    }
+
+    .modal-poster{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+
+    .modal-content{
+      display:flex;
+      flex-direction:column;
+      gap:.7rem;
+      font-size:.9rem;
+    }
+
+    .modal-title{
+      font-size:1.4rem;
+      font-weight:700;
+    }
+
+    .modal-meta{
+      font-size:.8rem;
+      color:var(--text-muted);
+    }
+
+    .modal-summary{
+      font-size:.86rem;
+      color:var(--text-muted);
+      max-height:180px;
+      overflow-y:auto;
+    }
+
+    .modal-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:.4rem;
+      margin-top:.3rem;
+    }
+
+    .modal-tags span{
+      padding:.18rem .6rem;
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:.74rem;
+    }
+
+    .modal-actions{
+      margin-top:.8rem;
+      display:flex;
+      gap:.6rem;
+    }
+
+    .modal-close{
+      position:absolute;
+      top:.8rem;
+      right:.9rem;
+      width:32px;
+      height:32px;
+      border-radius:999px;
+      border:none;
+      background:rgba(255,255,255,.06);
+      color:var(--text-main);
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.9rem;
+      transition:.2s;
+    }
+
+    .modal-close:hover{
+      background:rgba(255,255,255,.2);
+    }
+
+    /* ======= RESPONSIVE ======= */
+    @media(max-width:1024px){
+      .nav-menu{display:none;}
+      .menu-toggle{display:flex;}
+      .nav-menu.open{
+        position:absolute;
+        top:100%;
+        left:0;
+        right:0;
+        padding:.65rem 1.2rem 1rem;
+        background:rgba(5,7,26,.98);
+        border-bottom:var(--border-soft);
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:flex-start;
       }
-      .nav-menu.active{display:flex}
-      .mobile-menu-btn{display:flex}
-      .social-icons{display:none;}
-      .main-content{margin-top:80px;}
-      .search-bar-wrap{
-        flex-direction:column;
-        align-items:stretch;
-        border-radius:18px;
-        padding:.9rem .95rem;
-      }
-      .search-main-input{
-        background:rgba(255,255,255,.03);
-        border-radius:999px;
-        padding:0 .4rem;
-      }
-      .search-cta-btn{width:100%;justify-content:center;}
-      .anime-grid{
-        grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
-        gap:1.3rem;
+      .page-wrap{padding-top:5.4rem;}
+      .hero-grid{
+        grid-template-columns:1fr;
       }
     }
-    @media (max-width: 520px){
-      .hero-panel{padding:2rem 1.6rem;}
-      .hero-grid{gap:1.8rem;}
-      .anime-grid{grid-template-columns:1fr;}
-      .hero-slider .slider-item{grid-template-columns:1fr;}
-      .slider-poster{min-height:200px;}
+
+    @media(max-width:720px){
+      .nav-wrap{padding:.7rem 1.1rem;}
+      .page-wrap{padding-inline:1.1rem;}
+      .search-row{flex-direction:column;align-items:stretch;}
+      .hero-left{padding:1.9rem 1.6rem;}
+      .spotlight-media{min-height:230px;}
+      .anime-card-img{height:240px;}
+      .poster-card{flex:0 0 170px;}
+      .poster-img{height:220px;}
+      .modal-layout{grid-template-columns:1fr;}
+      .modal-summary{max-height:240px;}
+    }
+
+    @media(max-width:480px){
+      .brand-sub{display:none;}
+      .hero-title{font-size:1.8rem;}
+      .grid-wrap{grid-template-columns:1fr;}
+      .schedule-grid{grid-template-columns:1fr;}
     }
   </style>
 </head>
 <body>
-  <div class="scroll-to-top" id="scrollToTop"><i class="fas fa-chevron-up"></i></div>
+  <!-- Scroll‑Top -->
+  <button class="scroll-top" id="scrollTopBtn">
+    <i class="fas fa-chevron-up"></i>
+  </button>
 
+  <!-- HEADER -->
   <header class="header">
-    <nav class="nav-container">
-      <div class="logo-section">
-        <div class="logo"><div class="logo-inner"><i class="fas fa-play"></i></div></div>
-        <div class="site-meta">
-          <div class="site-title">Anime Nation India</div>
-          <div class="site-tagline">IST‑based anime calendar & discovery</div>
-        </div>
-      </div>
+    <nav class="nav-wrap">
+     <a href="#top" class="brand">
+  <div class="brand-logo">
+    <img src="ani-logo.png"
+         alt="Anime Nation India logo"
+         style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
+  </div>
+  <div class="brand-text">
+    <span class="brand-title">Anime Nation India</span>
+    <span class="brand-sub">LIVE CALENDAR • NEWS</span>
+  </div>
+</a>
+
 
       <ul class="nav-menu" id="navMenu">
-        <li><a href="#home" class="nav-item active" data-section="home">Home</a></li>
-        <li><a href="#news" class="nav-item" data-section="news">News</a></li>
-        <li><a href="#popular" class="nav-item" data-section="popular">Popular</a></li>
-        <li><a href="#categories" class="nav-item" data-section="categories">Categories</a></li>
-        <li><a href="#calendar" class="nav-item" data-section="calendar">Calendar</a></li>
-        <li><a href="#about" class="nav-item" data-section="about">About</a></li>
-        <li><a href="#contact" class="nav-item" data-section="contact">Contact</a></li>
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#featured" class="nav-link">Spotlight<span class="nav-pill">Hot</span></a></li>
+        <li><a href="#airing" class="nav-link">Schedule</a></li>
+        <li><a href="#popular" class="nav-link">Popular</a></li>
+        <li><a href="#news" class="nav-link">News</a></li>
+        <li><a href="#categories" class="nav-link">Genres</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
       </ul>
 
-      <div class="social-icons">
-        <a href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
-        <a href="https://www.threads.net/@animenationindia" class="social-icon threads-icon" target="_blank" rel="noopener">T</a>
-        <a href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
-        <a href="https://www.facebook.com/share/1Bo8tbhWYY/" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
-      </div>
+      <div class="nav-right">
+        <div class="social-row">
+          <a class="social-btn" target="_blank" rel="noopener"
+             href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==">
+            <i class="fab fa-instagram"></i>
+          </a>
+          <a class="social-btn" target="_blank" rel="noopener"
+             href="https://www.threads.net/@animenationindia">
+            <span class="threads-txt">T</span>
+          </a>
+          <a class="social-btn" target="_blank" rel="noopener"
+             href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ">
+            <i class="fab fa-youtube"></i>
+          </a>
+          <a class="social-btn" target="_blank" rel="noopener"
+             href="https://www.facebook.com/share/1Bo8tbhWYY/">
+            <i class="fab fa-facebook-f"></i>
+          </a>
+        </div>
 
-      <div class="mobile-menu-btn" id="mobileMenuBtn">
-        <div class="hamburger"></div>
-        <div class="hamburger"></div>
-        <div class="hamburger"></div>
+
+        <div class="menu-toggle" id="menuToggle">
+          <span></span><span></span><span></span>
+        </div>
       </div>
     </nav>
   </header>
-  <main class="main-content">
-    <section id="home">
-      <div class="hero-grid">
-        <div class="hero-panel">
-          <div class="hero-pill"><i class="fas fa-bolt"></i><span>Live powered by AniList · IST</span></div>
-          <h1 class="hero-title">Track, discover & follow <span>your anime universe</span>.</h1>
-          <p class="hero-subtitle">See what’s airing today in India, explore trending and classic shows, and open full details in one tap. All data stays synced with AniList so new titles auto‑appear.</p>
-          <div class="hero-actions">
-            <button class="btn-solid" id="ctaToday"><i class="fas fa-calendar-day"></i><span>See today’s schedule</span></button>
-            <button class="btn-outline" id="ctaBrowse"><i class="fas fa-th-large"></i><span>Browse all sections</span></button>
-          </div>
-          <div class="hero-stats">
-            <div class="stat-card"><div class="stat-label">Total anime loaded</div><div class="stat-number" id="animeCount">0</div></div>
-            <div class="stat-card"><div class="stat-label">Today’s new episodes</div><div class="stat-number" id="todayReleases">0</div></div>
-            <div class="stat-card"><div class="stat-label">Weekly news slots</div><div class="stat-number" id="weeklyNews">0</div></div>
-          </div>
+
+  <!-- MAIN CONTENT -->
+  <main class="page-wrap" id="home">
+    <section class="hero-grid">
+      <!-- LEFT HERO -->
+      <div class="hero-left">
+        <div class="hero-kicker">
+          <span><i class="fas fa-bolt"></i> Live Anime Radar</span>
+          <span>|</span>
+          <span id="heroSeasonText">Winter 2026 • Simulcast</span>
         </div>
 
-        <div class="now-playing-panel">
-          <div class="now-header">
-            <span><i class="fas fa-broadcast-tower" style="color:var(--primary-yellow);margin-right:.4rem;"></i>Now airing (IST)</span>
-            <span>Auto‑refresh from AniList</span>
-          </div>
-          <div class="now-list" id="nowList"></div>
-          <div class="hero-slider-wrap">
-            <div class="hero-slider" id="heroSlider">
-              <div class="slider-track" id="sliderTrack"></div>
-              <div class="slider-dots" id="sliderDots"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+        <h1 class="hero-title">
+          Track every <span class="hero-title-highlight">new episode</span> in IST.
+        </h1>
 
-    <section class="search-section">
-      <div class="search-bar-wrap">
-        <div class="search-main-input">
-          <i class="fas fa-search"></i>
-          <input type="text" id="searchInput" class="search-input" placeholder="Search any anime title, genre or studio…">
-        </div>
-        <div class="filter-chips" id="filterChips">
-          <button class="filter-chip active" data-filter-type="sort" data-filter-value="TRENDING_DESC"><i class="fas fa-fire"></i><span>Trending</span></button>
-          <button class="filter-chip" data-filter-type="sort" data-filter-value="POPULARITY_DESC"><i class="fas fa-star"></i><span>Most Popular</span></button>
-          <button class="filter-chip" data-filter-type="status" data-filter-value="RELEASING"><i class="fas fa-play-circle"></i><span>Ongoing</span></button>
-          <button class="filter-chip" data-filter-type="status" data-filter-value="FINISHED"><i class="fas fa-check-circle"></i><span>Completed</span></button>
-        </div>
-        <button class="search-cta-btn" id="searchButton"><i class="fas fa-search"></i><span>Search on AniList</span></button>
-      </div>
-    </section>
-
-    <section class="carousel-section" id="featured">
-      <h2 class="section-title"><span>Featured</span> this month</h2>
-      <p class="section-sub">Hand‑picked from AniList’s trending chart – refreshes automatically as the season evolves.</p>
-      <div class="carousel" id="carousel"></div>
-    </section>
-
-    <section id="all-anime" class="section-shell">
-      <h2 class="section-title"><span>All loaded</span> anime</h2>
-      <p class="section-sub">Fresh mix of different genres pulled from AniList. Use search, filters or genre tags below to jump into exactly what you want.</p>
-      <div class="anime-grid" id="animeGrid"></div>
-    </section>
-
-    <section class="calendar-section" id="calendar">
-      <h2 class="section-title"><span>Release</span> calendar</h2>
-      <div class="calendar-info">
-        <p><strong>Date:</strong> <span id="currentDate"></span></p>
-        <p><strong>Timezone:</strong> IST (Indian Standard Time)</p>
-        <p><strong>Status:</strong> Live Updates (AniList)</p>
-      </div>
-      <div class="calendar-tabs" style="display:flex;gap:1rem;margin:1rem 0 1.5rem;flex-wrap:wrap;">
-        <button class="tab-btn active" id="tabToday" type="button" style="padding:.8rem 1.4rem;border:none;border-radius:999px;cursor:pointer;font-weight:600;background:linear-gradient(45deg,var(--primary-yellow),var(--yellow-dark));color:#050510;">Today</button>
-        <button class="tab-btn" id="tabTomorrow" type="button" style="padding:.8rem 1.4rem;border:none;border-radius:999px;cursor:pointer;font-weight:600;background:rgba(255,255,255,.08);color:var(--text-light);">Tomorrow</button>
-      </div>
-      <div id="calendarTodayWrap"><div class="calendar-day" id="calendarDay"></div></div>
-      <div id="calendarTomorrowWrap" style="display:none;"><div class="calendar-day" id="calendarTomorrow"></div></div>
-    </section>
-
-    <section id="news" style="padding:3.5rem 2rem 0;max-width:1380px;margin:0 auto;">
-      <h2 class="section-title"><span>Latest</span> anime picks</h2>
-      <p class="section-sub">Same pool of titles in a different order – use this like a quick “what else can I start next?” lane.</p>
-      <div class="anime-grid" id="newsGrid"></div>
-    </section>
-
-    <section id="popular" style="padding:3.5rem 2rem 0;max-width:1380px;margin:0 auto;">
-      <h2 class="section-title"><span>Popular</span> this week</h2>
-      <p class="section-sub">Pulled from the current AniList sort – a fast snapshot of what people are actually watching.</p>
-      <div class="anime-grid" id="popularGrid"></div>
-    </section>
-
-    <section id="categories" style="padding:3.8rem 2rem 0;max-width:1380px;margin:0 auto;">
-      <h2 class="section-title"><span>Browse</span> by tags</h2>
-      <p class="section-sub">Tap any genre to refilter the full grid. Tap the same tag again to go back to the mixed list.</p>
-      <div class="categories-list">
-        <span class="category-pill" data-genre="Action">Action</span>
-        <span class="category-pill" data-genre="Adventure">Adventure</span>
-        <span class="category-pill" data-genre="Comedy">Comedy</span>
-        <span class="category-pill" data-genre="Drama">Drama</span>
-        <span class="category-pill" data-genre="Fantasy">Fantasy</span>
-        <span class="category-pill" data-genre="Horror">Horror</span>
-        <span class="category-pill" data-genre="Isekai">Isekai</span>
-        <span class="category-pill" data-genre="Romance">Romance</span>
-        <span class="category-pill" data-genre="Slice of Life">Slice of Life</span>
-        <span class="category-pill" data-genre="Sci-Fi">Sci‑Fi</span>
-        <span class="category-pill" data-genre="Sports">Sports</span>
-        <span class="category-pill" data-genre="Mystery">Mystery</span>
-        <span class="category-pill" data-genre="Psychological">Psychological</span>
-        <span class="category-pill" data-genre="Seinen">Seinen</span>
-        <span class="category-pill" data-genre="Shounen">Shounen</span>
-        <span class="category-pill" data-genre="Supernatural">Supernatural</span>
-      </div>
-    </section>
-
-    <section id="about" style="padding:4.2rem 2rem 0;max-width:1380px;margin:0 auto;">
-      <h2 class="section-title"><span>About</span> Anime Nation India</h2>
-      <div style="max-width:880px;margin:0 auto;text-align:center;padding:2.4rem 2rem;border-radius:22px;background:rgba(10,10,30,.96);border:1px solid rgba(255,255,255,.09);box-shadow:var(--shadow);">
-        <p style="font-size:1.03rem;color:var(--text-muted);line-height:1.9;margin-bottom:1.4rem;">
-          Anime Nation India is a fan‑made dashboard focused on one thing: making it easy for Indian viewers to keep up with anime in IST. No random clutter, no spoilers first – just schedule, discovery and clean details.
+        <p class="hero-desc">
+          One dashboard for schedules, trending titles, and streaming info – powered by AniList live data and tuned for Indian fans on every device.
         </p>
-        <p style="font-size:.98rem;color:var(--text-muted);line-height:1.9;">
-          The data is powered by AniList’s public API, and this site does not host or mirror any video streams. Think of it as your control room for deciding what to watch next, then you jump to your favourite legal platform to actually stream it.
+
+        <div class="hero-tags">
+          <span class="tag-pill">AniList API</span>
+          <span class="tag-pill">IST timezone</span>
+          <span class="tag-pill">Sub + Dub</span>
+          <span class="tag-pill">Mobile ready</span>
+        </div>
+
+        <div class="hero-stats-row">
+          <div class="stat-box">
+            <div class="stat-label">Series indexed</div>
+            <div class="stat-value stat-accent-main" id="statAnimeCount">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Today airing</div>
+            <div class="stat-value stat-accent-success" id="statTodayShows">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">News this week</div>
+            <div class="stat-value stat-accent-danger" id="statNewsCount">0</div>
+          </div>
+        </div>
+
+        <div class="hero-cta-row">
+          <button class="btn-primary" id="jumpTodayBtn">
+            <i class="fas fa-calendar-day"></i>
+            Today’s schedule
+          </button>
+          <div class="hero-secondary">
+            <i class="fas fa-circle-dot"></i>
+            Auto‑refresh every 15 minutes from AniList.
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT – SPOTLIGHT SLIDER -->
+      <aside class="spotlight-card" id="spotlightCard">
+        <div class="spotlight-media">
+          <img src="" alt="Spotlight anime" class="spotlight-img" id="spotlightImg">
+          <div class="spotlight-gradient"></div>
+
+          <div class="spotlight-badge">
+            <i class="fas fa-fire"></i>
+            <span id="spotlightBadgeText">#1 Spotlight</span>
+          </div>
+
+          <div class="spotlight-meta-row">
+            <div class="spotlight-meta-left">
+              <h2 class="spotlight-title" id="spotlightTitle">Loading…</h2>
+              <p class="spotlight-sub" id="spotlightSub">Trending simulcast picked from AniList.</p>
+              <div class="spotlight-pill-row" id="spotlightGenres"></div>
+            </div>
+            <div class="spotlight-meta-right">
+              <span><i class="fas fa-clock"></i><strong id="spotlightDuration">24m</strong> / ep</span>
+              <span><i class="fas fa-star"></i><strong id="spotlightScore">–</strong> score</span>
+              <span><i class="fas fa-tv"></i><strong id="spotlightEpisodes">0</strong> eps</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="spotlight-body">
+          <p class="spotlight-desc" id="spotlightDesc">
+            Stay tuned – loading final season details directly from AniList…
+          </p>
+
+          <div class="spotlight-chips">
+            <span class="chip"><i class="fas fa-language"></i> Sub & Dub (where available)</span>
+            <span class="chip"><i class="fas fa-globe"></i> Global data from AniList</span>
+            <span class="chip"><i class="fas fa-sync-alt"></i> Auto‑refresh 15 min</span>
+          </div>
+          <div class="spotlight-footer">
+            <div>
+              <div class="pill-live">
+                <span class="pill-live-dot"></span>
+                LIVE DATA
+              </div>
+            </div>
+            <div class="spotlight-footer-right">
+              <span><i class="fas fa-arrow-right"></i> Tap any card for full details</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- SEARCH + FILTER -->
+    <section class="search-row" id="featured">
+      <div class="search-input-wrap">
+        <i class="fas fa-search"></i>
+        <input id="searchInput" class="search-input"
+               placeholder="Search anime by title, genre, or studio (AniList powered)…">
+        <button id="searchBtn" class="search-btn">
+          <i class="fas fa-arrow-right"></i>
+          Search
+        </button>
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-chip active" data-filter="all">
+          <i class="fas fa-fire"></i> All
+        </button>
+        <button class="filter-chip" data-filter="airing">
+          <i class="fas fa-broadcast-tower"></i> Airing now
+        </button>
+        <button class="filter-chip" data-filter="upcoming">
+          <i class="fas fa-hourglass-half"></i> Upcoming
+        </button>
+        <button class="filter-chip" data-filter="completed">
+          <i class="fas fa-check-circle"></i> Completed
+        </button>
+      </div>
+    </section>
+
+    <!-- FEATURED CAROUSEL -->
+    <section aria-label="Hot this month">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🔥 This month’s featured</h2>
+          <p class="section-sub">Top trending anime picked from AniList trending feed.</p>
+        </div>
+      </div>
+
+      <div class="poster-row" id="featuredCarousel"></div>
+    </section>
+
+    <!-- NEW: Latest Releases -->
+    <section id="latest">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🆕 Latest releases</h2>
+          <p class="section-sub">Freshly airing series from this season, sorted by air date.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="latestGrid"></div>
+    </section>
+
+    <!-- NEW: Best Movies -->
+    <section id="best-movies">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🎬 The best movies</h2>
+          <p class="section-sub">Highest rated anime movies from AniList.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="movieGrid"></div>
+    </section>
+
+    <!-- NEW: Popular Hindi Dubbed -->
+    <section id="hindi-dub">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🇮🇳 Popular Hindi dubbed anime</h2>
+          <p class="section-sub">Auto‑picked using AniList tags & descriptions mentioning Hindi / India.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="hindiGrid"></div>
+    </section>
+
+    <!-- NEW: Trending English Dub in India -->
+    <section id="english-dub">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🌍 Trending English dubbed</h2>
+          <p class="section-sub">Global trending titles with English dub tags when available.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="englishGrid"></div>
+    </section>
+
+    <!-- ALL ANIME GRID -->
+    <section aria-label="All anime list">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📚 All anime</h2>
+          <p class="section-sub">Browse everything returned from the current AniList query.</p>
+        </div>
+      </div>
+
+      <div class="grid-wrap" id="animeGrid"></div>
+    </section>
+
+    <!-- CALENDAR -->
+    <section id="airing" class="calendar-box">
+      <div class="section-head" style="margin-top:0;">
+        <div>
+          <h2 class="section-title">📅 Live release calendar</h2>
+          <p class="section-sub">Airing schedules in IST directly from AniList.</p>
+        </div>
+        <button class="tab-btn" id="btnEstimated">Estimated schedule</button>
+      </div>
+
+      <div class="calendar-meta">
+        <span><strong>Date:</strong> <span id="currentDate"></span></span>
+        <span><strong>Timezone:</strong> IST (Asia/Kolkata)</span>
+        <span><strong>Status:</strong> Auto‑refresh every 15 minutes</span>
+      </div>
+
+      <div class="calendar-tabs">
+        <button class="tab-btn active" id="tabToday">Today</button>
+        <button class="tab-btn" id="tabTomorrow">Tomorrow</button>
+      </div>
+
+      <div id="calendarTodayWrap">
+        <div class="schedule-grid" id="calendarDay"></div>
+      </div>
+
+      <div id="calendarTomorrowWrap" style="display:none;">
+        <div class="schedule-grid" id="calendarTomorrow"></div>
+      </div>
+
+      <!-- Estimated 7‑day schedule -->
+      <div class="est-wrap" id="estimatedWrap">
+        <div class="est-tabs" id="estimatedTabs"></div>
+        <div class="est-list" id="estimatedList"></div>
+      </div>
+    </section>
+
+    <!-- POPULAR -->
+    <section id="popular">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">⭐ Popular this month</h2>
+          <p class="section-sub">Quick picks from the same AniList trending pool.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="popularGrid"></div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section id="categories">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🏷️ Browse by genres</h2>
+          <p class="section-sub">Tap a genre card to filter the grid.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="categoriesGrid"></div>
+    </section>
+
+    <!-- NEWS -->
+    <section id="news">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📰 Latest anime news</h2>
+          <p class="section-sub">Daily headlines and updates pulled from live APIs.</p>
+        </div>
+      </div>
+      <div class="news-grid" id="newsGrid"></div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" style="margin-top:3.2rem;">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📞 Contact</h2>
+          <p class="section-sub">Business or collab? Reach Anime Nation India.</p>
+        </div>
+      </div>
+
+      <div class="calendar-box" style="margin-top:.3rem;">
+        <p style="font-size:.96rem;color:var(--text-muted);margin-bottom:1.2rem;">
+          For feedback, sponsorships, or corrections, mail at
+          <span style="color:var(--accent);font-weight:600;">animenationindia.global@gmail.com</span>
+          and follow our socials above.
         </p>
       </div>
     </section>
 
-    <section id="legal" style="padding:4rem 2rem 0;max-width:1380px;margin:0 auto;">
-      <h2 class="section-title"><span>Privacy</span> & terms</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.8rem;">
-        <div style="background:rgba(10,10,30,.96);padding:1.9rem 1.7rem;border-radius:18px;border:1px solid rgba(255,255,255,.09);">
-          <h3 style="font-size:1.05rem;margin-bottom:.8rem;color:var(--primary-yellow);">Privacy policy</h3>
-          <p style="font-size:.9rem;color:var(--text-muted);line-height:1.8;">
-            This site does not ask you to create an account and does not store personal data on its own servers. Basic analytics may be used to improve features, but no information is sold or shared for advertising.
-          </p>
-        </div>
-        <div style="background:rgba(10,10,30,.96);padding:1.9rem 1.7rem;border-radius:18px;border:1px solid rgba(255,255,255,.09);">
-          <h3 style="font-size:1.05rem;margin-bottom:.8rem;color:var(--primary-yellow);">Terms of service</h3>
-          <p style="font-size:.9rem;color:var(--text-muted);line-height:1.8;">
-            Anime information is provided “as‑is” using third‑party APIs and may change or be removed at any time. By using this site you agree not to misuse the data or attempt to bypass licensing on official streaming platforms.
-          </p>
-        </div>
-      </div>
-    </section>
+    <!-- ABOUT + PRIVACY -->
+    <section id="about-site" class="info-section">
+      <h3>About Anime Nation India</h3>
+      <p>
+        Anime Nation India is a fan‑made, data‑driven dashboard built for anime watchers
+        in India who want one place to check airing times, trending series, and simulcast
+        information in IST. It uses the AniList public API for live schedules, titles,
+        and metadata, and is not affiliated with any official broadcaster or streaming
+        platform.
+      </p>
+      <p>
+        The goal of this website is to make it easier to follow seasonal anime, track
+        when new episodes drop, and discover what is popular right now without hopping
+        between multiple services. All links that leave this site go directly to legal
+        catalog or information pages, never to unauthorized streaming mirrors.
+      </p>
 
-    <section id="contact" style="padding:4.2rem 2rem 0;max-width:1380px;margin:0 auto 2rem;">
-      <h2 class="section-title"><span>Contact</span> & feedback</h2>
-      <div style="max-width:880px;margin:0 auto;">
-        <div style="background:rgba(10,10,30,.96);padding:3.1rem 2.6rem;border-radius:22px;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.1);text-align:center;">
-          <p style="font-size:1rem;color:var(--text-muted);margin-bottom:2rem;">
-            Found a bug, want a new feature like watchlist or season filter, or just want to say hi? Drop a quick message – this hub is actively updated and feedback really helps.
-          </p>
-          <div style="font-size:1.35rem;color:var(--primary-yellow);margin-bottom:2rem;background:rgba(255,215,0,.08);padding:1.4rem;border-radius:18px;border-left:4px solid var(--primary-yellow);">
-            animenationindia.global@gmail.com
-          </div>
-          <form id="contactForm" style="max-width:620px;margin:0 auto;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.7rem;margin-bottom:1.9rem;">
-              <input id="contactName" type="text" placeholder="Your Name *" required style="width:100%;padding:1.05rem;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(5,5,20,.95);color:var(--text-light);">
-              <input id="contactEmail" type="email" placeholder="Your Email *" required style="width:100%;padding:1.05rem;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(5,5,20,.95);color:var(--text-light);">
-            </div>
-            <div style="margin-bottom:2.2rem;">
-              <textarea id="contactMessage" rows="5" placeholder="Your Message *" required style="width:100%;padding:1.05rem;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(5,5,20,.95);color:var(--text-light);resize:vertical;font-family:inherit;"></textarea>
-            </div>
-            <button type="submit" style="width:100%;padding:1.05rem 3rem;background:linear-gradient(135deg,var(--primary-yellow),var(--yellow-dark));border:none;border-radius:14px;color:#050510;font-weight:700;font-size:1rem;cursor:pointer;transition:.3s;display:flex;align-items:center;justify-content:center;gap:.7rem;">
-              <span id="formBtnText">Send message</span>
-              <span id="formBtnLoading" style="display:none;border:3px solid rgba(0,0,0,.1);border-top-color:#050510;border-radius:50%;width:18px;height:18px;vertical-align:middle;animation:spin 1s linear infinite;"></span>
-            </button>
-          </form>
-        </div>
+      <h3>Privacy & Advertising</h3>
+      <p>
+        This website does not require user registration and does not store personal
+        information such as names, passwords, or watch history on its own servers.
+        Embedded third‑party services (for example Google Analytics or Google AdSense)
+        may use cookies or similar technologies to measure traffic, prevent fraud, and
+        serve more relevant ads. By continuing to use this site you agree that such
+        services may process basic technical information like your IP address, device
+        type, and approximate location.
+      </p>
+      <p>
+        You are encouraged to use browser‑level controls such as ad‑blockers or cookie
+        settings if you want stricter privacy. Anime Nation India will never sell your
+        data or use dark‑pattern pop‑ups to force tracking consent.
+      </p>
+
+      <div class="ad-placeholder">
+        Future AdSense banner area – once your domain is approved, replace this block
+        with the official Google ad script snippet.
       </div>
     </section>
   </main>
 
-  <div class="modal" id="animeModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle"></h2>
-        <button class="close-btn" id="closeModal">&times;</button>
-      </div>
-      <img id="modalPoster" class="modal-poster" src="" alt="">
-      <div class="modal-body">
-        <ul class="detail-list" id="modalDetails"></ul>
-        <div id="modalShort"></div>
-        <div id="modalSynopsis"></div>
-        <div id="modalExternal"></div>
+  <!-- MODAL -->
+  <div class="anime-modal-backdrop" id="animeModal">
+    <div class="anime-modal">
+      <button class="modal-close" id="modalCloseBtn">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="modal-layout">
+        <div class="modal-cover-wrap">
+          <img id="modalPoster" src="" alt="Anime cover" class="modal-poster">
+        </div>
+        <div class="modal-content">
+          <h2 id="modalTitle" class="modal-title"></h2>
+          <p id="modalMeta" class="modal-meta"></p>
+          <p id="modalSummary" class="modal-summary"></p>
+          <div class="modal-tags" id="modalTags"></div>
+          <div class="modal-actions">
+            <a id="modalAniListLink" href="#" target="_blank" rel="noopener" class="btn-primary">
+              <i class="fas fa-external-link-alt"></i>
+              View full details on AniList
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- FOOTER -->
   <footer class="footer">
-    <div class="footer-links">
-      <a href="#about" class="footer-link">About</a>
-      <a href="#contact" class="footer-link">Contact</a>
-      <a href="#legal" class="footer-link">Privacy Policy</a>
-      <a href="#legal" class="footer-link">Terms of Service</a>
-      <a href="#home" class="footer-link">Back to top</a>
-    </div>
-    <div class="social-icons" style="justify-content:center;margin:2.3rem 0 1.6rem;">
-      <a href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-instagram"></i></a>
-      <a href="https://www.threads.net/@animenationindia" class="social-icon threads-icon" target="_blank" rel="noopener">T</a>
-      <a href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
-      <a href="https://www.facebook.com/share/1Bo8tbhWYY/" class="social-icon" target="_blank" rel="noopener"><i class="fab fa-facebook-f"></i></a>
-    </div>
-    <p style="color:var(--text-muted);font-size:.9rem;">© 2020 Anime Nation India. All rights reserved. This is an unofficial fan project and is not affiliated with any studio or streaming service.</p>
-  </footer>
-<script>
-const ANILIST_ENDPOINT = "https://graphql.anilist.co";
-
-let baseAnimeList = [];
-let animeData = [];
-let featuredAnime = [];
-let popularAnime = [];
-let newsAnime = [];
-let calendarTodayData = [];
-let calendarTomorrowData = [];
-let activeStatusFilter = null;
-let activeSort = "TRENDING_DESC";
-let activeGenre = null;
-let sliderIndex = 0;
-let sliderTimer = null;
-
-// DOM
-const navMenu = document.getElementById("navMenu");
-const mobileMenuBtn = document.getElementById("mobileMenuBtn");
-const searchInput = document.getElementById("searchInput");
-const searchButton = document.getElementById("searchButton");
-const animeGrid = document.getElementById("animeGrid");
-const carousel = document.getElementById("carousel");
-const calendarDay = document.getElementById("calendarDay");
-const calendarTomorrow = document.getElementById("calendarTomorrow");
-const animeModal = document.getElementById("animeModal");
-const closeModal = document.getElementById("closeModal");
-const scrollToTop = document.getElementById("scrollToTop");
-const newsGrid = document.getElementById("newsGrid");
-const popularGrid = document.getElementById("popularGrid");
-const tabToday = document.getElementById("tabToday");
-const tabTomorrow = document.getElementById("tabTomorrow");
-const calendarTodayWrap = document.getElementById("calendarTodayWrap");
-const calendarTomorrowWrap = document.getElementById("calendarTomorrowWrap");
-const nowList = document.getElementById("nowList");
-const sliderTrack = document.getElementById("sliderTrack");
-const sliderDots = document.getElementById("sliderDots");
-const ctaToday = document.getElementById("ctaToday");
-const ctaBrowse = document.getElementById("ctaBrowse");
-
-// MAIN LIST
-async function loadAnimeDataFromAniList(sort = "TRENDING_DESC", statusFilter = null) {
-  activeSort = sort;
-  activeStatusFilter = statusFilter;
-
-  const query = `
-    query ($page: Int, $perPage: Int, $sort: [MediaSort], $status: MediaStatus) {
-      Page(page: $page, perPage: $perPage) {
-        media(type: ANIME, sort: $sort, status: $status) {
-          id
-          title { romaji english }
-          coverImage { large }
-          genres
-          episodes
-          averageScore
-          status
-          startDate { year }
-          studios(isMain: true) { nodes { name } }
-          siteUrl
-          description
-        }
-      }
-    }`;
-
-  const variables = { page: 1, perPage: 36, sort: [sort], status: statusFilter };
-
-  try {
-    const res = await fetch(ANILIST_ENDPOINT, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Accept":"application/json"},
-      body: JSON.stringify({ query, variables })
-    });
-    const json = await res.json();
-    const list = json?.data?.Page?.media || [];
-
-    const mapped = list.map(m => {
-      const statusText = (m.status || "").toLowerCase();
-      const status = statusText.includes("finished")
-        ? "Completed"
-        : statusText.includes("releasing")
-        ? "Ongoing"
-        : "Upcoming";
-
-      return {
-        id: m.id,
-        title: m.title.english || m.title.romaji || "Untitled Anime",
-        genre: (m.genres || []).join(", "),
-        poster: m.coverImage?.large || "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=1200&fit=crop",
-        synopsis: m.description
-          ? m.description.replace(/<br\s*\/?>/gi," ").replace(/<\/?i>/gi,"").substring(0,240) + "..."
-          : "No synopsis available.",
-        status,
-        episodes: m.episodes || 0,
-        rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : "8.0",
-        releaseDate: m.startDate?.year || "Unknown",
-        studio: m.studios?.nodes?.[0]?.name || "Unknown",
-        category: (m.genres && m.genres[0] ? m.genres[0].toLowerCase() : "action"),
-        externalUrl: m.siteUrl
-      };
-    });
-
-    baseAnimeList = mapped.slice();
-    animeData     = mapped.slice();
-    featuredAnime = baseAnimeList.slice(0, 10);
-    popularAnime  = baseAnimeList.slice(0, 12);
-    newsAnime     = baseAnimeList.slice(0, 12).reverse();
-
-    renderFeaturedCarousel();
-    buildHeroSlider();
-    renderAnimeGrid(animeData);
-    renderNews();
-    renderPopular();
-    renderCategories();
-    updateStats();
-  } catch (e) {
-    console.error("AniList trending fetch failed", e);
-    renderFallbackError();
-  }
-}
-
-// GENRE
-async function fetchByGenre(genre) {
-  if (activeGenre === genre) {
-    activeGenre   = null;
-    animeData     = baseAnimeList.slice();
-    featuredAnime = baseAnimeList.slice(0, 10);
-    popularAnime  = baseAnimeList.slice(0, 12);
-    newsAnime     = baseAnimeList.slice(0, 12).reverse();
-
-    renderFeaturedCarousel();
-    buildHeroSlider();
-    renderAnimeGrid(animeData);
-    renderNews();
-    renderPopular();
-    renderCategories();
-    updateStats();
-    return;
-  }
-
-  activeGenre = genre;
-
-  const query = `
-    query ($genre: String, $page: Int, $perPage: Int) {
-      Page(page: $page, perPage: $perPage) {
-        media(genre_in: [$genre], type: ANIME, sort: TRENDING_DESC) {
-          id
-          title { romaji english }
-          coverImage { large }
-          genres
-          episodes
-          averageScore
-          status
-          startDate { year }
-          studios(isMain: true) { nodes { name } }
-          siteUrl
-          description
-        }
-      }
-    }`;
-
-  const variables = { genre, page: 1, perPage: 36 };
-
-  try {
-    const res = await fetch(ANILIST_ENDPOINT, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Accept":"application/json"},
-      body: JSON.stringify({ query, variables })
-    });
-    const json = await res.json();
-    const list = json?.data?.Page?.media || [];
-    if (!list.length) return;
-
-    const mapped = list.map(m => {
-      const statusText = (m.status || "").toLowerCase();
-      const status = statusText.includes("finished")
-        ? "Completed"
-        : statusText.includes("releasing")
-        ? "Ongoing"
-        : "Upcoming";
-
-      return {
-        id: m.id,
-        title: m.title.english || m.title.romaji || "Untitled Anime",
-        genre: (m.genres || []).join(", "),
-        poster: m.coverImage?.large || "",
-        synopsis: m.description
-          ? m.description.replace(/<br\s*\/?>/gi," ").substring(0,220) + "..."
-          : "AniList genre result.",
-        status,
-        episodes: m.episodes || 0,
-        rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : "8.0",
-        releaseDate: m.startDate?.year || "",
-        studio: m.studios?.nodes?.[0]?.name || "Unknown",
-        category: (m.genres && m.genres[0] ? m.genres[0].toLowerCase() : "action"),
-        externalUrl: m.siteUrl
-      };
-    });
-
-    baseAnimeList = mapped.slice();
-    animeData     = mapped.slice();
-    featuredAnime = baseAnimeList.slice(0, 10);
-    popularAnime  = baseAnimeList.slice(0, 12);
-    newsAnime     = baseAnimeList.slice(0, 12).reverse();
-
-    renderFeaturedCarousel();
-    buildHeroSlider();
-    renderAnimeGrid(animeData);
-    renderNews();
-    renderPopular();
-    renderCategories();
-    updateStats();
-  } catch (e) {
-    console.error("Genre fetch failed", e);
-  }
-}
-
-// CALENDAR
-async function loadCalendarFromAniList() {
-  const now = Math.floor(Date.now() / 1000);
-  const startToday = now;
-  const startTomorrow = now + 24*60*60;
-  const startDayAfterTomorrow = now + 48*60*60;
-
-  const query = `
-    query ($start: Int, $end: Int) {
-      Page(page: 1, perPage: 50) {
-        airingSchedules(airingAt_greater: $start, airingAt_lesser: $end) {
-          airingAt
-          episode
-          media { title { romaji english } }
-        }
-      }
-    }`;
-
-  async function fetchRange(start, end) {
-    const res = await fetch(ANILIST_ENDPOINT, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Accept":"application/json"},
-      body: JSON.stringify({ query, variables: { start, end } })
-    });
-    const json = await res.json();
-    const list = json?.data?.Page?.airingSchedules || [];
-    return list.map(item => {
-      const title = item.media?.title?.english || item.media?.title?.romaji || "Untitled";
-      const ms = item.airingAt * 1000;
-      const timeIST = new Date(ms).toLocaleTimeString("en-IN",{
-        hour:"2-digit",minute:"2-digit",hour12:true,timeZone:"Asia/Kolkata"
-      });
-      return { time:`${timeIST} IST`, title, ep:item.episode, status:"Scheduled", type:"new" };
-    });
-  }
-
-  try {
-    calendarTodayData = await fetchRange(startToday,startTomorrow);
-    calendarTomorrowData = await fetchRange(startTomorrow,startDayAfterTomorrow);
-    renderCalendarToday();
-    renderCalendarTomorrow();
-    renderNowList();
-    updateStats();
-    updateCurrentDate();
-  } catch (e) {
-    console.error("Calendar fetch failed", e);
-    renderCalendarToday();
-    renderCalendarTomorrow();
-  }
-}
-
-// SEARCH
-async function searchAnimeOnAniList(queryText) {
-  const q = queryText.trim();
-  if (!q) {
-    await loadAnimeDataFromAniList(activeSort, activeStatusFilter);
-    return;
-  }
-
-  const query = `
-    query ($search: String, $page: Int, $perPage: Int) {
-      Page(page: $page, perPage: $perPage) {
-        media(search: $search, type: ANIME, sort: POPULARITY_DESC) {
-          id
-          title { romaji english }
-          coverImage { large }
-          genres
-          episodes
-          averageScore
-          status
-          startDate { year }
-          studios(isMain: true) { nodes { name } }
-          siteUrl
-          description
-        }
-      }
-    }`;
-
-  const variables = { search: q, page: 1, perPage: 36 };
-
-  try {
-    const res = await fetch(ANILIST_ENDPOINT, {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Accept":"application/json"},
-      body: JSON.stringify({ query, variables })
-    });
-    const json = await res.json();
-    const list = json?.data?.Page?.media || [];
-
-    if (!list.length) {
-      renderAnimeGrid([{id:0,title:"No results found",synopsis:"Try another keyword."}]);
-      popularAnime = [];
-      newsAnime = [];
-      renderPopular();
-      renderNews();
-      updateStats();
-      return;
-    }
-
-    const mapped = list.map(m => {
-      const statusText = (m.status || "").toLowerCase();
-      const status = statusText.includes("finished")
-        ? "Completed"
-        : statusText.includes("releasing")
-        ? "Ongoing"
-        : "Upcoming";
-
-      return {
-        id: m.id,
-        title: m.title.english || m.title.romaji || "Untitled Anime",
-        genre: (m.genres || []).join(", "),
-        poster: m.coverImage?.large || "",
-        synopsis: m.description
-          ? m.description.replace(/<br\s*\/?>/gi," ").substring(0,220) + "..."
-          : "Search result from AniList.",
-        status,
-        episodes: m.episodes || 0,
-        rating: m.averageScore ? (m.averageScore / 10).toFixed(1) : "8.0",
-        releaseDate: m.startDate?.year || "",
-        studio: m.studios?.nodes?.[0]?.name || "Unknown",
-        category: (m.genres && m.genres[0] ? m.genres[0].toLowerCase() : "action"),
-        externalUrl: m.siteUrl
-      };
-    });
-
-    baseAnimeList = mapped.slice();
-    animeData     = mapped.slice();
-    featuredAnime = baseAnimeList.slice(0, 10);
-    popularAnime  = baseAnimeList.slice(0, 12);
-    newsAnime     = baseAnimeList.slice(0, 12).reverse();
-    activeGenre   = null;
-
-    renderFeaturedCarousel();
-    buildHeroSlider();
-    renderAnimeGrid(animeData);
-    renderNews();
-    renderPopular();
-    renderCategories();
-    updateStats();
-  } catch (e) {
-    console.error("Search failed", e);
-    alert("Search failed. Please try again.");
-  }
-}
-
-// RENDER
-function createAnimeCard(anime, isCarousel=false) {
-  if (!anime || !anime.id) {
-    return `
-      <div class="anime-card">
-        <div class="card-info">
-          <h3 class="anime-title">${anime?.title || "No data"}</h3>
-          <p style="color:var(--text-muted);margin-top:.5rem;">${anime?.synopsis || ""}</p>
-        </div>
-      </div>`;
-  }
-  const statusLower = (anime.status || "").toLowerCase();
-  const statusClass = statusLower.includes("ongoing")
-    ? "status-ongoing"
-    : statusLower.includes("completed")
-    ? "status-completed"
-    : "status-upcoming";
-
-  return `
-    <div class="anime-card" data-anime-id="${anime.id}">
-      <img src="${anime.poster}" alt="${anime.title}" class="anime-poster ${isCarousel?"carousel-poster":""}" loading="lazy">
-      <div class="card-info">
-        <h3 class="anime-title">${anime.title}</h3>
-        <div class="anime-genre">${anime.genre || ""}</div>
-        <div class="card-meta-row">
-          <span>${anime.studio || "Unknown"}</span>
-          <span>${anime.rating || "0.0"}/10</span>
-        </div>
-        <span class="status-badge ${statusClass}">${anime.status}</span>
-        ${!isCarousel ? `<p class="card-synopsis">${anime.synopsis || ""}</p>` : ""}
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="#home" class="footer-link">Home</a>
+        <a href="#airing" class="footer-link">Schedule</a>
+        <a href="#popular" class="footer-link">Popular</a>
+        <a href="#news" class="footer-link">News</a>
+        <a href="#categories" class="footer-link">Genres</a>
       </div>
-    </div>`;
-}
 
-function renderFeaturedCarousel() {
-  if (!carousel) return;
-  carousel.innerHTML = featuredAnime.map(a => createAnimeCard(a, true)).join("");
-}
-function renderAnimeGrid(data) {
-  if (!animeGrid) return;
-  animeGrid.innerHTML = data.map(a => createAnimeCard(a, false)).join("");
-}
-function renderNews() {
-  if (!newsGrid) return;
-  newsGrid.innerHTML = newsAnime.map(a => createAnimeCard(a, false)).join("");
-}
-function renderPopular() {
-  if (!popularGrid) return;
-  popularGrid.innerHTML = popularAnime.map(a => createAnimeCard(a, false)).join("");
-}
-function renderCategories() {
-  const pills = document.querySelectorAll(".category-pill");
-  pills.forEach(p => {
-    if (p.dataset.genre === activeGenre) p.classList.add("active");
-    else p.classList.remove("active");
-  });
-}
+      <div class="social-row">
+        <a class="social-btn" target="_blank" rel="noopener"
+           href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==">
+          <i class="fab fa-instagram"></i>
+        </a>
+        <a class="social-btn" target="_blank" rel="noopener"
+           href="https://www.threads.net/@animenationindia">
+          <span class="threads-txt">T</span>
+        </a>
+        <a class="social-btn" target="_blank" rel="noopener"
+           href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ">
+          <i class="fab fa-youtube"></i>
+        </a>
+        <a class="social-btn" target="_blank" rel="noopener"
+           href="https://www.facebook.com/share/1Bo8tbhWYY/">
+          <i class="fab fa-facebook-f"></i>
+        </a>
+      </div>
 
-// CALENDAR RENDER
-function renderCalendarToday() {
-  if (!calendarDay) return;
-  if (!calendarTodayData.length) {
-    calendarDay.innerHTML = `
-      <div class="release-item">
-        <div class="release-time">No live schedule</div>
-        <div style="font-weight:600;margin-bottom:.5rem;color:var(--text-light)">No episodes found for today from AniList.</div>
-        <div style="color:var(--primary-yellow);font-size:.95rem;font-weight:500">Try again later or check another day.</div>
-      </div>`;
-  } else {
-    calendarDay.innerHTML = calendarTodayData.map(i => `
-      <div class="release-item">
-        <div class="release-time">${i.time}</div>
-        <div style="font-weight:600;margin-bottom:.5rem;color:var(--text-light)">${i.title}</div>
-        <div style="color:var(--primary-yellow);font-size:.95rem;font-weight:500">Ep ${i.ep} - ${i.status}</div>
-      </div>`).join("");
-  }
-}
-function renderCalendarTomorrow() {
-  if (!calendarTomorrow) return;
-  if (!calendarTomorrowData.length) {
-    calendarTomorrow.innerHTML = `
-      <div class="release-item">
-        <div class="release-time">No schedule</div>
-        <div style="font-weight:600;margin-bottom:.5rem;color:var(--text-light)">No episodes found for tomorrow.</div>
-      </div>`;
-  } else {
-    calendarTomorrow.innerHTML = calendarTomorrowData.map(i => `
-      <div class="release-item">
-        <div class="release-time">${i.time}</div>
-        <div style="font-weight:600;margin-bottom:.5rem;color:var(--text-light)">${i.title}</div>
-        <div style="color:var(--primary-yellow);font-size:.95rem;font-weight:500">Ep ${i.ep} - ${i.status}</div>
-      </div>`).join("");
-  }
-}
-function renderNowList() {
-  if (!nowList) return;
-  const base = calendarTodayData.slice(0,5);
-  if (!base.length) {
-    nowList.innerHTML = `<div style="font-size:.8rem;color:var(--text-muted);">No live episodes detected for today. Check again later.</div>`;
-    return;
-  }
-  nowList.innerHTML = base.map(i => `
-    <div class="now-item">
-      <strong>${i.title}</strong>
-      <span>Ep ${i.ep} • ${i.time}</span>
-    </div>`).join("");
-}
+      <p class="footer-copy">
+        © 2020 Anime Nation India. Powered by AniList API. Not a streaming site.
+      </p>
+    </div>
+  </footer>
 
-// HERO SLIDER
-function buildHeroSlider() {
-  if (!sliderTrack || !sliderDots) return;
-  const list = featuredAnime.length ? featuredAnime.slice(0,4) : animeData.slice(0,4);
-  if (!list.length) return;
+  <script>
+    const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
-  sliderTrack.innerHTML = list.map((a,idx) => {
-    const genres = (a.genre || "").split(",").slice(0,3);
-    return `
-      <div class="slider-item ${idx===0?"active":""}" data-index="${idx}" data-anime-id="${a.id}">
-        <div class="slider-poster-wrap">
-          <img src="${a.poster}" alt="${a.title}" class="slider-poster" loading="lazy">
-          <div class="slider-overlay"></div>
-        </div>
-        <div class="slider-info">
-          <div class="slider-tag"><i class="fas fa-fire"></i><span>Featured Pick</span></div>
-          <div class="slider-title">${a.title}</div>
-          <div class="slider-meta">${a.studio||"Unknown studio"} · ${a.releaseDate||"Unknown year"} · ${a.rating||"8.0"}/10</div>
-          <div class="slider-genre-chips">
-            ${genres.map(g=>`<span class="slider-chip">${g.trim()}</span>`).join("")}
-          </div>
-          <div class="slider-buttons">
-            <button class="btn-mini" data-slider-action="details" data-anime-id="${a.id}">
-              <i class="fas fa-info-circle"></i><span>Quick details</span>
-            </button>
-            ${a.externalUrl ? `
-              <button class="btn-mini-ghost" data-slider-action="open-anilist" data-external-url="${a.externalUrl}">
-                <i class="fas fa-external-link-alt"></i><span>View on AniList</span>
-              </button>` : ""}
-          </div>
-        </div>
-      </div>`;
-  }).join("");
+    let animeData = [];
+    let featuredAnime = [];
+    let popularAnime = [];
+    let newsAnime = [];
+    let calendarTodayData = [];
+    let calendarTomorrowData = [];
+    let estimatedWeek = [];
+    let categoriesList = [
+      "Action","Adventure","Comedy","Drama","Fantasy","Music","Romance",
+      "Sci-Fi","Seinen","Shojo","Shonen","Slice of Life","Sports","Supernatural","Thriller"
+    ];
 
-  sliderDots.innerHTML = list.map((_,idx)=>`<div class="slider-dot ${idx===0?"active":""}" data-index="${idx}"></div>`).join("");
-  sliderIndex = 0;
-  startSliderAuto();
-}
-function setActiveSlider(i) {
-  const items = sliderTrack.querySelectorAll(".slider-item");
-  const dots = sliderDots.querySelectorAll(".slider-dot");
-  if (!items.length) return;
-  sliderIndex = (i + items.length) % items.length;
-  items.forEach((el,idx)=>el.classList.toggle("active",idx===sliderIndex));
-  dots.forEach((el,idx)=>el.classList.toggle("active",idx===sliderIndex));
-}
-function startSliderAuto() {
-  clearInterval(sliderTimer);
-  const items = sliderTrack.querySelectorAll(".slider-item");
-  if (!items.length) return;
-  sliderTimer = setInterval(()=>setActiveSlider(sliderIndex+1),6000);
-}
+    // new section data
+    let latestReleases = [];
+    let bestMovies = [];
+    let hindiDubbed = [];
+    let englishDubbed = [];
 
-// UTILS
-function updateCurrentDate() {
-  const el = document.getElementById("currentDate");
-  if (!el) return;
-  const now = new Date();
-  el.textContent = now.toLocaleDateString("en-IN",{
-    weekday:"long",year:"numeric",month:"long",day:"numeric",
-    hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"
-  });
-}
-function updateStats() {
-  const animeCount = document.getElementById("animeCount");
-  const todayRel = document.getElementById("todayReleases");
-  const weeklyNews = document.getElementById("weeklyNews");
-  if (animeCount) animeCount.textContent = animeData.length.toString();
-  if (todayRel) todayRel.textContent = calendarTodayData.length.toString();
-  if (weeklyNews) weeklyNews.textContent = "Live";
-}
-function renderFallbackError() {
-  animeData = [{
-    id:0,title:"Unable to load live data",poster:"",genre:"",
-    synopsis:"Check your connection or try again later. AniList API might be down.",
-    status:"Upcoming",episodes:0,rating:"0.0",releaseDate:"",studio:""
-  }];
-  renderAnimeGrid(animeData);
-}
-function setActiveTab(tab) {
-  if (tab==="today") {
-    tabToday.classList.add("active");
-    tabTomorrow.classList.remove("active");
-    tabToday.style.background="linear-gradient(45deg,var(--primary-yellow),var(--yellow-dark))";
-    tabToday.style.color="#050510";
-    tabTomorrow.style.background="rgba(255,255,255,.08)";
-    tabTomorrow.style.color="var(--text-light)";
-    calendarTodayWrap.style.display="block";
-    calendarTomorrowWrap.style.display="none";
-  } else {
-    tabTomorrow.classList.add("active");
-    tabToday.classList.remove("active");
-    tabTomorrow.style.background="linear-gradient(45deg,var(--primary-yellow),var(--yellow-dark))";
-    tabTomorrow.style.color="#050510";
-    tabToday.style.background="rgba(255,255,255,.08)";
-    tabToday.style.color="var(--text-light)";
-    calendarTodayWrap.style.display="none";
-    calendarTomorrowWrap.style.display="block";
-  }
-}
-function handleScroll() {
-  if (window.scrollY > 500) scrollToTop.classList.add("show");
-  else scrollToTop.classList.remove("show");
-}
-function debounce(fn,wait){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),wait);};}
+    const navMenu      = document.getElementById("navMenu");
+    const menuToggle   = document.getElementById("menuToggle");
+    const scrollTopBtn = document.getElementById("scrollTopBtn");
+    const jumpTodayBtn = document.getElementById("jumpTodayBtn");
 
-// MODAL
-function openAnimeModal(id) {
-  const anime = [...animeData, ...baseAnimeList, ...featuredAnime].find(a => Number(a.id)===Number(id));
-  if (!anime) return;
-  document.getElementById("modalTitle").textContent = anime.title;
-  const p = document.getElementById("modalPoster");
-  p.src = anime.poster; p.alt = anime.title;
+    const searchInput  = document.getElementById("searchInput");
+    const searchBtn    = document.getElementById("searchBtn");
+    const featuredCarousel = document.getElementById("featuredCarousel");
+    const animeGrid    = document.getElementById("animeGrid");
+    const popularGrid  = document.getElementById("popularGrid");
+    const categoriesGrid = document.getElementById("categoriesGrid");
+    const calendarDay  = document.getElementById("calendarDay");
+    const calendarTomorrow = document.getElementById("calendarTomorrow");
 
-  const short = anime.synopsis ? anime.synopsis.substring(0,180)+"..." : "Short story not available.";
-  document.getElementById("modalShort").innerHTML =
-    `<h3 style="margin:1.5rem 0 .8rem;color:var(--primary-yellow);font-size:1.2rem;">Short story</h3>
-     <p style="line-height:1.7;color:var(--text-muted);font-size:1.02rem;">${short}</p>`;
-  document.getElementById("modalSynopsis").innerHTML =
-    `<h3 style="margin:1.5rem 0 .8rem;color:var(--primary-yellow);font-size:1.2rem;">Full synopsis</h3>
-     <p style="line-height:1.8;color:var(--text-muted);font-size:1.02rem;">${anime.synopsis||""}</p>`;
-  document.getElementById("modalDetails").innerHTML = `
-    <li class="detail-item"><span class="detail-label">Status</span><span class="detail-value">${anime.status}</span></li>
-    <li class="detail-item"><span class="detail-label">Episodes</span><span class="detail-value">${anime.episodes||"Unknown"}</span></li>
-    <li class="detail-item"><span class="detail-label">Score</span><span class="detail-value">${anime.rating||"N/A"}/10</span></li>
-    <li class="detail-item"><span class="detail-label">Year</span><span class="detail-value">${anime.releaseDate||"Unknown"}</span></li>
-    <li class="detail-item"><span class="detail-label">Studio</span><span class="detail-value">${anime.studio||"Unknown"}</span></li>`;
-  const ext = anime.externalUrl || `https://anilist.co/anime/${anime.id}`;
-  document.getElementById("modalExternal").innerHTML =
-    `<a href="${ext}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.5rem;margin-top:1.5rem;padding:.9rem 1.6rem;border-radius:999px;background:linear-gradient(45deg,var(--primary-yellow),var(--yellow-dark));color:#050510;font-weight:600;text-decoration:none;">
-       More details on AniList <i class="fas fa-external-link-alt" style="font-size:.9rem;"></i>
-     </a>`;
-  animeModal.classList.add("active");
-  document.body.style.overflow = "hidden";
-}
-function closeAnimeModal() {
-  animeModal.classList.remove("active");
-  document.body.style.overflow = "";
-}
+    const latestGrid   = document.getElementById("latestGrid");
+    const movieGrid    = document.getElementById("movieGrid");
+    const hindiGrid    = document.getElementById("hindiGrid");
+    const englishGrid  = document.getElementById("englishGrid");
 
-// EVENTS
-function setupEventListeners() {
-  mobileMenuBtn.addEventListener("click",()=>navMenu.classList.toggle("active"));
+    const tabToday     = document.getElementById("tabToday");
+    const tabTomorrow  = document.getElementById("tabTomorrow");
+    const wrapToday    = document.getElementById("calendarTodayWrap");
+    const wrapTomorrow = document.getElementById("calendarTomorrowWrap");
+    const btnEstimated = document.getElementById("btnEstimated");
+    const estimatedWrap = document.getElementById("estimatedWrap");
+    const estimatedTabs = document.getElementById("estimatedTabs");
+    const estimatedList = document.getElementById("estimatedList");
 
-  document.querySelectorAll(".nav-item[data-section]").forEach(item=>{
-    item.addEventListener("click",e=>{
-      e.preventDefault();
-      const id = item.dataset.section;
-      const s = document.getElementById(id);
-      if (s) s.scrollIntoView({behavior:"smooth"});
-      navMenu.classList.remove("active");
-      document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
-      item.classList.add("active");
-    });
-  });
+    const newsGrid = document.getElementById("newsGrid");
 
-  searchInput.addEventListener("keydown",e=>{
-    if (e.key==="Enter") {
-      e.preventDefault();
-      searchAnimeOnAniList(searchInput.value);
+    // spotlight DOM
+    const spotlightImg      = document.getElementById("spotlightImg");
+    const spotlightTitle    = document.getElementById("spotlightTitle");
+    const spotlightSub      = document.getElementById("spotlightSub");
+    const spotlightGenres   = document.getElementById("spotlightGenres");
+    const spotlightDuration = document.getElementById("spotlightDuration");
+    const spotlightScore    = document.getElementById("spotlightScore");
+    const spotlightEpisodes = document.getElementById("spotlightEpisodes");
+    const spotlightDesc     = document.getElementById("spotlightDesc");
+
+    // modal DOM
+    const animeModal       = document.getElementById("animeModal");
+    const modalCloseBtn    = document.getElementById("modalCloseBtn");
+    const modalPoster      = document.getElementById("modalPoster");
+    const modalTitle       = document.getElementById("modalTitle");
+    const modalMeta        = document.getElementById("modalMeta");
+    const modalSummary     = document.getElementById("modalSummary");
+    const modalTags        = document.getElementById("modalTags");
+    const modalAniListLink = document.getElementById("modalAniListLink");
+
+    // stats
+    const statAnimeCount = document.getElementById("statAnimeCount");
+    const statTodayShows = document.getElementById("statTodayShows");
+    const statNewsCount  = document.getElementById("statNewsCount");
+
+    /* ---------- AniList helper ---------- */
+    async function anilistQuery(query, variables){
+      const res = await fetch(ANILIST_ENDPOINT,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Accept":"application/json"},
+        body:JSON.stringify({query,variables})
+      });
+      const json = await res.json();
+      return json;
     }
-  });
-  searchButton.addEventListener("click",()=>searchAnimeOnAniList(searchInput.value));
 
-  document.querySelectorAll(".filter-chip").forEach(chip=>{
-    chip.addEventListener("click",async ()=>{
-      const type = chip.dataset.filterType;
-      const value = chip.dataset.filterValue;
-      if (type==="sort") {
-        document.querySelectorAll('.filter-chip[data-filter-type="sort"]').forEach(c=>c.classList.remove("active"));
-        chip.classList.add("active");
-        activeSort = value;
-      } else if (type==="status") {
-        if (chip.classList.contains("active")) {
-          chip.classList.remove("active");
-          activeStatusFilter = null;
-        } else {
-          document.querySelectorAll('.filter-chip[data-filter-type="status"]').forEach(c=>c.classList.remove("active"));
-          chip.classList.add("active");
-          activeStatusFilter = value;
+    // hentai / adult safety filter
+    function isSafeAnimeMedia(m){
+      if(!m) return false;
+      if(m.isAdult) return false;
+      const genres = (m.genres || []).map(g => g.toLowerCase());
+      const titleParts = [
+        m.title?.romaji || "",
+        m.title?.english || "",
+        m.title?.native || ""
+      ].join(" ").toLowerCase();
+      if(genres.includes("hentai")) return false;
+      if(genres.includes("ecchi")) return false;
+      if(titleParts.includes("hentai")) return false;
+      return true;
+    }
+
+    function mapMediaList(list, defaultSynopsis){
+      return (list || []).filter(isSafeAnimeMedia).map(m=>{
+        const title = m.title.english || m.title.romaji;
+        const genres = (m.genres||[]).join(", ");
+        const status = (m.status||"CURRENT").toLowerCase().includes("finish")
+                       ? "Completed" : (m.status||"CURRENT").toLowerCase().includes("not_yet")
+                       ? "Upcoming"  : "Ongoing";
+        return {
+          id:m.id,
+          title,
+          genre:genres,
+          poster:m.coverImage.large,
+          synopsis:m.description ? m.description.replace(/<[^>]*>/g,"") : defaultSynopsis,
+          status,
+          episodes:m.episodes || 0,
+          rating:m.averageScore ? (m.averageScore/10).toFixed(1) : "8.0",
+          duration:m.duration || 24,
+          releaseDate:m.startDate?.year || "",
+          studio:(m.studios?.nodes?.[0] && m.studios.nodes[0].name) || "Unknown",
+          externalUrl:m.siteUrl || ""
+        };
+      });
+    }
+
+    /* ---------- AniList: trending list for base page ---------- */
+    async function loadTrendingFromAniList(){
+      const query = `
+        query ($page:Int,$perPage:Int){
+          Page(page:$page,perPage:$perPage){
+            media(type:ANIME,sort:TRENDING_DESC,isAdult:false){
+              id
+              title{romaji english native}
+              coverImage{large}
+              genres
+              episodes
+              averageScore
+              status
+              duration
+              startDate{year}
+              studios(isMain:true){nodes{name}}
+              siteUrl
+              description(asHtml:false)
+              isAdult
+            }
+          }
         }
+      `;
+      const variables = {page:1,perPage:60};
+      const json = await anilistQuery(query,variables);
+      const list = json?.data?.Page?.media || [];
+
+      animeData = mapMediaList(list,"Trending anime from AniList.");
+      featuredAnime = animeData.slice(0,8);
+      popularAnime  = animeData.slice(0,6);
+      newsAnime     = animeData.slice().reverse();
+
+      const allGenres = new Set(categoriesList);
+      animeData.forEach(m=>{
+        m.genre.split(",").forEach(g=>{ if(g.trim()) allGenres.add(g.trim()); });
+      });
+      categoriesList = Array.from(allGenres).sort();
+
+      renderEverything();
+      updateStats();
+      updateSpotlightFromFirst();
+      renderNewsFromAnime();
+    }
+
+    /* ---------- AniList: home auto sections ---------- */
+    async function loadHomeBlocksFromAniList(){
+      // Latest releases – recent airing
+      const latestQuery = `
+        query($page:Int,$perPage:Int,$seasonYear:Int){
+          Page(page:$page,perPage:$perPage){
+            media(
+              type:ANIME,
+              status_in:[RELEASING],
+              sort:[START_DATE_DESC,POPULARITY_DESC],
+              seasonYear:$seasonYear,
+              isAdult:false
+            ){
+              id
+              title{romaji english native}
+              coverImage{large}
+              genres
+              episodes
+              averageScore
+              status
+              duration
+              startDate{year}
+              studios(isMain:true){nodes{name}}
+              siteUrl
+              description(asHtml:false)
+              isAdult
+            }
+          }
+        }
+      `;
+      const year = new Date().getFullYear();
+      const latestJson = await anilistQuery(latestQuery,{page:1,perPage:16,seasonYear:year});
+      latestReleases = mapMediaList(latestJson?.data?.Page?.media || [],"Recently airing anime.");
+
+      // Best movies
+      const movieQuery = `
+        query($page:Int,$perPage:Int){
+          Page(page:$page,perPage:$perPage){
+            media(
+              type:ANIME,
+              format:MOVIE,
+              sort:[SCORE_DESC,POPULARITY_DESC],
+              isAdult:false
+            ){
+              id
+              title{romaji english native}
+              coverImage{large}
+              genres
+              episodes
+              averageScore
+              status
+              duration
+              startDate{year}
+              studios(isMain:true){nodes{name}}
+              siteUrl
+              description(asHtml:false)
+              isAdult
+            }
+          }
+        }
+      `;
+      const movieJson = await anilistQuery(movieQuery,{page:1,perPage:12});
+      bestMovies = mapMediaList(movieJson?.data?.Page?.media || [],"Top rated anime movie.");
+
+      // Popular Hindi dubbed – heuristic keywords (safe only)
+      const hindiQuery = `
+        query($page:Int,$perPage:Int){
+          Page(page:$page,perPage:$perPage){
+            media(
+              type:ANIME,
+              sort:POPULARITY_DESC,
+              isAdult:false,
+              search:"Hindi"
+            ){
+              id
+              title{romaji english native}
+              coverImage{large}
+              genres
+              episodes
+              averageScore
+              status
+              duration
+              startDate{year}
+              studios(isMain:true){nodes{name}}
+              siteUrl
+              description(asHtml:false)
+              isAdult
+            }
+          }
+        }
+      `;
+      const hindiJson = await anilistQuery(hindiQuery,{page:1,perPage:16});
+      hindiDubbed = mapMediaList(hindiJson?.data?.Page?.media || [],"Anime related to Hindi / Indian region on AniList.");
+
+      // Trending English dubbed – trending + 'Dub' keyword (safe only)
+      const engQuery = `
+        query($page:Int,$perPage:Int){
+          Page(page:$page,perPage:$perPage){
+            media(
+              type:ANIME,
+              sort:TRENDING_DESC,
+              isAdult:false,
+              search:"Dub"
+            ){
+              id
+              title{romaji english native}
+              coverImage{large}
+              genres
+              episodes
+              averageScore
+              status
+              duration
+              startDate{year}
+              studios(isMain:true){nodes{name}}
+              siteUrl
+              description(asHtml:false)
+              isAdult
+            }
+          }
+        }
+      `;
+      const engJson = await anilistQuery(engQuery,{page:1,perPage:16});
+      englishDubbed = mapMediaList(engJson?.data?.Page?.media || [],"Trending series with dub keyword on AniList.");
+
+      renderHomeBlocks();
+    }
+
+    function renderHomeBlocks(){
+      if(latestGrid){
+        latestGrid.innerHTML = latestReleases.length
+          ? latestReleases.map(createAnimeCard).join("")
+          : `<div style="grid-column:1/-1;font-size:.86rem;color:var(--text-muted);">No latest releases found right now.</div>`;
       }
-      await loadAnimeDataFromAniList(activeSort, activeStatusFilter);
-      if (activeGenre) await fetchByGenre(activeGenre);
+      if(movieGrid){
+        movieGrid.innerHTML = bestMovies.length
+          ? bestMovies.map(createAnimeCard).join("")
+          : `<div style="grid-column:1/-1;font-size:.86rem;color:var(--text-muted);">No movies found.</div>`;
+      }
+      if(hindiGrid){
+        hindiGrid.innerHTML = hindiDubbed.length
+          ? hindiDubbed.map(createAnimeCard).join("")
+          : `<div style="grid-column:1/-1;font-size:.86rem;color:var(--text-muted);">Hindi‑related titles not detected on AniList search.</div>`;
+      }
+      if(englishGrid){
+        englishGrid.innerHTML = englishDubbed.length
+          ? englishDubbed.map(createAnimeCard).join("")
+          : `<div style="grid-column:1/-1;font-size:.86rem;color:var(--text-muted);">Dub‑tagged trending titles not found for now.</div>`;
+      }
+    }
+
+    /* ---------- AniList: airing schedule (today/tomorrow + 7‑day estimated) ---------- */
+    async function loadCalendarFromAniList(){
+      const now = new Date();
+      const istNow = new Date(now.toLocaleString("en-US",{timeZone:"Asia/Kolkata"}));
+
+      const startTodayIST = new Date(istNow);
+      startTodayIST.setHours(0,0,0,0);
+
+      const startTomorrowIST = new Date(startTodayIST);
+      startTomorrowIST.setDate(startTomorrowIST.getDate()+1);
+
+      const startDayAfterTomorrowIST = new Date(startTomorrowIST);
+      startDayAfterTomorrowIST.setDate(startDayAfterTomorrowIST.getDate()+1);
+
+      const startToday = Math.floor(startTodayIST.getTime()/1000);
+      const startTomorrow = Math.floor(startTomorrowIST.getTime()/1000);
+      const startDayAfterTomorrow = Math.floor(startDayAfterTomorrowIST.getTime()/1000);
+
+      const query = `
+        query ($start:Int,$end:Int){
+          Page(page:1,perPage:80){
+            airingSchedules(airingAt_greater:$start,airingAt_lesser:$end){
+              airingAt
+              episode
+              media{
+                id
+                title{romaji english native}
+                coverImage{large}
+                averageScore
+                episodes
+                duration
+                siteUrl
+                isAdult
+                genres
+              }
+            }
+          }
+        }
+      `;
+
+      async function fetchRange(start,end){
+        const json = await anilistQuery(query,{start,end});
+        const list = json?.data?.Page?.airingSchedules || [];
+        return list
+          .filter(item=>isSafeAnimeMedia(item.media))
+          .map(item=>{
+            const t = item.media.title.english || item.media.title.romaji;
+            const airingAtMs = item.airingAt*1000;
+            const timeIST = new Date(airingAtMs).toLocaleTimeString("en-IN",{
+              hour:"2-digit",
+              minute:"2-digit",
+              hour12:false,
+              timeZone:"Asia/Kolkata"
+            });
+            return {
+              time:`${timeIST} IST`,
+              title:`${t} – Ep ${item.episode}`,
+              status:"Scheduled",
+              mediaId:item.media.id,
+              poster:item.media.coverImage.large,
+              score:item.media.averageScore ? (item.media.averageScore/10).toFixed(1) : "8.0",
+              episodes:item.media.episodes || 0,
+              duration:item.media.duration || 24,
+              externalUrl:item.media.siteUrl || "",
+              episode:item.episode
+            };
+          });
+      }
+
+      calendarTodayData = await fetchRange(startToday,startTomorrow);
+      calendarTomorrowData = await fetchRange(startTomorrow,startDayAfterTomorrow);
+
+      // 7‑day estimated
+      estimatedWeek = [];
+      for(let d=0; d<7; d++){
+        const dayStart = new Date(startTodayIST);
+        dayStart.setDate(dayStart.getDate()+d);
+        const dayEnd = new Date(dayStart);
+        dayEnd.setDate(dayEnd.getDate()+1);
+        const s = Math.floor(dayStart.getTime()/1000);
+        const e = Math.floor(dayEnd.getTime()/1000);
+        const dayList = await fetchRange(s,e);
+        estimatedWeek.push({date:dayStart,list:dayList});
+      }
+
+      renderCalendar();
+      renderEstimated();
+      updateStats();
+    }
+
+    /* ---------- Search with AniList API ---------- */
+    async function searchAnimeOnAniList(queryText){
+      if(!queryText) return;
+      const query = `
+        query ($search:String,$page:Int,$perPage:Int){
+          Page(page:$page,perPage:$perPage){
+            media(search:$search,type:ANIME,sort:POPULARITY_DESC,isAdult:false){
+              id
+              title{romaji english native}
+              coverImage{large}
+              genres
+              episodes
+              averageScore
+              status
+              duration
+              startDate{year}
+              studios(isMain:true){nodes{name}}
+              siteUrl
+              description(asHtml:false)
+              isAdult
+            }
+          }
+        }
+      `;
+      const variables = {search:queryText,page:1,perPage:40};
+      const json = await anilistQuery(query,variables);
+      const list = json?.data?.Page?.media || [];
+
+      if(!list.length){
+        animeGrid.innerHTML =
+          `<div style="grid-column:1/-1;padding:1.8rem;border-radius:20px;background:rgba(0,0,0,.5);text-align:center;">
+             <p style="color:#fff;font-weight:600;">No results found.</p>
+             <p style="color:#9fa0c4;font-size:.86rem;margin-top:.3rem;">Try another title or genre keyword.</p>
+           </div>`;
+        return;
+      }
+
+      animeData = mapMediaList(list,"Search result from AniList.");
+      featuredAnime = animeData.slice(0,8);
+      popularAnime  = animeData.slice(0,6);
+      newsAnime     = animeData.slice().reverse();
+
+      renderEverything();
+      updateStats();
+      updateSpotlightFromFirst();
+      renderNewsFromAnime();
+    }
+
+    /* ---------- Rendering helpers ---------- */
+    function createAnimeCard(anime){
+      const statusClass =
+        anime.status === "Completed" ? "badge-status badge-completed" :
+        anime.status === "Upcoming"  ? "badge-status badge-upcoming"  :
+                                       "badge-status badge-ongoing";
+
+      return `
+        <article class="anime-card" data-anime-id="${anime.id}">
+          <img src="${anime.poster}" alt="${anime.title}" class="anime-card-img" loading="lazy">
+          <div class="anime-card-body">
+            <h3 class="anime-name">${anime.title}</h3>
+            <div class="anime-meta-row">
+              <span>${anime.genre ? anime.genre.split(",")[0] : ""}</span>
+              <span class="${statusClass}">${anime.status}</span>
+            </div>
+            <div class="anime-meta-row" style="margin-top:.2rem;">
+              <span><i class="fas fa-star" style="color:#ffd54a;margin-right:.25rem;"></i>${anime.rating}/10</span>
+              <span>${anime.episodes || 0} eps</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function createPosterCard(anime){
+      return `
+        <div class="poster-card" data-anime-id="${anime.id}">
+          <img src="${anime.poster}" alt="${anime.title}" class="poster-img" loading="lazy">
+          <div class="poster-meta">
+            <div class="poster-title">${anime.title}</div>
+            <div class="poster-cat">${anime.genre}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFeaturedCarousel(){
+      featuredCarousel.innerHTML = featuredAnime.map(createPosterCard).join("");
+    }
+
+    function renderGrid(){
+      animeGrid.innerHTML = animeData.map(createAnimeCard).join("");
+    }
+
+    function renderPopular(){
+      popularGrid.innerHTML = popularAnime.map(createAnimeCard).join("");
+    }
+
+    function renderCategories(){
+      if(!categoriesList.length){
+        categoriesGrid.innerHTML = "";
+        return;
+      }
+      categoriesGrid.innerHTML = categoriesList.map(g=>`
+        <div class="anime-card category-card" data-category="${g}">
+          <div class="anime-card-body">
+            <h3 class="anime-name">${g}</h3>
+            <div class="anime-meta-row">
+              <span style="color:var(--text-muted);font-size:.8rem;">
+                Tap to filter anime list by "${g}" genre.
+              </span>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderCalendar(){
+      if(!calendarTodayData.length){
+        calendarDay.innerHTML =
+          `<div class="schedule-card">
+             <div class="schedule-time">No schedule</div>
+             <div class="schedule-title">No episodes found for today from AniList.</div>
+             <div class="schedule-label">Try again later.</div>
+           </div>`;
+      }else{
+        calendarDay.innerHTML = calendarTodayData.map(i=>`
+          <div class="schedule-card" data-media-id="${i.mediaId}">
+            <div class="schedule-time">${i.time}</div>
+            <div class="schedule-title">${i.title}</div>
+            <div class="schedule-label">${i.status}</div>
+          </div>
+        `).join("");
+      }
+
+      if(!calendarTomorrowData.length){
+        calendarTomorrow.innerHTML =
+          `<div class="schedule-card">
+             <div class="schedule-time">No schedule</div>
+             <div class="schedule-title">No episodes found for tomorrow from AniList.</div>
+             <div class="schedule-label">Please check again later.</div>
+           </div>`;
+      }else{
+        calendarTomorrow.innerHTML = calendarTomorrowData.map(i=>`
+          <div class="schedule-card" data-media-id="${i.mediaId}">
+            <div class="schedule-time">${i.time}</div>
+            <div class="schedule-title">${i.title}</div>
+            <div class="schedule-label">${i.status}</div>
+          </div>
+        `).join("");
+      }
+    }
+
+    function renderEstimated(){
+      if(!estimatedWeek.length){
+        estimatedWrap.classList.remove("active");
+        return;
+      }
+      estimatedWrap.classList.add("active");
+      estimatedTabs.innerHTML = estimatedWeek.map((day,idx)=>{
+        const d = day.date;
+        const weekday = d.toLocaleDateString("en-IN",{weekday:"short"});
+        const label = d.toLocaleDateString("en-IN",{month:"short",day:"2-digit"});
+        return `
+          <button class="est-day-btn ${idx===0?"active":""}" data-day-index="${idx}">
+            ${weekday}
+            <span>${label}</span>
+          </button>
+        `;
+      }).join("");
+      renderEstimatedList(0);
+    }
+
+    function renderEstimatedList(index){
+      const day = estimatedWeek[index];
+      if(!day || !day.list.length){
+        estimatedList.innerHTML =
+          `<div style="padding:1rem 0;font-size:.86rem;color:var(--text-muted);">
+             No broadcast estimated for this day from AniList.
+           </div>`;
+        return;
+      }
+
+      estimatedList.innerHTML = day.list.map(item=>{
+        const name  = item.title.replace(/ – Ep.*$/,"");
+        const epNum = item.episode || "?";
+
+        return `
+          <div class="est-row" data-media-id="${item.mediaId}">
+            <div class="est-time">${item.time.split(" ")[0]}</div>
+            <div class="est-title">${name}</div>
+            <div class="est-ep">Episode ${epNum}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderNewsFromAnime(){
+      if(!newsAnime.length){
+        newsGrid.innerHTML =
+          `<div style="grid-column:1/-1;padding:1.2rem;border-radius:18px;background:rgba(0,0,0,.45);font-size:.86rem;color:var(--text-muted);">
+             Live news feed could not be loaded. Try again later.
+           </div>`;
+        return;
+      }
+      newsGrid.innerHTML = newsAnime.slice(0,9).map(a=>{
+        const summary = (a.synopsis||"").slice(0,160)+"…";
+        return `
+          <article class="news-card" data-anime-id="${a.id}">
+            <div class="news-tag">News • AniList</div>
+            <h3 class="news-title">${a.title}</h3>
+            <div class="news-meta">${a.genre}</div>
+            <p class="news-summary">${summary}</p>
+          </article>
+        `;
+      }).join("");
+      statNewsCount.textContent = newsAnime.length;
+    }
+
+    function renderEverything(){
+      renderFeaturedCarousel();
+      renderGrid();
+      renderPopular();
+      renderCategories();
+      renderHomeBlocks();
+    }
+
+    /* ---------- Spotlight slider (top 5 featured) ---------- */
+    let spotlightIndex = 0;
+    let spotlightTimer = null;
+
+    function setSpotlightFromAnime(anime) {
+      if (!anime) return;
+      spotlightImg.src = anime.poster;
+      spotlightImg.alt = anime.title;
+      spotlightTitle.textContent = anime.title;
+      spotlightSub.textContent = `${anime.studio || "Unknown studio"} • ${anime.releaseDate || ""}`;
+      spotlightDuration.textContent = `${anime.duration || 24}m`;
+      spotlightScore.textContent = anime.rating;
+      spotlightEpisodes.textContent = anime.episodes || 0;
+      spotlightDesc.textContent = (anime.synopsis || "").slice(0, 180) + "...";
+      spotlightGenres.innerHTML = "";
+      (anime.genre || "").split(",").slice(0, 3).forEach(g => {
+        if (g.trim()) {
+          const span = document.createElement("span");
+          span.className = "spotlight-pill";
+          span.textContent = g.trim();
+          spotlightGenres.appendChild(span);
+        }
+      });
+    }
+
+    function updateSpotlightFromFirst() {
+      const pool = featuredAnime.length ? featuredAnime : animeData;
+      if (!pool.length) return;
+      spotlightIndex = 0;
+      setSpotlightFromAnime(pool[spotlightIndex]);
+      startSpotlightAutoRotate();
+    }
+
+    function startSpotlightAutoRotate() {
+      if (spotlightTimer) clearInterval(spotlightTimer);
+      spotlightTimer = setInterval(() => {
+        const pool = featuredAnime.length ? featuredAnime : animeData;
+        if (!pool.length) return;
+        spotlightIndex = (spotlightIndex + 1) % Math.min(pool.length, 5);
+        setSpotlightFromAnime(pool[spotlightIndex]);
+      }, 6000);
+    }
+
+    document.getElementById("spotlightCard").addEventListener("click", () => {
+      const pool = featuredAnime.length ? featuredAnime : animeData;
+      if (!pool.length) return;
+      spotlightIndex = (spotlightIndex + 1) % Math.min(pool.length, 5);
+      setSpotlightFromAnime(pool[spotlightIndex]);
+      startSpotlightAutoRotate();
     });
-  });
 
-  document.querySelectorAll(".category-pill").forEach(pill=>{
-    pill.addEventListener("click",()=>fetchByGenre(pill.dataset.genre));
-  });
-
-  document.body.addEventListener("click",e=>{
-    const card = e.target.closest(".anime-card");
-    if (card && card.dataset.animeId) openAnimeModal(card.dataset.animeId);
-
-    const dot = e.target.closest(".slider-dot");
-    if (dot && dot.dataset.index) {
-      setActiveSlider(Number(dot.dataset.index));
-      startSliderAuto();
+    /* ---------- Stats + date ---------- */
+    function updateStats(){
+      statAnimeCount.textContent = animeData.length.toLocaleString();
+      statTodayShows.textContent = calendarTodayData.length;
+      if(!newsAnime.length){
+        statNewsCount.textContent = "0";
+      }
     }
-    const btnMini = e.target.closest("[data-slider-action]");
-    if (btnMini) {
-      const action = btnMini.dataset.sliderAction;
-      if (action==="details") openAnimeModal(btnMini.dataset.animeId);
-      else if (action==="open-anilist" && btnMini.dataset.externalUrl) window.open(btnMini.dataset.externalUrl,"_blank");
+
+    function updateCurrentDate(){
+      const now = new Date();
+      const opt = {
+        weekday:"long",year:"numeric",month:"long",day:"numeric",
+        hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"
+      };
+      document.getElementById("currentDate").textContent =
+        now.toLocaleDateString("en-IN",opt);
     }
-  });
 
-  closeModal.addEventListener("click",closeAnimeModal);
-  window.addEventListener("click",e=>{if (e.target===animeModal) closeAnimeModal();});
+    /* ---------- Modal helpers ---------- */
+    function openAnimeModalByObject(anime){
+      if (!anime) return;
+      modalPoster.src = anime.poster;
+      modalPoster.alt = anime.title;
+      modalTitle.textContent = anime.title;
+      modalMeta.textContent =
+        `${anime.studio || "Unknown studio"} • ${anime.releaseDate || "Year N/A"} • ` +
+        `${anime.duration || 24}m • ${anime.episodes || 0} eps • ${anime.rating}/10`;
+      modalSummary.textContent = anime.synopsis || "No summary available.";
+      modalTags.innerHTML = "";
+      (anime.genre || "").split(",").forEach(g => {
+        if (g.trim()){
+          const span = document.createElement("span");
+          span.textContent = g.trim();
+          modalTags.appendChild(span);
+        }
+      });
+      if (anime.externalUrl){
+        modalAniListLink.href = anime.externalUrl;
+      } else {
+        modalAniListLink.href = `https://anilist.co/anime/${anime.id}`;
+      }
 
-  window.addEventListener("scroll",handleScroll);
-  scrollToTop.addEventListener("click",()=>window.scrollTo({top:0,behavior:"smooth"}));
+      animeModal.classList.add("open");
+    }
 
-  tabToday.addEventListener("click",()=>{setActiveTab("today");renderCalendarToday();});
-  tabTomorrow.addEventListener("click",()=>{setActiveTab("tomorrow");renderCalendarTomorrow();});
+    function openAnimeModal(animeId){
+      const allPools = [
+        animeData,
+        featuredAnime,
+        popularAnime,
+        latestReleases,
+        bestMovies,
+        hindiDubbed,
+        englishDubbed
+      ];
+      let anime = null;
+      for(const pool of allPools){
+        anime = pool.find(a=>String(a.id)===String(animeId));
+        if(anime) break;
+      }
+      openAnimeModalByObject(anime);
+    }
 
-  ctaToday.addEventListener("click",()=>document.getElementById("calendar").scrollIntoView({behavior:"smooth"}));
-  ctaBrowse.addEventListener("click",()=>document.getElementById("all-anime").scrollIntoView({behavior:"smooth"}));
+    function closeAnimeModal(){
+      animeModal.classList.remove("open");
+    }
 
-  const contactForm = document.getElementById("contactForm");
-  contactForm.addEventListener("submit",e=>{
-    e.preventDefault();
-    const name = document.getElementById("contactName").value.trim();
-    const email = document.getElementById("contactEmail").value.trim();
-    const message = document.getElementById("contactMessage").value.trim();
-    if (!name || !email || !message) return;
-    const subject = encodeURIComponent("Feedback from Anime Nation India");
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`);
-    window.location.href = `mailto:animenationindia.global@gmail.com?subject=${subject}&body=${body}`;
-  });
-}
+    modalCloseBtn.addEventListener("click", closeAnimeModal);
+    animeModal.addEventListener("click", e => {
+      if (e.target === animeModal) closeAnimeModal();
+    });
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") closeAnimeModal();
+    });
 
-// INIT
-async function init() {
-  await loadAnimeDataFromAniList();
-  await loadCalendarFromAniList();
-  setupEventListeners();
-  setActiveTab("today");
-  setInterval(loadCalendarFromAniList, 15*60*1000);
-}
+    function setupAnimeCardClick(){
+      document.addEventListener("click", e => {
+        const card = e.target.closest(".anime-card, .poster-card, .news-card");
+        if (card && card.dataset.animeId){
+          openAnimeModal(card.dataset.animeId);
+          return;
+        }
+        const estRow = e.target.closest(".est-row");
+        if(estRow && estRow.dataset.mediaId){
+          const mediaId = estRow.dataset.mediaId;
+          const fromSchedule = [...calendarTodayData,...calendarTomorrowData,...estimatedWeek.flatMap(d=>d.list)]
+            .find(i=>String(i.mediaId)===String(mediaId));
+          if(fromSchedule){
+            const mapped = {
+              id:fromSchedule.mediaId,
+              title:fromSchedule.title.replace(/ – Ep.*$/,""),
+              genre:"",
+              poster:fromSchedule.poster,
+              synopsis:`Upcoming episode from AniList schedule. ${fromSchedule.title}`,
+              status:"Ongoing",
+              episodes:fromSchedule.episodes,
+              rating:fromSchedule.score,
+              duration:fromSchedule.duration,
+              releaseDate:"",
+              studio:"",
+              externalUrl:fromSchedule.externalUrl
+            };
+            openAnimeModalByObject(mapped);
+          }
+          return;
+        }
+        const schedCard = e.target.closest(".schedule-card");
+        if(schedCard && schedCard.dataset.mediaId){
+          const mediaId = schedCard.dataset.mediaId;
+          const fromSchedule = [...calendarTodayData,...calendarTomorrowData]
+            .find(i=>String(i.mediaId)===String(mediaId));
+          if(fromSchedule){
+            const mapped = {
+              id:fromSchedule.mediaId,
+              title:fromSchedule.title.replace(/ – Ep.*$/,""),
+              genre:"",
+              poster:fromSchedule.poster,
+              synopsis:`Upcoming episode from AniList schedule. ${fromSchedule.title}`,
+              status:"Ongoing",
+              episodes:fromSchedule.episodes,
+              rating:fromSchedule.score,
+              duration:fromSchedule.duration,
+              releaseDate:"",
+              studio:"",
+              externalUrl:fromSchedule.externalUrl
+            };
+            openAnimeModalByObject(mapped);
+          }
+        }
+      });
+    }
 
-document.addEventListener("DOMContentLoaded", init);
-</script>
+    /* ---------- Filters & interactions ---------- */
+    function setupFilterChips(){
+      const chips = document.querySelectorAll(".filter-chip");
+      chips.forEach(chip=>{
+        chip.addEventListener("click",()=>{
+          chips.forEach(c=>c.classList.remove("active"));
+          chip.classList.add("active");
+          const val = chip.dataset.filter;
+          let filtered = animeData;
+          if(val === "airing"){
+            filtered = animeData.filter(a=>a.status === "Ongoing");
+          }else if(val === "upcoming"){
+            filtered = animeData.filter(a=>a.status === "Upcoming");
+          }else if(val === "completed"){
+            filtered = animeData.filter(a=>a.status === "Completed");
+          }
+          animeGrid.innerHTML = filtered.map(createAnimeCard).join("");
+        });
+      });
+    }
+
+    function setupCategoryClick(){
+      document.addEventListener("click",e=>{
+        const catCard = e.target.closest(".category-card");
+        if(!catCard) return;
+        const cat = catCard.dataset.category.toLowerCase();
+        const filtered = animeData.filter(a =>
+          (a.genre||"").toLowerCase().includes(cat)
+        );
+        animeGrid.innerHTML = (filtered.length ? filtered : animeData).map(createAnimeCard).join("");
+        window.scrollTo({top:animeGrid.offsetTop - 90,behavior:"smooth"});
+      });
+    }
+
+    function setupSearch(){
+      function triggerSearch(){
+        const q = searchInput.value.trim();
+        if(q) searchAnimeOnAniList(q);
+      }
+      searchInput.addEventListener("keydown",e=>{
+        if(e.key === "Enter"){
+          e.preventDefault();
+          triggerSearch();
+        }
+      });
+      searchBtn.addEventListener("click",e=>{
+        e.preventDefault();
+        triggerSearch();
+      });
+    }
+
+    function setupNav(){
+      menuToggle.addEventListener("click",()=>{
+        navMenu.classList.toggle("open");
+      });
+
+      navMenu.addEventListener("click",e=>{
+        const link = e.target.closest(".nav-link");
+        if(!link) return;
+        e.preventDefault();
+        document.querySelectorAll(".nav-link").forEach(l=>l.classList.remove("active"));
+        link.classList.add("active");
+        const href = link.getAttribute("href");
+        if(href && href.startsWith("#")){
+          const target = document.querySelector(href);
+          if(target){
+            const top = target.offsetTop - 80;
+            window.scrollTo({top,behavior:"smooth"});
+          }
+        }
+        navMenu.classList.remove("open");
+      });
+
+      jumpTodayBtn.addEventListener("click",()=>{
+        const target = document.getElementById("airing");
+        if(target){
+          const top = target.offsetTop - 80;
+          window.scrollTo({top,behavior:"smooth"});
+        }
+      });
+    }
+
+    function setupScrollTop(){
+      window.addEventListener("scroll",()=>{
+        if(window.scrollY > 480){
+          scrollTopBtn.classList.add("visible");
+        }else{
+          scrollTopBtn.classList.remove("visible");
+        }
+      });
+      scrollTopBtn.addEventListener("click",()=>{
+        window.scrollTo({top:0,behavior:"smooth"});
+      });
+    }
+
+    function setupTabs(){
+      tabToday.addEventListener("click",()=>{
+        tabToday.classList.add("active");
+        tabTomorrow.classList.remove("active");
+        wrapToday.style.display = "block";
+        wrapTomorrow.style.display = "none";
+      });
+      tabTomorrow.addEventListener("click",()=>{
+        tabTomorrow.classList.add("active");
+        tabToday.classList.remove("active");
+        wrapTomorrow.style.display = "block";
+        wrapToday.style.display = "none";
+      });
+
+      btnEstimated.addEventListener("click",()=>{
+        estimatedWrap.scrollIntoView({behavior:"smooth",block:"start"});
+      });
+
+      estimatedTabs.addEventListener("click",e=>{
+        const btn = e.target.closest(".est-day-btn");
+        if(!btn) return;
+        document.querySelectorAll(".est-day-btn").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+        const idx = Number(btn.dataset.dayIndex||0);
+        renderEstimatedList(idx);
+      });
+    }
+
+    /* ---------- Init ---------- */
+    async function init(){
+      updateCurrentDate();
+      setupNav();
+      setupFilterChips();
+      setupCategoryClick();
+      setupSearch();
+      setupScrollTop();
+      setupTabs();
+      setupAnimeCardClick();
+
+      try{
+        await loadTrendingFromAniList();
+      }catch(e){ console.error("AniList trending failed",e); }
+
+      try{
+        await loadHomeBlocksFromAniList();
+      }catch(e){ console.error("AniList home blocks failed",e); }
+
+      try{
+        await loadCalendarFromAniList();
+      }catch(e){ console.error("AniList calendar failed",e); }
+
+      setInterval(loadCalendarFromAniList,15*60*1000);
+    }
+
+    document.addEventListener("DOMContentLoaded",init);
+  </script>
 </body>
 </html>
