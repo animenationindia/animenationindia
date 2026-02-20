@@ -5,15 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Anime Nation India – Live Anime Calendar & Streaming Info</title>
    
-
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-EZS80QT1HJ"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EZS80QT1HJ"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
   gtag('config', 'G-EZS80QT1HJ');
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Anime Nation India",
+  "url": "https://animenationindia.online/",
+  "description": "Track live anime schedule, next episodes, Hindi dubs and streaming info for Indian fans."
+}
 </script>
 
 <meta name="description" content="Anime Nation India gives you a live anime calendar, upcoming episodes, Hindi dub info and streaming links — all in one clean, fast page.">
@@ -30,13 +38,9 @@
 <meta name="twitter:description" content="Live anime calendar with Hindi dub and streaming platforms in one place.">
 <meta name="twitter:image" content="https://animenationindia.github.io/animenationindia/og-image.jpg">
  
-
-
- <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-  <!-- Main Style -->
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
 
@@ -226,29 +230,6 @@
     .social-btn:hover::before{opacity:1;}
 
     .threads-txt{font-size:.78rem;font-weight:600;}
-
-    .cta-login{
-      padding:.5rem 1.3rem;
-      border-radius:999px;
-      border:none;
-      background:transparent;
-      color:var(--text-main);
-      font-weight:600;
-      font-size:.86rem;
-      border:1px solid rgba(255,255,255,.18);
-      display:flex;
-      align-items:center;
-      gap:.45rem;
-      cursor:pointer;
-      transition:.3s ease;
-    }
-
-    .cta-login i{color:var(--accent);}
-
-    .cta-login:hover{
-      background:rgba(255,255,255,.06);
-      transform:translateY(-1px);
-    }
 
     .btn-primary{
       padding:.6rem 1.5rem;
@@ -1348,12 +1329,10 @@
   </style>
 </head>
 <body>
-  <!-- Scroll‑Top -->
   <button class="scroll-top" id="scrollTopBtn">
     <i class="fas fa-chevron-up"></i>
   </button>
 
-  <!-- HEADER -->
   <header class="header">
     <nav class="nav-wrap">
      <a href="#top" class="brand">
@@ -1367,7 +1346,6 @@
     <span class="brand-sub">LIVE CALENDAR • NEWS</span>
   </div>
 </a>
-
 
       <ul class="nav-menu" id="navMenu">
         <li><a href="#home" class="nav-link active">Home</a></li>
@@ -1399,7 +1377,6 @@
           </a>
         </div>
 
-
         <div class="menu-toggle" id="menuToggle">
           <span></span><span></span><span></span>
         </div>
@@ -1407,10 +1384,8 @@
     </nav>
   </header>
 
-  <!-- MAIN CONTENT -->
   <main class="page-wrap" id="home">
     <section class="hero-grid">
-      <!-- LEFT HERO -->
       <div class="hero-left">
         <div class="hero-kicker">
           <span><i class="fas fa-bolt"></i> Live Anime Radar</span>
@@ -1460,7 +1435,6 @@
         </div>
       </div>
 
-      <!-- RIGHT – SPOTLIGHT SLIDER -->
       <aside class="spotlight-card" id="spotlightCard">
         <div class="spotlight-media">
           <img src="" alt="Spotlight anime" class="spotlight-img" id="spotlightImg">
@@ -1510,7 +1484,6 @@
       </aside>
     </section>
 
-    <!-- SEARCH + FILTER -->
     <section class="search-row" id="featured">
       <div class="search-input-wrap">
         <i class="fas fa-search"></i>
@@ -1537,6 +1510,7 @@
         </button>
       </div>
     </section>
+    
     <div style="text-align: center; margin: 20px 0; width: 100%;">
     <a href="https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80" 
        target="_blank" 
@@ -1544,9 +1518,8 @@
        <i class="fas fa-play-circle"></i> WATCH LIVE ANIME STREAMING NOW
     </a>
     <p style="color: #b8b8cf; font-size: 0.75rem; margin-top: 8px;">*Click to unlock direct server links</p>
-</div>
+    </div>
 
-    <!-- FEATURED CAROUSEL -->
     <section aria-label="Hot this month">
       <div class="section-head">
         <div>
@@ -1558,7 +1531,6 @@
       <div class="poster-row" id="featuredCarousel"></div>
     </section>
 
-    <!-- NEW: Latest Releases -->
     <section id="latest">
       <div class="section-head">
         <div>
@@ -1569,7 +1541,6 @@
       <div class="grid-wrap" id="latestGrid"></div>
     </section>
 
-    <!-- NEW: Best Movies -->
     <section id="best-movies">
       <div class="section-head">
         <div>
@@ -1580,7 +1551,6 @@
       <div class="grid-wrap" id="movieGrid"></div>
     </section>
 
-    <!-- NEW: Popular Hindi Dubbed -->
     <section id="hindi-dub">
       <div class="section-head">
         <div>
@@ -1591,7 +1561,6 @@
       <div class="grid-wrap" id="hindiGrid"></div>
     </section>
 
-    <!-- NEW: Trending English Dub in India -->
     <section id="english-dub">
       <div class="section-head">
         <div>
@@ -1602,7 +1571,6 @@
       <div class="grid-wrap" id="englishGrid"></div>
     </section>
 
-    <!-- ALL ANIME GRID -->
     <section aria-label="All anime list">
       <div class="section-head">
         <div>
@@ -1614,7 +1582,6 @@
       <div class="grid-wrap" id="animeGrid"></div>
     </section>
 
-    <!-- CALENDAR -->
     <section id="airing" class="calendar-box">
       <div class="section-head" style="margin-top:0;">
         <div>
@@ -1643,14 +1610,12 @@
         <div class="schedule-grid" id="calendarTomorrow"></div>
       </div>
 
-      <!-- Estimated 7‑day schedule -->
       <div class="est-wrap" id="estimatedWrap">
         <div class="est-tabs" id="estimatedTabs"></div>
         <div class="est-list" id="estimatedList"></div>
       </div>
     </section>
 
-    <!-- POPULAR -->
     <section id="popular">
       <div class="section-head">
         <div>
@@ -1661,7 +1626,6 @@
       <div class="grid-wrap" id="popularGrid"></div>
     </section>
 
-    <!-- CATEGORIES -->
     <section id="categories">
       <div class="section-head">
         <div>
@@ -1672,7 +1636,6 @@
       <div class="grid-wrap" id="categoriesGrid"></div>
     </section>
 
-    <!-- NEWS -->
     <section id="news">
       <div class="section-head">
         <div>
@@ -1683,7 +1646,6 @@
       <div class="news-grid" id="newsGrid"></div>
     </section>
 
-    <!-- CONTACT -->
     <section id="contact" style="margin-top:3.2rem;">
       <div class="section-head">
         <div>
@@ -1701,7 +1663,6 @@
       </div>
     </section>
 
-    <!-- ABOUT + PRIVACY -->
     <section id="about-site" class="info-section">
       <h3>About Anime Nation India</h3>
       <p>
@@ -1741,7 +1702,6 @@
     </section>
   </main>
 
-  <!-- MODAL -->
   <div class="anime-modal-backdrop" id="animeModal">
     <div class="anime-modal">
       <button class="modal-close" id="modalCloseBtn">
@@ -1753,21 +1713,34 @@
         </div>
         <div class="modal-content">
           <h2 id="modalTitle" class="modal-title"></h2>
-          <p id="modalMeta" class="modal-meta"></p>
-          <p id="modalSummary" class="modal-summary"></p>
+          
+          <div class="modal-badges-row" id="modalBadgesRow" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; margin-bottom: 0.6rem; font-size: 0.8rem; font-weight: 700; flex-wrap: wrap;">
+             <span style="background: #fff; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px;">PG-13</span>
+             <span style="background: #ffdd95; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px;">HD</span>
+             <span style="background: #b0e3af; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i class="fas fa-closed-captioning"></i> <span id="modalEpSub">0</span></span>
+             <span style="background: #e3b5e4; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i class="fas fa-microphone"></i> <span id="modalEpDub">0</span></span>
+             <span style="color: var(--text-muted); font-weight: 400;">•</span>
+             <span id="modalFormat" style="color: var(--text-muted); font-weight: 400;">TV</span>
+             <span style="color: var(--text-muted); font-weight: 400;">•</span>
+             <span id="modalDurationBadge" style="color: var(--text-muted); font-weight: 400;">24m</span>
+          </div>
+
+          <p id="modalMeta" class="modal-meta" style="margin-bottom: 0.5rem;"></p>
           <div class="modal-tags" id="modalTags"></div>
-          <div class="modal-actions">
-            <a id="modalAniListLink" href="#" target="_blank" rel="noopener" class="btn-primary">
-              <i class="fas fa-external-link-alt"></i>
-              View full details on AniList
+          
+          <div class="modal-actions" style="margin-top: 1rem; margin-bottom: 1rem;">
+            <a id="modalAniListLink" href="https://animeyy.com/" target="_blank" rel="noopener" class="btn-primary" style="background: linear-gradient(135deg, #ff4dd2, #ffd54a); color: #050716; padding: 0.7rem 1.8rem;">
+              <i class="fas fa-play-circle" style="font-size: 1.1rem;"></i>
+              Watch Now
             </a>
           </div>
+
+          <p id="modalSummary" class="modal-summary"></p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- FOOTER -->
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-links">
@@ -1798,7 +1771,7 @@
       </div>
 
       <p class="footer-copy">
-        © 2020 Anime Nation India. Powered by AniList API. Not a streaming site.
+        © 2026 Anime Nation India. Powered by AniList API. Not a streaming site.
       </p>
     </div>
   </footer>
@@ -1925,7 +1898,8 @@
           duration:m.duration || 24,
           releaseDate:m.startDate?.year || "",
           studio:(m.studios?.nodes?.[0] && m.studios.nodes[0].name) || "Unknown",
-          externalUrl:m.siteUrl || ""
+          externalUrl:m.siteUrl || "",
+          format: m.format || "TV" // Added Format for modal badge
         };
       });
     }
@@ -1936,19 +1910,7 @@
         query ($page:Int,$perPage:Int){
           Page(page:$page,perPage:$perPage){
             media(type:ANIME,sort:TRENDING_DESC,isAdult:false){
-              id
-              title{romaji english native}
-              coverImage{large}
-              genres
-              episodes
-              averageScore
-              status
-              duration
-              startDate{year}
-              studios(isMain:true){nodes{name}}
-              siteUrl
-              description(asHtml:false)
-              isAdult
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
             }
           }
         }
@@ -1976,30 +1938,11 @@
 
     /* ---------- AniList: home auto sections ---------- */
     async function loadHomeBlocksFromAniList(){
-      // Latest releases – recent airing
       const latestQuery = `
         query($page:Int,$perPage:Int,$seasonYear:Int){
           Page(page:$page,perPage:$perPage){
-            media(
-              type:ANIME,
-              status_in:[RELEASING],
-              sort:[START_DATE_DESC,POPULARITY_DESC],
-              seasonYear:$seasonYear,
-              isAdult:false
-            ){
-              id
-              title{romaji english native}
-              coverImage{large}
-              genres
-              episodes
-              averageScore
-              status
-              duration
-              startDate{year}
-              studios(isMain:true){nodes{name}}
-              siteUrl
-              description(asHtml:false)
-              isAdult
+            media(type:ANIME,status_in:[RELEASING],sort:[START_DATE_DESC,POPULARITY_DESC],seasonYear:$seasonYear,isAdult:false){
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
             }
           }
         }
@@ -2008,29 +1951,11 @@
       const latestJson = await anilistQuery(latestQuery,{page:1,perPage:16,seasonYear:year});
       latestReleases = mapMediaList(latestJson?.data?.Page?.media || [],"Recently airing anime.");
 
-      // Best movies
       const movieQuery = `
         query($page:Int,$perPage:Int){
           Page(page:$page,perPage:$perPage){
-            media(
-              type:ANIME,
-              format:MOVIE,
-              sort:[SCORE_DESC,POPULARITY_DESC],
-              isAdult:false
-            ){
-              id
-              title{romaji english native}
-              coverImage{large}
-              genres
-              episodes
-              averageScore
-              status
-              duration
-              startDate{year}
-              studios(isMain:true){nodes{name}}
-              siteUrl
-              description(asHtml:false)
-              isAdult
+            media(type:ANIME,format:MOVIE,sort:[SCORE_DESC,POPULARITY_DESC],isAdult:false){
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
             }
           }
         }
@@ -2038,29 +1963,11 @@
       const movieJson = await anilistQuery(movieQuery,{page:1,perPage:12});
       bestMovies = mapMediaList(movieJson?.data?.Page?.media || [],"Top rated anime movie.");
 
-      // Popular Hindi dubbed – heuristic keywords (safe only)
       const hindiQuery = `
         query($page:Int,$perPage:Int){
           Page(page:$page,perPage:$perPage){
-            media(
-              type:ANIME,
-              sort:POPULARITY_DESC,
-              isAdult:false,
-              search:"Hindi"
-            ){
-              id
-              title{romaji english native}
-              coverImage{large}
-              genres
-              episodes
-              averageScore
-              status
-              duration
-              startDate{year}
-              studios(isMain:true){nodes{name}}
-              siteUrl
-              description(asHtml:false)
-              isAdult
+            media(type:ANIME,sort:POPULARITY_DESC,isAdult:false,search:"Hindi"){
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
             }
           }
         }
@@ -2068,29 +1975,11 @@
       const hindiJson = await anilistQuery(hindiQuery,{page:1,perPage:16});
       hindiDubbed = mapMediaList(hindiJson?.data?.Page?.media || [],"Anime related to Hindi / Indian region on AniList.");
 
-      // Trending English dubbed – trending + 'Dub' keyword (safe only)
       const engQuery = `
         query($page:Int,$perPage:Int){
           Page(page:$page,perPage:$perPage){
-            media(
-              type:ANIME,
-              sort:TRENDING_DESC,
-              isAdult:false,
-              search:"Dub"
-            ){
-              id
-              title{romaji english native}
-              coverImage{large}
-              genres
-              episodes
-              averageScore
-              status
-              duration
-              startDate{year}
-              studios(isMain:true){nodes{name}}
-              siteUrl
-              description(asHtml:false)
-              isAdult
+            media(type:ANIME,sort:TRENDING_DESC,isAdult:false,search:"Dub"){
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
             }
           }
         }
@@ -2146,18 +2035,9 @@
         query ($start:Int,$end:Int){
           Page(page:1,perPage:80){
             airingSchedules(airingAt_greater:$start,airingAt_lesser:$end){
-              airingAt
-              episode
+              airingAt episode
               media{
-                id
-                title{romaji english native}
-                coverImage{large}
-                averageScore
-                episodes
-                duration
-                siteUrl
-                isAdult
-                genres
+                id title{romaji english native} coverImage{large} averageScore episodes duration siteUrl isAdult genres format
               }
             }
           }
@@ -2173,10 +2053,7 @@
             const t = item.media.title.english || item.media.title.romaji;
             const airingAtMs = item.airingAt*1000;
             const timeIST = new Date(airingAtMs).toLocaleTimeString("en-IN",{
-              hour:"2-digit",
-              minute:"2-digit",
-              hour12:false,
-              timeZone:"Asia/Kolkata"
+              hour:"2-digit", minute:"2-digit", hour12:false, timeZone:"Asia/Kolkata"
             });
             return {
               time:`${timeIST} IST`,
@@ -2188,7 +2065,8 @@
               episodes:item.media.episodes || 0,
               duration:item.media.duration || 24,
               externalUrl:item.media.siteUrl || "",
-              episode:item.episode
+              episode:item.episode,
+              format: item.media.format || "TV"
             };
           });
       }
@@ -2196,7 +2074,6 @@
       calendarTodayData = await fetchRange(startToday,startTomorrow);
       calendarTomorrowData = await fetchRange(startTomorrow,startDayAfterTomorrow);
 
-      // 7‑day estimated
       estimatedWeek = [];
       for(let d=0; d<7; d++){
         const dayStart = new Date(startTodayIST);
@@ -2221,19 +2098,7 @@
         query ($search:String,$page:Int,$perPage:Int){
           Page(page:$page,perPage:$perPage){
             media(search:$search,type:ANIME,sort:POPULARITY_DESC,isAdult:false){
-              id
-              title{romaji english native}
-              coverImage{large}
-              genres
-              episodes
-              averageScore
-              status
-              duration
-              startDate{year}
-              studios(isMain:true){nodes{name}}
-              siteUrl
-              description(asHtml:false)
-              isAdult
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
             }
           }
         }
@@ -2322,7 +2187,7 @@
             <h3 class="anime-name">${g}</h3>
             <div class="anime-meta-row">
               <span style="color:var(--text-muted);font-size:.8rem;">
-                Tap to filter anime list by "${g}" genre.
+                Tap to view top "${g}" anime.
               </span>
             </div>
           </div>
@@ -2516,9 +2381,14 @@
       modalPoster.src = anime.poster;
       modalPoster.alt = anime.title;
       modalTitle.textContent = anime.title;
-      modalMeta.textContent =
-        `${anime.studio || "Unknown studio"} • ${anime.releaseDate || "Year N/A"} • ` +
-        `${anime.duration || 24}m • ${anime.episodes || 0} eps • ${anime.rating}/10`;
+      
+      // New Badges setup
+      document.getElementById("modalEpSub").textContent = anime.episodes || "?";
+      document.getElementById("modalEpDub").textContent = anime.episodes || "?"; 
+      document.getElementById("modalFormat").textContent = anime.format || "TV";
+      document.getElementById("modalDurationBadge").textContent = (anime.duration || 24) + "m";
+      
+      modalMeta.textContent = `${anime.studio || "Unknown studio"} • ${anime.releaseDate || "Year N/A"}`;
       modalSummary.textContent = anime.synopsis || "No summary available.";
       modalTags.innerHTML = "";
       (anime.genre || "").split(",").forEach(g => {
@@ -2528,11 +2398,9 @@
           modalTags.appendChild(span);
         }
       });
-      if (anime.externalUrl){
-        modalAniListLink.href = anime.externalUrl;
-      } else {
-        modalAniListLink.href = `https://anilist.co/anime/${anime.id}`;
-      }
+      
+      // Updated Link 
+      modalAniListLink.href = "https://animeyy.com/";
 
       animeModal.classList.add("open");
     }
@@ -2592,7 +2460,8 @@
               duration:fromSchedule.duration,
               releaseDate:"",
               studio:"",
-              externalUrl:fromSchedule.externalUrl
+              externalUrl:fromSchedule.externalUrl,
+              format: fromSchedule.format || "TV"
             };
             openAnimeModalByObject(mapped);
           }
@@ -2616,7 +2485,8 @@
               duration:fromSchedule.duration,
               releaseDate:"",
               studio:"",
-              externalUrl:fromSchedule.externalUrl
+              externalUrl:fromSchedule.externalUrl,
+              format: fromSchedule.format || "TV"
             };
             openAnimeModalByObject(mapped);
           }
@@ -2645,16 +2515,55 @@
       });
     }
 
+    // Dynamic Genre Fetching from AniList API
+    async function fetchAnimeByGenre(genre) {
+      const gridSection = document.getElementById("animeGrid");
+      const sectionHead = gridSection.previousElementSibling;
+      const sectionTitleWrapper = sectionHead.querySelector("div");
+      
+      if (!gridSection.dataset.originalTitleHtml) {
+        gridSection.dataset.originalTitleHtml = sectionTitleWrapper.innerHTML;
+      }
+      
+      sectionTitleWrapper.innerHTML = `<h2 class="section-title">⏳ Loading top <strong>${genre}</strong> anime...</h2><p class="section-sub">Fetching directly from AniList...</p>`;
+      sectionHead.scrollIntoView({behavior: "smooth", block: "start"});
+
+      const query = `
+        query ($genre: String, $page: Int, $perPage: Int) {
+          Page(page: $page, perPage: $perPage) {
+            media(genre: $genre, type: ANIME, sort: POPULARITY_DESC, isAdult: false) {
+              id title{romaji english native} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} siteUrl description(asHtml:false) isAdult format
+            }
+          }
+        }
+      `;
+      
+      const variables = { genre: genre, page: 1, perPage: 24 };
+      
+      try {
+        const json = await anilistQuery(query, variables);
+        const list = json?.data?.Page?.media || [];
+        const mappedData = mapMediaList(list, `Top ${genre} anime.`);
+
+        sectionTitleWrapper.innerHTML = `<h2 class="section-title">🏷️ Category: ${genre} <button id="clearGenreBtn" style="margin-left:12px; padding: 4px 12px; border-radius: 20px; background: var(--danger); color: white; border: none; cursor: pointer; font-size: 0.75rem; font-weight: 600; vertical-align: middle;"><i class="fas fa-times"></i> Clear Filter</button></h2><p class="section-sub">Top trending anime in this genre.</p>`;
+        
+        gridSection.innerHTML = mappedData.length ? mappedData.map(createAnimeCard).join("") : `<div style="grid-column:1/-1;font-size:.86rem;color:var(--text-muted);">No anime found for this genre.</div>`;
+
+        document.getElementById("clearGenreBtn").addEventListener("click", () => {
+          sectionTitleWrapper.innerHTML = gridSection.dataset.originalTitleHtml;
+          renderGrid(); 
+        });
+      } catch(e) {
+        sectionTitleWrapper.innerHTML = `<h2 class="section-title">❌ Error loading ${genre}.</h2><p class="section-sub">Please try again later.</p>`;
+      }
+    }
+
     function setupCategoryClick(){
-      document.addEventListener("click",e=>{
+      document.addEventListener("click", e => {
         const catCard = e.target.closest(".category-card");
         if(!catCard) return;
-        const cat = catCard.dataset.category.toLowerCase();
-        const filtered = animeData.filter(a =>
-          (a.genre||"").toLowerCase().includes(cat)
-        );
-        animeGrid.innerHTML = (filtered.length ? filtered : animeData).map(createAnimeCard).join("");
-        window.scrollTo({top:animeGrid.offsetTop - 90,behavior:"smooth"});
+        const cat = catCard.dataset.category;
+        fetchAnimeByGenre(cat);
       });
     }
 
@@ -2758,17 +2667,16 @@
       setupTabs();
       setupAnimeCardClick();
 
-      try{
-        await loadTrendingFromAniList();
-      }catch(e){ console.error("AniList trending failed",e); }
-
-      try{
-        await loadHomeBlocksFromAniList();
-      }catch(e){ console.error("AniList home blocks failed",e); }
-
-      try{
-        await loadCalendarFromAniList();
-      }catch(e){ console.error("AniList calendar failed",e); }
+      // Faster Loading with Promise.all
+      try {
+        await Promise.all([
+          loadTrendingFromAniList(),
+          loadHomeBlocksFromAniList(),
+          loadCalendarFromAniList()
+        ]);
+      } catch (e) {
+        console.error("AniList API calls failed during initialization", e);
+      }
 
       setInterval(loadCalendarFromAniList,15*60*1000);
     }
@@ -2779,9 +2687,3 @@
   <script src="https://pl28587997.effectivegatecpm.com/7f/9f/6a/7f9f6ab1bbfd093596d55eb87b10a665.js"></script>
 </body>
 </html>
-
-
-
-
-
-
