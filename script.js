@@ -903,30 +903,48 @@ async function init(){
 }
 
 document.addEventListener("DOMContentLoaded",init);
-/* ---------- 3-Click Ad & Redirection Logic ---------- */
+/* ---------- 3-Click Ad & Redirection Logic (100% New Tab) ---------- */
 const mainWatchBtn = document.getElementById("mainWatchBtn");
 
 if (mainWatchBtn) {
-  mainWatchBtn.addEventListener("click", function(e) {
-    e.preventDefault(); // Button er normal kaj bondho kora holo
+  const adLink = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80";
+  const targetWebsite = "https://animeyy.com/"; // <-- Tomar asol link ekhane debe
 
-    // Browser er memory theke click count check kora
-    let clickCount = parseInt(localStorage.getItem("watchBtnClicks")) || 0;
-    clickCount++; // Click count 1 barano holo
+  // Page load howar somoy aager click count check kora
+  let clickCount = parseInt(localStorage.getItem("watchBtnClicks")) || 0;
 
-    const adLink = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80";
+  // Jodi aage theke 2 bar click hoye thake, tahole button er link ta aage thekei asol website er kora thakbe
+  if (clickCount >= 2) {
+    mainWatchBtn.href = targetWebsite;
+  } else {
+    mainWatchBtn.href = adLink;
+  }
+
+  mainWatchBtn.addEventListener("click", function() {
+    // Ekhane e.preventDefault() use kora holo NA. Tai browser normally new tab e khulbe.
     
-    // Nicher line-e tomar asol website er link ta boshabe
-    const targetWebsite = "https://animeyy.com/"; // <-- Tomar asol link ekhane debe
+    clickCount++;
 
-    if (clickCount < 3) {
-      // 1st and 2nd Click: Click count save hobe ar Ad NEW TAB e khulbe
-      localStorage.setItem("watchBtnClicks", clickCount);
-      window.open(adLink, '_blank'); 
-    } else {
-      // 3rd Click: Click count 0 hoye jabe ar Asol website NEW TAB e khulbe
+    if (clickCount >= 3) {
+      // 3rd click er por count 0 kore dewa holo jate porer bar abar Ad theke suru hoy
       localStorage.setItem("watchBtnClicks", 0);
-      window.open(targetWebsite, '_blank');
+      clickCount = 0;
+      
+      // Click hoye jabar half second por pichon theke link ta abar Ad er link set kore dewa holo
+      setTimeout(() => {
+        mainWatchBtn.href = adLink;
+      }, 500);
+      
+    } else {
+      // 1st ba 2nd click count save holo
+      localStorage.setItem("watchBtnClicks", clickCount);
+      
+      // Jodi 2 bar click kora hoye jay, tahole 3rd click er jonno button er link ta asol website er kore dewa holo
+      if (clickCount === 2) {
+        setTimeout(() => {
+          mainWatchBtn.href = targetWebsite;
+        }, 500);
+      }
     }
   });
 }
