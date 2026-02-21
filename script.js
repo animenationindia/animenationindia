@@ -915,16 +915,18 @@ if (mainWatchBtn) {
     clickCount++; // Click count 1 barano holo
 
     const adLink = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80";
-    const targetWebsite = "https://animeyy.com"; // <--- Ekhane tomar asol website link boshabe!
+    
+    // Nicher line-e tomar asol website er link ta boshabe
+    const targetWebsite = "https://animeyy.com/"; // <-- Tomar asol link ekhane debe
 
     if (clickCount < 3) {
-      // 1st and 2nd Click: Click count save hobe ar Ad khulbe
+      // 1st and 2nd Click: Click count save hobe ar Ad NEW TAB e khulbe
       localStorage.setItem("watchBtnClicks", clickCount);
-      window.location.href = adLink; 
+      window.open(adLink, '_blank'); 
     } else {
-      // 3rd Click: Click count 0 hoye jabe ar Asol website khulbe
+      // 3rd Click: Click count 0 hoye jabe ar Asol website NEW TAB e khulbe
       localStorage.setItem("watchBtnClicks", 0);
-      window.location.href = targetWebsite;
+      window.open(targetWebsite, '_blank');
     }
   });
 }
