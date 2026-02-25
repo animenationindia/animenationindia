@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime List - Anime Nation India</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <nav class="nav-wrap">
+      <a href="index.html" class="brand">
+        <div class="brand-logo">
+          <img src="ani-logo.png" alt="Anime Nation India logo" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Anime Nation India</span>
+          <span class="brand-sub">Go Back to Home</span>
+        </div>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-wrap" style="padding-top: 8rem; min-height: 80vh;">
+    <a href="index.html" style="color: var(--accent); text-decoration: none; font-weight: 600; margin-bottom: 20px; display: inline-block;"><i class="fas fa-arrow-left"></i> Back to Home</a>
+    
+    <div class="section-head">
+      <div>
+        <h2 class="section-title" id="pageTitle" style="font-size: 2rem;">Loading Data...</h2>
+        <p class="section-sub" id="pageSub">Fetching directly from AniList...</p>
+      </div>
+    </div>
+    
+    <div class="grid-wrap" id="viewAllGrid"></div>
+  </main>
+
+  <div class="anime-modal-backdrop" id="animeModal">
+    <div class="anime-modal">
+      <button class="modal-close" id="modalCloseBtn">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="modal-layout">
+        <div class="modal-cover-wrap">
+          <img id="modalPoster" src="" alt="Anime cover" class="modal-poster">
+        </div>
+        <div class="modal-content">
+          <h2 id="modalTitle" class="modal-title"></h2>
+          
+          <div class="modal-badges-row" id="modalBadgesRow" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; margin-bottom: 0.6rem; font-size: 0.8rem; font-weight: 700; flex-wrap: wrap;">
+             <span style="background: #fff; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px;">PG-13</span>
+             <span style="background: #ffdd95; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px;">HD</span>
+             <span style="background: #b0e3af; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i class="fas fa-closed-captioning"></i> <span id="modalEpSub">0</span></span>
+             <span style="background: #e3b5e4; color: #000; padding: 0.15rem 0.4rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.2rem;"><i class="fas fa-microphone"></i> <span id="modalEpDub">0</span></span>
+             <span style="color: var(--text-muted); font-weight: 400;">•</span>
+             <span id="modalFormat" style="color: var(--text-muted); font-weight: 400;">TV</span>
+             <span style="color: var(--text-muted); font-weight: 400;">•</span>
+             <span id="modalDurationBadge" style="color: var(--text-muted); font-weight: 400;">24m</span>
+          </div>
+
+          <p id="modalMeta" class="modal-meta" style="margin-bottom: 0.5rem;"></p>
+          <div class="modal-tags" id="modalTags"></div>
+          
+          <div class="modal-actions" style="margin-top: 1rem; margin-bottom: 1rem;">
+            <a id="modalAniListLink" href="https://animeyy.com/" target="_blank" rel="noopener" class="btn-primary" style="background: linear-gradient(135deg, #ff4dd2, #ffd54a); color: #050716; padding: 0.7rem 1.8rem;">
+              <i class="fas fa-play-circle" style="font-size: 1.1rem;"></i>
+              Watch Now
+            </a>
+          </div>
+
+          <p id="modalSummary" class="modal-summary"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ANILIST_ENDPOINT = "https://graphql.anilist.co";
+    const grid = document.getElementById("viewAllGrid");
+
+    async function fetchFromAnilist(variables) {
+      const query = `
+        query ($page: Int, $perPage: Int, $sort: [MediaSort], $format: MediaFormat, $status: MediaStatus, $search: String, $genre: String) {
+          Page(page: $page, perPage: $perPage) {
+            media(type: ANIME, sort: $sort, format: $format, status: $status, search: $search, genre: $genre, isAdult: false) {
+              id title{romaji english} coverImage{large} genres episodes averageScore status duration startDate{year} studios(isMain:true){nodes{name}} description(asHtml:false) format
+            }
+          }
+        }
+      `;
+      const res = await fetch(ANILIST_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, variables })
+      });
+      const json = await res.json();
+      return json.data.Page.media || [];
+    }
+
+    function createSimpleCard(anime) {
+      const title = anime.title.english || anime.title.romaji;
+      
+      const statusClass =
+        (anime.status || "").toLowerCase().includes("finish") ? "badge-status badge-completed" :
+        (anime.status || "").toLowerCase().includes("not_yet")  ? "badge-status badge-upcoming"  :
+                                       "badge-status badge-ongoing";
+
+      let displayStatus = "Ongoing";
+      if(statusClass.includes("completed")) displayStatus = "Completed";
+      if(statusClass.includes("upcoming")) displayStatus = "Upcoming";
+
+      // Encode the anime object safely for the onclick handler
+      const safeAnimeStr = JSON.stringify({
+        id: anime.id,
+        title: title,
+        genre: (anime.genres||[]).join(", "),
+        poster: anime.coverImage.large,
+        synopsis: anime.description ? anime.description.replace(/<[^>]*>/g,"") : "No summary available.",
+        status: displayStatus,
+        episodes: anime.episodes || 0,
+        rating: anime.averageScore ? (anime.averageScore/10).toFixed(1) : "8.0",
+        duration: anime.duration || 24,
+        releaseDate: anime.startDate?.year || "",
+        studio: (anime.studios?.nodes?.[0] && anime.studios.nodes[0].name) || "Unknown",
+        format: anime.format || "TV"
+      }).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+      return `
+        <article class="anime-card" onclick='openModalLocal(${safeAnimeStr})' style="cursor: pointer;">
+          <img src="${anime.coverImage.large}" alt="${title}" class="anime-card-img" loading="lazy">
+          <div class="anime-card-body">
+            <h3 class="anime-name">${title}</h3>
+            <div class="anime-meta-row">
+              <span>${(anime.genres || [])[0] || "Unknown"}</span>
+              <span class="${statusClass}">${displayStatus}</span>
+            </div>
+            <div class="anime-meta-row" style="margin-top:.2rem;">
+              <span><i class="fas fa-star" style="color:#ffd54a;margin-right:.25rem;"></i>${anime.averageScore ? (anime.averageScore/10).toFixed(1) : "8.0"}/10</span>
+              <span>${anime.episodes || 0} eps</span>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    async function initPage() {
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get("type");
+      
+      let vars = { page: 1, perPage: 40 };
+      let title = "Results";
+      let sub = "Top 40 anime from AniList.";
+
+      if (type === "trending") { vars.sort = ["TRENDING_DESC"]; title = "🔥 Trending Now"; }
+      else if (type === "latest") { vars.status = "RELEASING"; vars.sort = ["START_DATE_DESC", "POPULARITY_DESC"]; title = "🆕 Latest Releases"; }
+      else if (type === "movies") { vars.format = "MOVIE"; vars.sort = ["SCORE_DESC"]; title = "🎬 The Best Movies"; }
+      else if (type === "hindi") { vars.search = "Hindi"; vars.sort = ["POPULARITY_DESC"]; title = "🇮🇳 Hindi Dubbed"; }
+      else if (type === "english") { vars.search = "Dub"; vars.sort = ["TRENDING_DESC"]; title = "🌍 English Dubbed"; }
+      else if (type === "upcoming") { vars.status = "NOT_YET_RELEASED"; vars.sort = ["POPULARITY_DESC"]; title = "📅 Upcoming Next Season"; }
+      else if (type === "allTimePopular") { vars.sort = ["POPULARITY_DESC"]; title = "🌟 All Time Popular"; }
+      else if (type === "topRated") { vars.sort = ["SCORE_DESC", "POPULARITY_DESC"]; title = "🏆 Top 100 Anime"; }
+
+      document.getElementById("pageTitle").textContent = title;
+      document.getElementById("pageSub").textContent = sub;
+
+      try {
+        const data = await fetchFromAnilist(vars);
+        grid.innerHTML = data.map(createSimpleCard).join("");
+      } catch(e) {
+        grid.innerHTML = `<div style="color:var(--danger);">Error fetching data. Try again.</div>`;
+      }
+    }
+
+    // Modal Logic for this page
+    const aModal = document.getElementById("animeModal");
+    function openModalLocal(anime) {
+      document.getElementById("modalPoster").src = anime.poster;
+      document.getElementById("modalTitle").textContent = anime.title;
+      document.getElementById("modalEpSub").textContent = anime.episodes || "?";
+      document.getElementById("modalEpDub").textContent = anime.episodes || "?"; 
+      document.getElementById("modalFormat").textContent = anime.format || "TV";
+      document.getElementById("modalDurationBadge").textContent = (anime.duration || 24) + "m";
+      document.getElementById("modalMeta").textContent = `${anime.studio} • ${anime.releaseDate}`;
+      document.getElementById("modalSummary").textContent = anime.synopsis;
+      
+      const tagsContainer = document.getElementById("modalTags");
+      tagsContainer.innerHTML = "";
+      (anime.genre || "").split(",").forEach(g => {
+        if (g.trim()){
+          const span = document.createElement("span");
+          span.textContent = g.trim();
+          tagsContainer.appendChild(span);
+        }
+      });
+      aModal.classList.add("open");
+    }
+
+    document.getElementById("modalCloseBtn").addEventListener("click", () => aModal.classList.remove("open"));
+    aModal.addEventListener("click", e => { if (e.target === aModal) aModal.classList.remove("open"); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") aModal.classList.remove("open"); });
+
+    initPage();
+  </script>
+</body>
+</html>
