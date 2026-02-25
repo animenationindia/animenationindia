@@ -12,7 +12,7 @@
   <header class="header">
     <nav class="nav-wrap">
       <a href="index.html" class="brand">
-        <div class="brand-logo"><img src="ani-logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
+        <div class="brand-logo"><img src="ani-logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:18px;" alt="Logo"></div>
         <div class="brand-text"><span class="brand-title">Anime Nation India</span><span class="brand-sub">Go Back to Home</span></div>
       </a>
     </nav>
@@ -26,6 +26,7 @@
         <p class="section-sub" id="pageSub">Fetching from API...</p>
       </div>
     </div>
+    
     <div id="wrapperContainer" class="grid-wrap"></div>
   </main>
 
@@ -33,7 +34,7 @@
     <div class="anime-modal">
       <button class="modal-close" id="modalCloseBtn"><i class="fas fa-times"></i></button>
       <div class="modal-layout">
-        <div class="modal-cover-wrap"><img id="modalPoster" src="" class="modal-poster"></div>
+        <div class="modal-cover-wrap"><img id="modalPoster" src="" class="modal-poster" alt="Poster"></div>
         <div class="modal-content">
           <h2 id="modalTitle" class="modal-title"></h2>
           <div class="modal-badges-row" style="display: flex; gap: 0.5rem; margin-top: 0.3rem; margin-bottom: 0.6rem; font-size: 0.8rem; font-weight: 700; flex-wrap: wrap;">
@@ -79,21 +80,23 @@
     }
     document.getElementById("modalCloseBtn").onclick = () => aModal.classList.remove("open");
     aModal.onclick = (e) => { if(e.target===aModal) aModal.classList.remove("open"); };
+    document.addEventListener("keydown", e => { if (e.key === "Escape") aModal.classList.remove("open"); });
 
     // Card Creators
     function createSimpleCard(anime) {
       const statusClass = (anime.status||"").toLowerCase().includes("completed") ? "badge-completed" : (anime.status||"").toLowerCase().includes("upcoming") ? "badge-upcoming" : "badge-ongoing";
       const safeObj = JSON.stringify(anime).replace(/'/g, "\\'").replace(/"/g, "&quot;");
       return `<article class="anime-card" onclick='openModalLocal(${safeObj})'>
-        <img src="${anime.poster}" class="anime-card-img" loading="lazy">
+        <img src="${anime.poster}" class="anime-card-img" loading="lazy" alt="Poster">
         <div class="anime-card-body"><h3 class="anime-name">${anime.title}</h3><div class="anime-meta-row"><span>${(anime.genre||"Anime").split(",")[0]}</span><span class="badge-status ${statusClass}">${anime.status}</span></div><div class="anime-meta-row" style="margin-top:.2rem;"><span><i class="fas fa-star" style="color:#ffd54a;margin-right:.25rem;"></i>${anime.rating}/10</span><span>${anime.episodes||0} eps</span></div></div></article>`;
     }
+
     function createTopRow(anime, index) {
       const safeObj = JSON.stringify(anime).replace(/'/g, "\\'").replace(/"/g, "&quot;");
       const tags = (anime.genre||"").split(",").slice(0,3).map(g=>`<span class="top-tag-pill">${g.trim()}</span>`).join("");
       const seasonStr = anime.season ? anime.season.charAt(0) + anime.season.slice(1).toLowerCase() : "";
       return `<div class="top-row-card" onclick='openModalLocal(${safeObj})'>
-        <div class="top-rank">#${index}</div><img src="${anime.poster}" class="top-img">
+        <div class="top-rank">#${index}</div><img src="${anime.poster}" class="top-img" alt="Poster">
         <div class="top-info"><div class="top-title-row">${anime.title}</div><div class="top-tags-row">${tags}</div></div>
         <div class="top-stats"><div class="score"><i class="fas fa-smile"></i> ${anime.scoreInt||80}%</div></div>
         <div class="top-format">${(anime.format||"TV").replace("_"," ")}<br>${anime.episodes||0} eps</div>
@@ -118,7 +121,7 @@
         let st = m.status==="FINISHED"?"Completed":m.status==="NOT_YET_RELEASED"?"Upcoming":"Ongoing";
         return {
           id:m.id, title: m.title.english || m.title.romaji, genre: (m.genres||[]).join(", "),
-          poster: m.coverImage.large, synopsis: m.description ? m.description.replace(/<[^>]*>/g,"") : "No summary.",
+          poster: m.coverImage.large, synopsis: m.description ? m.description.replace(/<[^>]*>/g,"") : "No summary available.",
           status: st, episodes: m.episodes || "?", rating: m.averageScore?(m.averageScore/10).toFixed(1):"8.0", scoreInt: m.averageScore,
           duration: m.duration || 24, releaseDate: m.startDate?.year || "", season: m.season || "",
           studio: m.studios?.nodes?.[0]?.name || "Unknown", format: m.format || "TV"
@@ -134,7 +137,7 @@
         let st = m.status==="Finished Airing"?"Completed":m.status==="Not yet aired"?"Upcoming":"Ongoing";
         return {
           id: m.mal_id, title: m.title_english || m.title, genre: (m.genres||[]).map(g=>g.name).join(", "),
-          poster: m.images.webp.large_image_url, synopsis: m.synopsis ? m.synopsis.replace(/<[^>]*>/g,"") : "No summary.",
+          poster: m.images.webp.large_image_url, synopsis: m.synopsis ? m.synopsis.replace(/<[^>]*>/g,"") : "No summary available.",
           status: st, episodes: m.episodes || "?", rating: m.score ? m.score.toFixed(1) : "8.0", scoreInt: m.score ? Math.round(m.score*10) : 80,
           duration: m.duration ? m.duration.replace(" per ep", "") : "24 min", releaseDate: m.year || "", season: m.season || "",
           studio: m.studios?.[0]?.name || "Unknown", format: m.type || "TV"
@@ -167,7 +170,7 @@
 
       try {
         let data = isJikan ? await fetchFromJikan(genreId) : await fetchFromAnilist(vars);
-        if(!data.length) { container.innerHTML = "No results found."; return; }
+        if(!data.length) { container.innerHTML = "<div style='color:var(--text-muted); padding:2rem;'>No results found.</div>"; return; }
 
         if(type === "topRated") {
           container.className = "top-list-wrap";
@@ -177,7 +180,7 @@
           container.innerHTML = data.map(createSimpleCard).join("");
         }
       } catch(e) {
-        container.innerHTML = `<div style="color:var(--danger); padding:2rem;">❌ Error fetching data. Please try again later.</div>`;
+        container.innerHTML = `<div style="color:var(--danger); padding:2rem;">❌ Error fetching data. Please check your internet connection or try again later.</div>`;
       }
     }
     initPage();
