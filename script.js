@@ -1,6 +1,6 @@
 const ANILIST_ENDPOINT = "https://graphql.anilist.co";
 
-// JIKAN GENRE IDS (Hardcoded to save API calls)
+// JIKAN GENRE IDS
 const jikanGenres = [
   { name: "Action", id: 1 }, { name: "Adventure", id: 2 }, { name: "Comedy", id: 4 },
   { name: "Drama", id: 8 }, { name: "Fantasy", id: 10 }, { name: "Romance", id: 22 },
@@ -8,7 +8,7 @@ const jikanGenres = [
   { name: "Thriller", id: 41 }, { name: "Slice of Life", id: 36 }, { name: "Mystery", id: 7 }
 ];
 
-let calendarTodayData = [], calendarTomorrowData = [];
+let calendarTodayData = [], calendarTomorrowData = [], newsAnime = [];
 
 // DOM Elements
 const navMenu = document.getElementById("navMenu"), menuToggle = document.getElementById("menuToggle");
@@ -67,13 +67,18 @@ async function loadHomeDataSuperFast() {
     const data = res?.data;
     if(!data) return;
 
-    if(document.getElementById("trendingCarousel")) document.getElementById("trendingCarousel").innerHTML = mapMediaList(data.trending.media).map(createPosterCard).join("");
+    const mappedTrending = mapMediaList(data.trending.media);
+    if(document.getElementById("trendingCarousel")) document.getElementById("trendingCarousel").innerHTML = mappedTrending.map(createPosterCard).join("");
     if(document.getElementById("upcomingCarousel")) document.getElementById("upcomingCarousel").innerHTML = mapMediaList(data.upcoming.media).map(createPosterCard).join("");
     if(document.getElementById("popularSeasonGrid")) document.getElementById("popularSeasonGrid").innerHTML = mapMediaList(data.popularSeason.media).map(createAnimeCard).join("");
     if(document.getElementById("allTimePopularGrid")) document.getElementById("allTimePopularGrid").innerHTML = mapMediaList(data.allTime.media).map(createAnimeCard).join("");
     if(document.getElementById("top100List")) document.getElementById("top100List").innerHTML = mapMediaList(data.top100.media).map((a, i) => createTopRowCard(a, i+1)).join("");
 
-    if(data.trending.media.length > 0) setupSpotlight(mapMediaList(data.trending.media));
+    if(mappedTrending.length > 0) setupSpotlight(mappedTrending);
+    
+    // Setup News from Trending data (as originally done)
+    newsAnime = mappedTrending.slice().reverse();
+    renderNewsFromAnime();
 
     // Render Jikan Categories
     if(document.getElementById("categoriesGrid")) {
@@ -152,6 +157,31 @@ function createTopRowCard(anime, index) {
       <div class="top-format">${anime.format.replace("_"," ")}<br>${anime.episodes} eps</div>
       <div class="top-season">${anime.season ? anime.season.charAt(0) + anime.season.slice(1).toLowerCase() : ""} ${anime.releaseDate}</div>
     </div>`;
+}
+
+// RESTORED: News Renderer
+function renderNewsFromAnime(){
+  const newsGrid = document.getElementById("newsGrid");
+  const statNewsCount = document.getElementById("statNewsCount");
+  if(!newsAnime.length){
+    if(newsGrid) newsGrid.innerHTML = `<div style="grid-column:1/-1;padding:1.2rem;border-radius:18px;background:rgba(0,0,0,.45);font-size:.86rem;color:var(--text-muted);">Live news feed could not be loaded. Try again later.</div>`;
+    return;
+  }
+  if(newsGrid) {
+    newsGrid.innerHTML = newsAnime.slice(0,9).map(a=>{
+      const summary = (a.synopsis||"").slice(0,160)+"…";
+      const safeObj = JSON.stringify(a).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      return `
+        <article class="news-card" onclick='openAnimeModalLocal(${safeObj})'>
+          <div class="news-tag">News • AniList</div>
+          <h3 class="news-title">${a.title}</h3>
+          <div class="news-meta">${a.genre.split(",")[0]||"News"}</div>
+          <p class="news-summary">${summary}</p>
+        </article>
+      `;
+    }).join("");
+  }
+  if(statNewsCount) statNewsCount.textContent = newsAnime.length;
 }
 
 // Spotlight Slider
