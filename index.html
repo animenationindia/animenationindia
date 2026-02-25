@@ -52,7 +52,7 @@
 
   <header class="header">
     <nav class="nav-wrap">
-     <a href="#" class="brand" onclick="location.reload()">
+     <a href="#top" class="brand">
         <div class="brand-logo">
           <img src="ani-logo.png" alt="Anime Nation India logo" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">
         </div>
@@ -63,10 +63,13 @@
       </a>
 
       <ul class="nav-menu" id="navMenu">
-        <li><a href="#home" class="nav-link active" onclick="closeViewAll()">Home</a></li>
-        <li><a href="#featured" class="nav-link" onclick="closeViewAll()">Spotlight<span class="nav-pill">Hot</span></a></li>
-        <li><a href="#airing" class="nav-link" onclick="closeViewAll()">Schedule</a></li>
-        <li><a href="#categories" class="nav-link" onclick="closeViewAll()">Genres</a></li>
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="#featured" class="nav-link">Spotlight<span class="nav-pill">Hot</span></a></li>
+        <li><a href="#airing" class="nav-link">Schedule</a></li>
+        <li><a href="#popular" class="nav-link">Popular</a></li>
+        <li><a href="#news" class="nav-link">News</a></li>
+        <li><a href="#categories" class="nav-link">Genres</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
       </ul>
 
       <div class="nav-right">
@@ -74,8 +77,14 @@
           <a class="social-btn" target="_blank" rel="noopener" href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==">
             <i class="fab fa-instagram"></i>
           </a>
+          <a class="social-btn" target="_blank" rel="noopener" href="https://www.threads.net/@animenationindia">
+            <span class="threads-txt">T</span>
+          </a>
           <a class="social-btn" target="_blank" rel="noopener" href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ">
             <i class="fab fa-youtube"></i>
+          </a>
+          <a class="social-btn" target="_blank" rel="noopener" href="https://www.facebook.com/share/1Bo8tbhWYY/">
+            <i class="fab fa-facebook-f"></i>
           </a>
         </div>
         <div class="menu-toggle" id="menuToggle">
@@ -85,368 +94,324 @@
     </nav>
   </header>
 
-  <div id="mainHomeWrapper">
-    <main class="page-wrap" id="home">
-      <section class="hero-grid">
-        <div class="hero-left">
-          <div class="hero-kicker">
-            <span><i class="fas fa-bolt"></i> Live Anime Radar</span>
-            <span>|</span>
-            <span id="heroSeasonText">Winter 2026 • Simulcast</span>
+  <main class="page-wrap" id="home">
+    <section class="hero-grid">
+      <div class="hero-left">
+        <div class="hero-kicker">
+          <span><i class="fas fa-bolt"></i> Live Anime Radar</span>
+          <span>|</span>
+          <span id="heroSeasonText">Winter 2026 • Simulcast</span>
+        </div>
+
+        <h1 class="hero-title">
+          Track every <span class="hero-title-highlight">new episode</span> in IST.
+        </h1>
+
+        <p class="hero-desc">
+          One dashboard for schedules, trending titles, and streaming info – powered by AniList live data and tuned for Indian fans on every device.
+        </p>
+
+        <div class="hero-tags">
+          <span class="tag-pill">AniList API</span>
+          <span class="tag-pill">IST timezone</span>
+          <span class="tag-pill">Sub + Dub</span>
+          <span class="tag-pill">Mobile ready</span>
+        </div>
+
+        <div class="hero-stats-row">
+          <div class="stat-box">
+            <div class="stat-label">Series indexed</div>
+            <div class="stat-value stat-accent-main" id="statAnimeCount">0</div>
           </div>
-
-          <h1 class="hero-title">
-            Track every <span class="hero-title-highlight">new episode</span> in IST.
-          </h1>
-
-          <p class="hero-desc">
-            One dashboard for schedules, trending titles, and streaming info – powered by AniList live data and tuned for Indian fans on every device.
-          </p>
-
-          <div class="hero-tags">
-            <span class="tag-pill">AniList API</span>
-            <span class="tag-pill">IST timezone</span>
-            <span class="tag-pill">Sub + Dub</span>
-            <span class="tag-pill">Mobile ready</span>
+          <div class="stat-box">
+            <div class="stat-label">Today airing</div>
+            <div class="stat-value stat-accent-success" id="statTodayShows">0</div>
           </div>
-
-          <div class="hero-stats-row">
-            <div class="stat-box">
-              <div class="stat-label">Series indexed</div>
-              <div class="stat-value stat-accent-main" id="statAnimeCount">0</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">Today airing</div>
-              <div class="stat-value stat-accent-success" id="statTodayShows">0</div>
-            </div>
-            <div class="stat-box">
-              <div class="stat-label">News this week</div>
-              <div class="stat-value stat-accent-danger" id="statNewsCount">0</div>
-            </div>
-          </div>
-
-          <div class="hero-cta-row">
-            <button class="btn-primary" id="jumpTodayBtn">
-              <i class="fas fa-calendar-day"></i>
-              Today’s schedule
-            </button>
-            <div class="hero-secondary">
-              <i class="fas fa-circle-dot"></i>
-              Auto‑refresh every 15 minutes from AniList.
-            </div>
+          <div class="stat-box">
+            <div class="stat-label">News this week</div>
+            <div class="stat-value stat-accent-danger" id="statNewsCount">0</div>
           </div>
         </div>
 
-        <aside class="spotlight-card" id="spotlightCard">
-          <div class="spotlight-media">
-            <img src="" alt="Spotlight anime" class="spotlight-img" id="spotlightImg">
-            <div class="spotlight-gradient"></div>
-            <div class="spotlight-badge">
-              <i class="fas fa-fire"></i>
-              <span id="spotlightBadgeText">#1 Spotlight</span>
-            </div>
-
-            <div class="spotlight-meta-row">
-              <div class="spotlight-meta-left">
-                <h2 class="spotlight-title" id="spotlightTitle">Loading…</h2>
-                <p class="spotlight-sub" id="spotlightSub">Trending simulcast picked from AniList.</p>
-                <div class="spotlight-pill-row" id="spotlightGenres"></div>
-              </div>
-              <div class="spotlight-meta-right">
-                <span><i class="fas fa-clock"></i><strong id="spotlightDuration">24m</strong> / ep</span>
-                <span><i class="fas fa-star"></i><strong id="spotlightScore">–</strong> score</span>
-                <span><i class="fas fa-tv"></i><strong id="spotlightEpisodes">0</strong> eps</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="spotlight-body">
-            <p class="spotlight-desc" id="spotlightDesc">
-              Stay tuned – loading final season details directly from AniList…
-            </p>
-            <div class="spotlight-chips">
-              <span class="chip"><i class="fas fa-language"></i> Sub & Dub (where available)</span>
-              <span class="chip"><i class="fas fa-globe"></i> Global data from AniList</span>
-              <span class="chip"><i class="fas fa-sync-alt"></i> Auto‑refresh 15 min</span>
-            </div>
-            <div class="spotlight-footer">
-              <div>
-                <div class="pill-live">
-                  <span class="pill-live-dot"></span>
-                  LIVE DATA
-                </div>
-              </div>
-              <div class="spotlight-footer-right">
-                <span><i class="fas fa-arrow-right"></i> Tap any card for full details</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </section>
-
-      <section class="search-row" id="featured">
-        <div class="search-input-wrap">
-          <i class="fas fa-search"></i>
-          <input id="searchInput" class="search-input" placeholder="Search anime by title, genre, or studio (AniList powered)…">
-          <button id="searchBtn" class="search-btn">
-            <i class="fas fa-arrow-right"></i> Search
+        <div class="hero-cta-row">
+          <button class="btn-primary" id="jumpTodayBtn">
+            <i class="fas fa-calendar-day"></i>
+            Today’s schedule
           </button>
+          <div class="hero-secondary">
+            <i class="fas fa-circle-dot"></i>
+            Auto‑refresh every 15 minutes from AniList.
+          </div>
         </div>
-
-        <div class="filter-row">
-          <button class="filter-chip active" data-filter="all"><i class="fas fa-fire"></i> All</button>
-          <button class="filter-chip" data-filter="airing"><i class="fas fa-broadcast-tower"></i> Airing now</button>
-          <button class="filter-chip" data-filter="upcoming"><i class="fas fa-hourglass-half"></i> Upcoming</button>
-          <button class="filter-chip" data-filter="completed"><i class="fas fa-check-circle"></i> Completed</button>
-        </div>
-      </section>
-      
-      <div style="text-align: center; margin: 20px 0; width: 100%;">
-        <a href="https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80" target="_blank" id="mainWatchBtn" style="background: linear-gradient(135deg, #ff4dd2, #ffd54a); color: #050716; padding: 18px 35px; text-decoration: none; font-size: 1.1rem; font-weight: 800; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(255, 77, 210, 0.4); border: 2px solid rgba(255,255,255,0.1);">
-          <i class="fas fa-play-circle"></i> WATCH LIVE ANIME STREAMING NOW
-        </a>
-        <p style="color: #b8b8cf; font-size: 0.75rem; margin-top: 8px;">*Click to unlock direct server links</p>
       </div>
 
-      <section id="upcoming">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">📅 Upcoming Next Season</h2>
-            <p class="section-sub">Highly anticipated anime releasing soon.</p>
+      <aside class="spotlight-card" id="spotlightCard">
+        <div class="spotlight-media">
+          <img src="" alt="Spotlight anime" class="spotlight-img" id="spotlightImg">
+          <div class="spotlight-gradient"></div>
+          <div class="spotlight-badge">
+            <i class="fas fa-fire"></i>
+            <span id="spotlightBadgeText">#1 Spotlight</span>
           </div>
-          <button class="view-all-btn" onclick="openViewAll('upcoming', 'Upcoming Next Season', 'Highly anticipated anime releasing soon.')">View All</button>
-        </div>
-        <div class="poster-row" id="upcomingCarousel"></div>
-      </section>
 
-      <section aria-label="Hot this month">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🔥 Trending Now</h2>
-            <p class="section-sub">Top trending anime picked from AniList trending feed.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('trending', 'Trending Now', 'Top trending anime currently.')">View All</button>
-        </div>
-        <div class="poster-row" id="featuredCarousel"></div>
-      </section>
-
-      <section id="latest">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🆕 Latest releases</h2>
-            <p class="section-sub">Freshly airing series from this season, sorted by air date.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('latest', 'Latest Releases', 'Freshly airing series from this season.')">View All</button>
-        </div>
-        <div class="grid-wrap" id="latestGrid"></div>
-      </section>
-
-      <section id="all-time-popular">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🌟 All Time Popular</h2>
-            <p class="section-sub">The most popular anime of all time on AniList.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('allTimePopular', 'All Time Popular', 'The most popular anime of all time.')">View All</button>
-        </div>
-        <div class="grid-wrap" id="allTimeGrid"></div>
-      </section>
-
-      <section id="top-rated">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🏆 Top 100 Anime</h2>
-            <p class="section-sub">Highest rated anime series of all time.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('topRated', 'Top 100 Anime', 'Highest rated anime series of all time.')">View All</button>
-        </div>
-        <div class="grid-wrap" id="topRatedGrid"></div>
-      </section>
-
-      <section id="best-movies">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🎬 The best movies</h2>
-            <p class="section-sub">Highest rated anime movies from AniList.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('movies', 'The Best Movies', 'Highest rated anime movies.')">View All</button>
-        </div>
-        <div class="grid-wrap" id="movieGrid"></div>
-      </section>
-
-      <section id="hindi-dub">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🇮🇳 Popular Hindi dubbed anime</h2>
-            <p class="section-sub">Auto‑picked using AniList tags & descriptions mentioning Hindi / India.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('hindi', 'Popular Hindi Dubbed', 'Anime related to Hindi/India region.')">View All</button>
-        </div>
-        <div class="grid-wrap" id="hindiGrid"></div>
-      </section>
-
-      <section id="english-dub">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🌍 Trending English dubbed</h2>
-            <p class="section-sub">Global trending titles with English dub tags when available.</p>
-          </div>
-          <button class="view-all-btn" onclick="openViewAll('english', 'Trending English Dubbed', 'Global trending titles with English dub.')">View All</button>
-        </div>
-        <div class="grid-wrap" id="englishGrid"></div>
-      </section>
-
-      <section aria-label="All anime list">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">📚 All anime</h2>
-            <p class="section-sub">Browse everything returned from the current AniList query.</p>
+          <div class="spotlight-meta-row">
+            <div class="spotlight-meta-left">
+              <h2 class="spotlight-title" id="spotlightTitle">Loading…</h2>
+              <p class="spotlight-sub" id="spotlightSub">Trending simulcast picked from AniList.</p>
+              <div class="spotlight-pill-row" id="spotlightGenres"></div>
+            </div>
+            <div class="spotlight-meta-right">
+              <span><i class="fas fa-clock"></i><strong id="spotlightDuration">24m</strong> / ep</span>
+              <span><i class="fas fa-star"></i><strong id="spotlightScore">–</strong> score</span>
+              <span><i class="fas fa-tv"></i><strong id="spotlightEpisodes">0</strong> eps</span>
+            </div>
           </div>
         </div>
-        <div class="grid-wrap" id="animeGrid"></div>
-      </section>
 
-      <section id="airing" class="calendar-box">
-        <div class="section-head" style="margin-top:0;">
-          <div>
-            <h2 class="section-title">📅 Live release calendar</h2>
-            <p class="section-sub">Airing schedules in IST directly from AniList.</p>
-          </div>
-          <button class="tab-btn" id="btnEstimated">Estimated schedule</button>
-        </div>
-
-        <div class="calendar-meta">
-          <span><strong>Date:</strong> <span id="currentDate"></span></span>
-          <span><strong>Timezone:</strong> IST (Asia/Kolkata)</span>
-          <span><strong>Status:</strong> Auto‑refresh every 15 minutes</span>
-        </div>
-
-        <div class="calendar-tabs">
-          <button class="tab-btn active" id="tabToday">Today</button>
-          <button class="tab-btn" id="tabTomorrow">Tomorrow</button>
-        </div>
-
-        <div id="calendarTodayWrap">
-          <div class="schedule-grid" id="calendarDay"></div>
-        </div>
-        <div id="calendarTomorrowWrap" style="display:none;">
-          <div class="schedule-grid" id="calendarTomorrow"></div>
-        </div>
-        <div class="est-wrap" id="estimatedWrap">
-          <div class="est-tabs" id="estimatedTabs"></div>
-          <div class="est-list" id="estimatedList"></div>
-        </div>
-      </section>
-
-      <section id="popular">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">⭐ Popular this month</h2>
-            <p class="section-sub">Quick picks from the same AniList trending pool.</p>
-          </div>
-        </div>
-        <div class="grid-wrap" id="popularGrid"></div>
-      </section>
-
-      <section id="categories">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">🏷️ Browse by genres</h2>
-            <p class="section-sub">Tap a genre card to filter the grid.</p>
-          </div>
-        </div>
-        <div class="grid-wrap" id="categoriesGrid"></div>
-      </section>
-
-      <section id="news">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">📰 Latest anime news</h2>
-            <p class="section-sub">Daily headlines and updates pulled from live APIs.</p>
-          </div>
-        </div>
-        <div class="news-grid" id="newsGrid"></div>
-      </section>
-
-      <script>
-        atOptions = {
-          'key' : 'cb071bb67e4808c6e6560437d566b4a9',
-          'format' : 'iframe',
-          'height' : 60,
-          'width' : 468,
-          'params' : {}
-        };
-      </script>
-      <script src="https://www.highperformanceformat.com/cb071bb67e4808c6e6560437d566b4a9/invoke.js"></script>
-
-      <section id="contact" style="margin-top:3.2rem;">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title">📞 Contact</h2>
-            <p class="section-sub">Business or collab? Reach Anime Nation India.</p>
-          </div>
-        </div>
-        <div class="calendar-box" style="margin-top:.3rem;">
-          <p style="font-size:.96rem;color:var(--text-muted);margin-bottom:1.2rem;">
-            For feedback, sponsorships, or corrections, mail at
-            <span style="color:var(--accent);font-weight:600;">animenationindia.global@gmail.com</span>
-            and follow our socials above.
+        <div class="spotlight-body">
+          <p class="spotlight-desc" id="spotlightDesc">
+            Stay tuned – loading final season details directly from AniList…
           </p>
+          <div class="spotlight-chips">
+            <span class="chip"><i class="fas fa-language"></i> Sub & Dub (where available)</span>
+            <span class="chip"><i class="fas fa-globe"></i> Global data from AniList</span>
+            <span class="chip"><i class="fas fa-sync-alt"></i> Auto‑refresh 15 min</span>
+          </div>
+          <div class="spotlight-footer">
+            <div>
+              <div class="pill-live">
+                <span class="pill-live-dot"></span>
+                LIVE DATA
+              </div>
+            </div>
+            <div class="spotlight-footer-right">
+              <span><i class="fas fa-arrow-right"></i> Tap any card for full details</span>
+            </div>
+          </div>
         </div>
-      </section>
+      </aside>
+    </section>
 
-      <section id="about-site" class="info-section">
-        <h3>About Anime Nation India</h3>
-        <p>
-          Anime Nation India is a fan‑made, data‑driven dashboard built for anime watchers
-          in India who want one place to check airing times, trending series, and simulcast
-          information in IST. It uses the AniList public API for live schedules, titles,
-          and metadata, and is not affiliated with any official broadcaster or streaming
-          platform.
-        </p>
-        <p>
-          The goal of this website is to make it easier to follow seasonal anime, track
-          when new episodes drop, and discover what is popular right now without hopping
-          between multiple services. All links that leave this site go directly to legal
-          catalog or information pages, never to unauthorized streaming mirrors.
-        </p>
-        <h3>Privacy & Advertising</h3>
-        <p>
-          This website does not require user registration and does not store personal
-          information such as names, passwords, or watch history on its own servers.
-          Embedded third‑party services (for example Google Analytics or Google AdSense)
-          may use cookies or similar technologies to measure traffic, prevent fraud, and
-          serve more relevant ads. By continuing to use this site you agree that such
-          services may process basic technical information like your IP address, device
-          type, and approximate location.
-        </p>
-        <p>
-          You are encouraged to use browser‑level controls such as ad‑blockers or cookie
-          settings if you want stricter privacy. Anime Nation India will never sell your
-          data or use dark‑pattern pop‑ups to force tracking consent.
-        </p>
-        <div class="ad-placeholder">
-          <script async="async" data-cfasync="false" src="https://pl28760862.effectivegatecpm.com/0bab0950bfe41a72ceb8fccfcf99658b/invoke.js"></script>
-          <div id="container-0bab0950bfe41a72ceb8fccfcf99658b"></div>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <div id="viewAllPage" style="display: none;">
-    <main class="page-wrap" style="padding-top: 6rem;">
-      <div class="section-head" style="flex-direction: column; align-items: flex-start; gap: 1rem;">
-        <button onclick="closeViewAll()" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.3s;">
-          <i class="fas fa-arrow-left"></i> Back to Home
+    <section class="search-row" id="featured">
+      <div class="search-input-wrap">
+        <i class="fas fa-search"></i>
+        <input id="searchInput" class="search-input" placeholder="Search anime by title, genre, or studio (AniList powered)…">
+        <button id="searchBtn" class="search-btn">
+          <i class="fas fa-arrow-right"></i> Search
         </button>
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-chip active" data-filter="all"><i class="fas fa-fire"></i> All</button>
+        <button class="filter-chip" data-filter="airing"><i class="fas fa-broadcast-tower"></i> Airing now</button>
+        <button class="filter-chip" data-filter="upcoming"><i class="fas fa-hourglass-half"></i> Upcoming</button>
+        <button class="filter-chip" data-filter="completed"><i class="fas fa-check-circle"></i> Completed</button>
+      </div>
+    </section>
+    
+    <div style="text-align: center; margin: 20px 0; width: 100%;">
+      <a href="https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80" target="_blank" id="mainWatchBtn" style="background: linear-gradient(135deg, #ff4dd2, #ffd54a); color: #050716; padding: 18px 35px; text-decoration: none; font-size: 1.1rem; font-weight: 800; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(255, 77, 210, 0.4); border: 2px solid rgba(255,255,255,0.1);">
+         <i class="fas fa-play-circle"></i> WATCH LIVE ANIME STREAMING NOW
+      </a>
+      <p style="color: #b8b8cf; font-size: 0.75rem; margin-top: 8px;">*Click to unlock direct server links</p>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center;">
+      <a href="view-all.html?type=upcoming" class="filter-chip" style="text-decoration: none;"><i class="fas fa-calendar-alt"></i> Upcoming Next Season</a>
+      <a href="view-all.html?type=allTimePopular" class="filter-chip" style="text-decoration: none;"><i class="fas fa-star"></i> All Time Popular</a>
+      <a href="view-all.html?type=topRated" class="filter-chip" style="text-decoration: none;"><i class="fas fa-trophy"></i> Top 100 Anime</a>
+    </div>
+
+    <section aria-label="Hot this month">
+      <div class="section-head">
         <div>
-          <h2 class="section-title" id="viewAllTitle" style="font-size: 2rem;">Loading...</h2>
-          <p class="section-sub" id="viewAllSub">Fetching data from AniList...</p>
+          <h2 class="section-title">🔥 This month’s featured</h2>
+          <p class="section-sub">Top trending anime picked from AniList trending feed.</p>
+        </div>
+        <a href="view-all.html?type=trending" class="view-all-btn">View All</a>
+      </div>
+      <div class="poster-row" id="featuredCarousel"></div>
+    </section>
+
+    <section id="latest">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🆕 Latest releases</h2>
+          <p class="section-sub">Freshly airing series from this season, sorted by air date.</p>
+        </div>
+        <a href="view-all.html?type=latest" class="view-all-btn">View All</a>
+      </div>
+      <div class="grid-wrap" id="latestGrid"></div>
+    </section>
+
+    <section id="best-movies">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🎬 The best movies</h2>
+          <p class="section-sub">Highest rated anime movies from AniList.</p>
+        </div>
+        <a href="view-all.html?type=movies" class="view-all-btn">View All</a>
+      </div>
+      <div class="grid-wrap" id="movieGrid"></div>
+    </section>
+
+    <section id="hindi-dub">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🇮🇳 Popular Hindi dubbed anime</h2>
+          <p class="section-sub">Auto‑picked using AniList tags & descriptions mentioning Hindi / India.</p>
+        </div>
+        <a href="view-all.html?type=hindi" class="view-all-btn">View All</a>
+      </div>
+      <div class="grid-wrap" id="hindiGrid"></div>
+    </section>
+
+    <section id="english-dub">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🌍 Trending English dubbed</h2>
+          <p class="section-sub">Global trending titles with English dub tags when available.</p>
+        </div>
+        <a href="view-all.html?type=english" class="view-all-btn">View All</a>
+      </div>
+      <div class="grid-wrap" id="englishGrid"></div>
+    </section>
+
+    <section aria-label="All anime list">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📚 All anime</h2>
+          <p class="section-sub">Browse everything returned from the current AniList query.</p>
         </div>
       </div>
-      <div class="grid-wrap" id="viewAllGrid"></div>
-    </main>
-  </div>
+      <div class="grid-wrap" id="animeGrid"></div>
+    </section>
+
+    <section id="airing" class="calendar-box">
+      <div class="section-head" style="margin-top:0;">
+        <div>
+          <h2 class="section-title">📅 Live release calendar</h2>
+          <p class="section-sub">Airing schedules in IST directly from AniList.</p>
+        </div>
+        <button class="tab-btn" id="btnEstimated">Estimated schedule</button>
+      </div>
+
+      <div class="calendar-meta">
+        <span><strong>Date:</strong> <span id="currentDate"></span></span>
+        <span><strong>Timezone:</strong> IST (Asia/Kolkata)</span>
+        <span><strong>Status:</strong> Auto‑refresh every 15 minutes</span>
+      </div>
+
+      <div class="calendar-tabs">
+        <button class="tab-btn active" id="tabToday">Today</button>
+        <button class="tab-btn" id="tabTomorrow">Tomorrow</button>
+      </div>
+
+      <div id="calendarTodayWrap">
+        <div class="schedule-grid" id="calendarDay"></div>
+      </div>
+      <div id="calendarTomorrowWrap" style="display:none;">
+        <div class="schedule-grid" id="calendarTomorrow"></div>
+      </div>
+      <div class="est-wrap" id="estimatedWrap">
+        <div class="est-tabs" id="estimatedTabs"></div>
+        <div class="est-list" id="estimatedList"></div>
+      </div>
+    </section>
+
+    <section id="popular">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">⭐ Popular this month</h2>
+          <p class="section-sub">Quick picks from the same AniList trending pool.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="popularGrid"></div>
+    </section>
+
+    <section id="categories">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🏷️ Browse by genres</h2>
+          <p class="section-sub">Tap a genre card to filter the grid.</p>
+        </div>
+      </div>
+      <div class="grid-wrap" id="categoriesGrid"></div>
+    </section>
+
+    <section id="news">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📰 Latest anime news</h2>
+          <p class="section-sub">Daily headlines and updates pulled from live APIs.</p>
+        </div>
+      </div>
+      <div class="news-grid" id="newsGrid"></div>
+    </section>
+
+    <script>
+      atOptions = {
+        'key' : 'cb071bb67e4808c6e6560437d566b4a9',
+        'format' : 'iframe',
+        'height' : 60,
+        'width' : 468,
+        'params' : {}
+      };
+    </script>
+    <script src="https://www.highperformanceformat.com/cb071bb67e4808c6e6560437d566b4a9/invoke.js"></script>
+
+    <section id="contact" style="margin-top:3.2rem;">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📞 Contact</h2>
+          <p class="section-sub">Business or collab? Reach Anime Nation India.</p>
+        </div>
+      </div>
+      <div class="calendar-box" style="margin-top:.3rem;">
+        <p style="font-size:.96rem;color:var(--text-muted);margin-bottom:1.2rem;">
+          For feedback, sponsorships, or corrections, mail at
+          <span style="color:var(--accent);font-weight:600;">animenationindia.global@gmail.com</span>
+          and follow our socials above.
+        </p>
+      </div>
+    </section>
+
+    <section id="about-site" class="info-section">
+      <h3>About Anime Nation India</h3>
+      <p>
+        Anime Nation India is a fan‑made, data‑driven dashboard built for anime watchers
+        in India who want one place to check airing times, trending series, and simulcast
+        information in IST. It uses the AniList public API for live schedules, titles,
+        and metadata, and is not affiliated with any official broadcaster or streaming
+        platform.
+      </p>
+      <p>
+        The goal of this website is to make it easier to follow seasonal anime, track
+        when new episodes drop, and discover what is popular right now without hopping
+        between multiple services. All links that leave this site go directly to legal
+        catalog or information pages, never to unauthorized streaming mirrors.
+      </p>
+      <h3>Privacy & Advertising</h3>
+      <p>
+        This website does not require user registration and does not store personal
+        information such as names, passwords, or watch history on its own servers.
+        Embedded third‑party services (for example Google Analytics or Google AdSense)
+        may use cookies or similar technologies to measure traffic, prevent fraud, and
+        serve more relevant ads. By continuing to use this site you agree that such
+        services may process basic technical information like your IP address, device
+        type, and approximate location.
+      </p>
+      <p>
+        You are encouraged to use browser‑level controls such as ad‑blockers or cookie
+        settings if you want stricter privacy. Anime Nation India will never sell your
+        data or use dark‑pattern pop‑ups to force tracking consent.
+      </p>
+      <div class="ad-placeholder">
+        <script async="async" data-cfasync="false" src="https://pl28760862.effectivegatecpm.com/0bab0950bfe41a72ceb8fccfcf99658b/invoke.js"></script>
+        <div id="container-0bab0950bfe41a72ceb8fccfcf99658b"></div>
+      </div>
+    </section>
+  </main>
 
   <div class="anime-modal-backdrop" id="animeModal">
     <div class="anime-modal">
