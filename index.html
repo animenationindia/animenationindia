@@ -49,7 +49,9 @@
         <li><a href="#trending" class="nav-link">Spotlight<span class="nav-pill">Hot</span></a></li>
         <li><a href="#airing" class="nav-link">Schedule</a></li>
         <li><a href="#popular-season" class="nav-link">Popular</a></li>
+        <li><a href="#news" class="nav-link">News</a></li>
         <li><a href="#categories" class="nav-link">Genres</a></li>
+        <li><a href="#contact" class="nav-link">Contact</a></li>
       </ul>
       <div class="nav-right">
         <div class="social-row">
@@ -81,6 +83,7 @@
         <div class="hero-stats-row">
           <div class="stat-box"><div class="stat-label">Series indexed</div><div class="stat-value stat-accent-main" id="statAnimeCount">Loading...</div></div>
           <div class="stat-box"><div class="stat-label">Today airing</div><div class="stat-value stat-accent-success" id="statTodayShows">0</div></div>
+          <div class="stat-box"><div class="stat-label">News this week</div><div class="stat-value stat-accent-danger" id="statNewsCount">0</div></div>
         </div>
         <div class="hero-cta-row">
           <button class="btn-primary" id="jumpTodayBtn"><i class="fas fa-calendar-day"></i> Today’s schedule</button>
@@ -190,10 +193,72 @@
       <div class="grid-wrap" id="categoriesGrid"></div>
     </section>
 
+    <section id="news">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📰 Latest anime news</h2>
+          <p class="section-sub">Daily headlines and updates pulled from live APIs.</p>
+        </div>
+      </div>
+      <div class="news-grid" id="newsGrid"></div>
+    </section>
+
     <script>
       atOptions = { 'key' : 'cb071bb67e4808c6e6560437d566b4a9', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
     </script>
     <script src="https://www.highperformanceformat.com/cb071bb67e4808c6e6560437d566b4a9/invoke.js"></script>
+
+    <section id="contact" style="margin-top:3.2rem;">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📞 Contact</h2>
+          <p class="section-sub">Business or collab? Reach Anime Nation India.</p>
+        </div>
+      </div>
+      <div class="calendar-box" style="margin-top:.3rem;">
+        <p style="font-size:.96rem;color:var(--text-muted);margin-bottom:1.2rem;">
+          For feedback, sponsorships, or corrections, mail at
+          <span style="color:var(--accent);font-weight:600;">animenationindia.global@gmail.com</span>
+          and follow our socials above.
+        </p>
+      </div>
+    </section>
+
+    <section id="about-site" class="info-section">
+      <h3>About Anime Nation India</h3>
+      <p>
+        Anime Nation India is a fan‑made, data‑driven dashboard built for anime watchers
+        in India who want one place to check airing times, trending series, and simulcast
+        information in IST. It uses the AniList public API for live schedules, titles,
+        and metadata, and is not affiliated with any official broadcaster or streaming
+        platform.
+      </p>
+      <p>
+        The goal of this website is to make it easier to follow seasonal anime, track
+        when new episodes drop, and discover what is popular right now without hopping
+        between multiple services. All links that leave this site go directly to legal
+        catalog or information pages, never to unauthorized streaming mirrors.
+      </p>
+      <h3>Privacy & Advertising</h3>
+      <p>
+        This website does not require user registration and does not store personal
+        information such as names, passwords, or watch history on its own servers.
+        Embedded third‑party services (for example Google Analytics or Google AdSense)
+        may use cookies or similar technologies to measure traffic, prevent fraud, and
+        serve more relevant ads. By continuing to use this site you agree that such
+        services may process basic technical information like your IP address, device
+        type, and approximate location.
+      </p>
+      <p>
+        You are encouraged to use browser‑level controls such as ad‑blockers or cookie
+        settings if you want stricter privacy. Anime Nation India will never sell your
+        data or use dark‑pattern pop‑ups to force tracking consent.
+      </p>
+      <div class="ad-placeholder">
+        <script async="async" data-cfasync="false" src="https://pl28760862.effectivegatecpm.com/0bab0950bfe41a72ceb8fccfcf99658b/invoke.js"></script>
+        <div id="container-0bab0950bfe41a72ceb8fccfcf99658b"></div>
+      </div>
+    </section>
 
   </main>
 
