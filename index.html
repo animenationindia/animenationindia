@@ -102,7 +102,7 @@
           </div>
         </div>
         <div class="spotlight-body">
-          <p class="spotlight-desc" id="spotlightDesc">Fetching live details from MyAnimeList...</p>
+          <p class="spotlight-desc" id="spotlightDesc" style="overflow-y: auto; max-height: 80px; scrollbar-width: thin; padding-right: 5px;">Fetching live details from MyAnimeList...</p>
           <div class="spotlight-chips"><span class="chip"><i class="fas fa-globe"></i> Global data from MAL</span><span class="chip"><i class="fas fa-sync-alt"></i> Auto-refresh</span></div>
         </div>
       </aside>
@@ -227,6 +227,28 @@
     </div> <div id="tab-anime" class="tab-pane">
       <section class="carousel-section">
         <div class="section-head">
+          <div><h2 class="section-title">📅 Get Ready: Upcoming Anime Season</h2><p class="section-sub">Highly anticipated anime releasing soon.</p></div>
+          <div class="carousel-controls">
+            <button class="row-nav prev" data-target="animeTabUpcomingRow"><i class="fas fa-chevron-left"></i></button>
+            <button class="row-nav next" data-target="animeTabUpcomingRow"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="poster-row" id="animeTabUpcomingRow"></div>
+      </section>
+
+      <section class="carousel-section">
+        <div class="section-head">
+          <div><h2 class="section-title" id="animeTabSeasonalTitle">🌸 Seasonal Anime</h2><p class="section-sub">Current broadcasting season.</p></div>
+          <div class="carousel-controls">
+            <button class="row-nav prev" data-target="animeTabSeasonalRow"><i class="fas fa-chevron-left"></i></button>
+            <button class="row-nav next" data-target="animeTabSeasonalRow"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="poster-row" id="animeTabSeasonalRow"></div>
+      </section>
+
+      <section class="carousel-section">
+        <div class="section-head">
           <div><h2 class="section-title">🦸‍♂️ Most Favorited Characters</h2><p class="section-sub">Top characters voted by the community.</p></div>
           <div class="carousel-controls">
             <button class="row-nav prev" data-target="topCharactersRow"><i class="fas fa-chevron-left"></i></button>
@@ -238,6 +260,17 @@
     </div>
 
     <div id="tab-manga" class="tab-pane">
+      <section class="carousel-section">
+        <div class="section-head">
+          <div><h2 class="section-title">🔥 Trending Manga: What's Hot Now</h2><p class="section-sub">Currently publishing and highly rated.</p></div>
+          <div class="carousel-controls">
+            <button class="row-nav prev" data-target="mangaTabTrendingRow"><i class="fas fa-chevron-left"></i></button>
+            <button class="row-nav next" data-target="mangaTabTrendingRow"><i class="fas fa-chevron-right"></i></button>
+          </div>
+        </div>
+        <div class="poster-row" id="mangaTabTrendingRow"></div>
+      </section>
+
       <section class="carousel-section">
         <div class="section-head">
           <div><h2 class="section-title">🇰🇷 The Hottest Manhwa Series</h2><p class="section-sub">Top Korean webtoons and manhwa.</p></div>
@@ -292,6 +325,20 @@
         </div>
       </div>
       <div class="news-grid" id="reviewsGrid"></div>
+    </section>
+
+    <section id="industry-figures" style="margin-top: 3rem;">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🎬 Behind the Scenes: Top Industry Figures</h2>
+          <p class="section-sub">Legendary creators, voice actors, and directors.</p>
+        </div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="peopleRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="peopleRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="peopleRow"></div>
     </section>
 
     <script>
