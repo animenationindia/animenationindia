@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Details - Anime Nation India</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="ani-logo.png">
+  <style>
+    /* PREMIUM DETAILS LAYOUT */
+    .details-page { padding-top: 7rem; }
+    .details-container { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+    
+    /* LEFT PANEL: Poster & Stats */
+    .details-left { flex: 0 0 320px; }
+    .details-poster { width: 100%; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); margin-bottom: 1.5rem; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1rem; }
+    .stat-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.08); }
+    .stat-val { display: block; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .stat-lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+
+    /* RIGHT PANEL: Info & Trailer */
+    .details-right { flex: 1; min-width: 300px; }
+    .info-title { font-size: 2.2rem; line-height: 1.2; margin-bottom: 1rem; color: #fff; }
+    .info-synopsis { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.7; }
+    
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 2rem; }
+    .info-tag { background: rgba(255,255,255,0.04); padding: 8px 15px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.06); }
+    .info-tag strong { color: var(--primary-soft); margin-right: 5px; }
+
+    .genre-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 2rem; }
+    .genre-btn { background: var(--accent); color: #000; padding: 5px 15px; border-radius: 99px; font-size: 0.8rem; font-weight: 700; }
+
+    /* VIDEO SECTION */
+    .trailer-box { margin-top: 2rem; border-radius: 20px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; /* 16:9 Aspect Ratio */ }
+    .trailer-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+    @media(max-width: 768px) {
+      .details-left { flex: 1 1 100%; text-align: center; }
+      .details-poster { max-width: 280px; }
+      .info-title { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <nav class="nav-wrap">
+      <a href="index.html" class="brand">
+        <div class="brand-logo"><img src="ani-logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
+        <div class="brand-text"><span class="brand-title">Anime Nation India</span></div>
+      </a>
+      <div class="nav-right">
+        <div class="social-row">
+          <a class="social-btn" target="_blank" href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="><i class="fab fa-instagram"></i></a>
+          <a class="social-btn" target="_blank" href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ"><i class="fab fa-youtube"></i></a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-wrap details-page">
+    <div id="loadingDetails" class="loader-box" style="text-align:center; padding: 5rem;"><i class="fas fa-spinner fa-spin fa-3x"></i></div>
+    
+    <div class="details-container" id="detailsContent" style="display:none;">
+      <div class="details-left">
+        <img id="detPoster" src="" class="details-poster">
+        <div class="stat-grid">
+          <div class="stat-item"><span id="detScore" class="stat-val">0.0</span><span class="stat-lbl">Score</span></div>
+          <div class="stat-item"><span id="detRank" class="stat-val">#0</span><span class="stat-lbl">Rank</span></div>
+          <div class="stat-item"><span id="detPop" class="stat-val">#0</span><span class="stat-lbl">Popularity</span></div>
+          <div class="stat-item"><span id="detFav" class="stat-val">0</span><span class="stat-lbl">Favorites</span></div>
+        </div>
+        
+        <a id="detWatchBtn" href="#" target="_blank" class="btn-primary" style="margin-top:2rem; width:100%; justify-content:center;">
+          <i class="fas fa-play-circle"></i> WATCH NOW
+        </a>
+      </div>
+
+      <div class="details-right">
+        <h1 id="detTitle" class="info-title">Loading...</h1>
+        <div class="genre-row" id="detGenres"></div>
+        <p id="detSynop" class="info-synopsis"></p>
+
+        <div class="info-grid">
+          <div class="info-tag"><strong>Status:</strong> <span id="detStatus">?</span></div>
+          <div class="info-tag"><strong>Episodes:</strong> <span id="detEps">?</span></div>
+          <div class="info-tag"><strong>Duration:</strong> <span id="detDur">?</span></div>
+          <div class="info-tag"><strong>Season:</strong> <span id="detSeason">?</span></div>
+          <div class="info-tag"><strong>Aired:</strong> <span id="detAired">?</span></div>
+          <div class="info-tag"><strong>Studio:</strong> <span id="detStudio">?</span></div>
+        </div>
+
+        <h3 class="section-title"><i class="fab fa-youtube" style="color:#ff0000"></i> Official Trailer</h3>
+        <div class="trailer-box" id="trailerContainer">
+          <iframe id="detTrailer" src="" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+
+    <section class="carousel-section" style="margin-top:4rem;">
+      <div class="section-head">
+        <div><h2 class="section-title">✨ Recommended for You</h2><p class="section-sub">Similar titles from MyAnimeList</p></div>
+      </div>
+      <div class="poster-row" id="detRecsRow"></div>
+    </section>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    const type = urlParams.get('type') || 'anime';
+
+    async function loadFullDetails() {
+      try {
+        const res = await fetch(`https://api.jikan.moe/v4/${type}/${id}/full`);
+        const json = await res.json();
+        const d = json.data;
+
+        document.getElementById('loadingDetails').style.display = 'none';
+        document.getElementById('detailsContent').style.display = 'flex';
+
+        // Set Content
+        document.title = `${d.title} - Anime Nation India`;
+        document.getElementById('detPoster').src = d.images.webp.large_image_url;
+        document.getElementById('detTitle').innerText = d.title_english || d.title;
+        document.getElementById('detScore').innerText = d.score || 'N/A';
+        document.getElementById('detRank').innerText = `#${d.rank || '?'}`;
+        document.getElementById('detPop').innerText = `#${d.popularity || '?'}`;
+        document.getElementById('detFav').innerText = d.favorites.toLocaleString();
+        document.getElementById('detSynop').innerText = d.synopsis || 'No summary available.';
+        
+        document.getElementById('detStatus').innerText = d.status;
+        document.getElementById('detEps').innerText = d.episodes || d.chapters || '?';
+        document.getElementById('detDur').innerText = d.duration || 'N/A';
+        document.getElementById('detSeason').innerText = `${d.season || ''} ${d.year || ''}`;
+        document.getElementById('detAired').innerText = d.aired?.string || d.published?.string || 'N/A';
+        document.getElementById('detStudio').innerText = d.studios?.[0]?.name || d.authors?.[0]?.name || 'Unknown';
+
+        // Genres
+        document.getElementById('detGenres').innerHTML = d.genres.map(g => `<span class="genre-btn">${g.name}</span>`).join('');
+
+        // Trailer
+        if(d.trailer?.embed_url) {
+          document.getElementById('detTrailer').src = d.trailer.embed_url;
+        } else {
+          document.getElementById('trailerContainer').style.display = 'none';
+        }
+
+        // Recommendations
+        fetchRecs();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function fetchRecs() {
+      const res = await fetch(`https://api.jikan.moe/v4/${type}/${id}/recommendations`);
+      const json = await res.json();
+      const recs = json.data.slice(0, 10);
+      document.getElementById('detRecsRow').innerHTML = recs.map(r => `
+        <div class="poster-card" onclick="window.location.href='details.html?id=${r.entry.mal_id}&type=${type}'">
+          <img src="${r.entry.images.webp.large_image_url}" class="poster-img">
+          <div class="poster-meta"><div class="poster-title">${r.entry.title}</div></div>
+        </div>
+      `).join('');
+    }
+
+    // Watch Button 3-Click Logic (Re-used)
+    const btn = document.getElementById('detWatchBtn');
+    let count = parseInt(localStorage.getItem("watchBtnClicks")) || 0;
+    btn.onclick = () => {
+      count++;
+      if (count >= 3) { localStorage.setItem("watchBtnClicks", 0); btn.href = "https://www.effectivegatecpm.com/nr48k2kn7k..."; }
+      else { localStorage.setItem("watchBtnClicks", count); if (count === 2) btn.href = "https://animeyy.com/"; }
+    };
+
+    window.onload = loadFullDetails;
+  </script>
+</body>
+</html>
