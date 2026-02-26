@@ -23,8 +23,8 @@
       </a>
       <div class="nav-right">
         <div class="social-row">
-          <a class="social-btn" target="_blank" href="https://www.instagram.com/animenationindia..."><i class="fab fa-instagram"></i></a>
-          <a class="social-btn" target="_blank" href="https://www.youtube.com/..."><i class="fab fa-youtube"></i></a>
+          <a class="social-btn" target="_blank" href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="><i class="fab fa-instagram"></i></a>
+          <a class="social-btn" target="_blank" href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ"><i class="fab fa-youtube"></i></a>
         </div>
       </div>
     </nav>
@@ -83,10 +83,11 @@
           const isManga = type === 'topManga' || item.type === 'Manga';
           const itemType = isManga ? 'manga' : 'anime';
           const score = item.score ? item.score : 'N/A';
+          const imgUrl = item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || '';
           
           return `
-            <article class="anime-card" onclick="window.open('details.html?id=${item.mal_id}&type=${itemType}', '_blank')">
-              <img src="${item.images.webp.large_image_url}" class="anime-card-img" loading="lazy">
+            <article class="anime-card" onclick="window.location.href='details.html?id=${item.mal_id}&type=${itemType}'">
+              <img src="${imgUrl}" class="anime-card-img" loading="lazy">
               <div class="anime-card-body">
                 <h3 class="anime-name">${item.title_english || item.title}</h3>
                 <div class="anime-meta-row">
