@@ -28,9 +28,9 @@ async function fetchJikan(endpoint) {
   }
 }
 
-// Global Nav to Premium Details Page
+// Global Nav to Details Page (SAME TAB)
 function openDetailsPage(id, type) {
-  window.open(`details.html?id=${id}&type=${type}`, '_blank');
+  window.location.href = `details.html?id=${id}&type=${type}`;
 }
 
 function mapJikanData(list, type = "anime") {
@@ -38,10 +38,11 @@ function mapJikanData(list, type = "anime") {
     let st = m.status === "Finished Airing" ? "Completed" : m.status === "Not yet aired" ? "Upcoming" : m.status || "Ongoing";
     return {
       id: m.mal_id, type: type, title: m.title_english || m.title, genre: (m.genres || []).map(g => g.name).join(", "),
-      poster: m.images.webp.large_image_url, synopsis: m.synopsis ? m.synopsis.replace(/<[^>]*>/g, "") : "No summary available.",
+      poster: m.images?.webp?.large_image_url || m.images?.jpg?.large_image_url || "", // Null check added
+      synopsis: m.synopsis ? m.synopsis.replace(/<[^>]*>/g, "") : "No summary available.",
       status: st, episodes: m.episodes || m.chapters || "?", rating: m.score ? m.score.toFixed(1) : "N/A", scoreInt: m.score ? Math.round(m.score * 10) : 80,
       duration: m.duration ? m.duration.replace(" per ep", "") : "24 min", releaseDate: m.year || m.published?.prop?.from?.split("-")[0] || "",
-      season: m.season || "", studio: m.studios?.[0]?.name || "Unknown", format: m.type || (type === "manga" ? "Manga" : "TV")
+      season: m.season || "", year: m.year || "", studio: m.studios?.[0]?.name || "Unknown", format: m.type || (type === "manga" ? "Manga" : "TV")
     };
   });
 }
@@ -49,11 +50,9 @@ function mapJikanData(list, type = "anime") {
 /* ================= TABS LOGIC ================= */
 document.querySelectorAll('.main-tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    // Remove active class from all buttons and panes
     document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     
-    // Add active class to clicked button and target pane
     btn.classList.add('active');
     const targetId = btn.getAttribute('data-target');
     document.getElementById(targetId).classList.add('active');
@@ -66,7 +65,7 @@ document.querySelectorAll('.row-nav').forEach(btn => {
     const targetRowId = btn.getAttribute('data-target');
     const row = document.getElementById(targetRowId);
     if(row) {
-      const scrollAmount = 300; // Scroll by 300px
+      const scrollAmount = 300;
       if(btn.classList.contains('prev')) {
         row.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
       } else {
@@ -130,62 +129,100 @@ function setupSpotlight(pool) {
 
 /* ================= API FETCHING & RENDERING ================= */
 async function loadAllHomeData() {
-  // Batch 1 (Home Tab)
-  const homeTrending = await fetchJikan("/seasons/now?limit=15");
+  // Batch 1
+  const homeTrending = await fetchJikan("/top/anime?filter=airing&limit=15");
   await delay(400); 
-  const homeManga = await fetchJikan("/top/manga?limit=15");
-  await delay(400);
-  const homePopular = await fetchJikan("/top/anime?filter=bypopularity&limit=12");
+  const homeSeasonal = await fetchJikan("/seasons/now?limit=15");
+  await delay(400); 
+  const homeUpcoming = await fetchJikan("/seasons/upcoming?limit=15");
   await delay(400);
 
-  // Batch 2 (Anime Tab)
-  const animeUpcoming = await fetchJikan("/seasons/upcoming?limit=15");
+  // Batch 2
+  const homeTop100 = await fetchJikan("/top/anime?limit=15");
   await delay(400);
-  const animeMovies = await fetchJikan("/top/anime?type=movie&limit=15");
+  const homePopularData = await fetchJikan("/top/anime?filter=bypopularity&limit=25");
+  await delay(400);
+  const homeMovies = await fetchJikan("/top/anime?type=movie&limit=15");
+  await delay(400);
+
+  // Batch 3
+  const homeManga = await fetchJikan("/top/manga?limit=15");
   await delay(400);
   const charsData = await fetchJikan("/top/characters?limit=15");
   await delay(400);
-
-  // Batch 3 (Manga Tab)
   const manhwaData = await fetchJikan("/top/manga?type=manhwa&limit=15");
   await delay(400);
+
+  // Batch 4
   const manhuaData = await fetchJikan("/top/manga?type=manhua&limit=15");
   await delay(400);
   const reviewsData = await fetchJikan("/reviews/anime?limit=9");
 
-  // -------- RENDER HOME TAB --------
+  // -------- RENDER HOME TAB SECIONS --------
+  
+  // 1. Trending
   const mappedTrending = mapJikanData(homeTrending, "anime");
   if (document.getElementById("homeTrendingRow")) document.getElementById("homeTrendingRow").innerHTML = mappedTrending.map(createPosterCard).join("");
   if (mappedTrending.length > 0) setupSpotlight(mappedTrending);
-  
-  const mappedManga = mapJikanData(homeManga, "manga");
-  if (document.getElementById("homeMangaRow")) document.getElementById("homeMangaRow").innerHTML = mappedManga.map(createPosterCard).join("");
-  if (document.getElementById("popularSeasonGrid")) document.getElementById("popularSeasonGrid").innerHTML = mapJikanData(homePopular, "anime").map(createAnimeCard).join("");
 
-  // -------- RENDER ANIME TAB --------
-  if (document.getElementById("animeUpcomingRow")) document.getElementById("animeUpcomingRow").innerHTML = mapJikanData(animeUpcoming, "anime").map(createPosterCard).join("");
-  if (document.getElementById("animeMoviesRow")) document.getElementById("animeMoviesRow").innerHTML = mapJikanData(animeMovies, "anime").map(createPosterCard).join("");
+  // 2. Seasonal Anime (with dynamic title)
+  const mappedSeasonal = mapJikanData(homeSeasonal, "anime");
+  if (document.getElementById("homeSeasonalRow")) document.getElementById("homeSeasonalRow").innerHTML = mappedSeasonal.map(createPosterCard).join("");
+  if (mappedSeasonal.length > 0 && mappedSeasonal[0].season) {
+    const sName = mappedSeasonal[0].season;
+    const sYear = mappedSeasonal[0].year;
+    const emoji = sName === 'winter' ? '❄️' : sName === 'spring' ? '🌸' : sName === 'summer' ? '☀️' : '🍁';
+    document.getElementById("seasonalTitle").innerText = `${emoji} ${sName.charAt(0).toUpperCase() + sName.slice(1)} ${sYear} Anime`;
+  }
+
+  // 3. Upcoming
+  if (document.getElementById("homeUpcomingRow")) document.getElementById("homeUpcomingRow").innerHTML = mapJikanData(homeUpcoming, "anime").map(createPosterCard).join("");
+
+  // 4. Top 100 Preview
+  if (document.getElementById("homeTop100Row")) document.getElementById("homeTop100Row").innerHTML = mapJikanData(homeTop100, "anime").map(createPosterCard).join("");
+
+  // 5. Popular Grid & 6. Dubbed Anime (Split from same API call to save rate limit)
+  const mappedPopularAll = mapJikanData(homePopularData, "anime");
+  const popularGrid = mappedPopularAll.slice(0, 12);
+  const popularDubbed = mappedPopularAll.slice(12, 25);
+  
+  if (document.getElementById("popularSeasonGrid")) document.getElementById("popularSeasonGrid").innerHTML = popularGrid.map(createAnimeCard).join("");
+  if (document.getElementById("homeDubbedRow")) document.getElementById("homeDubbedRow").innerHTML = popularDubbed.map(createPosterCard).join("");
+
+  // 7. Movies
+  if (document.getElementById("homeMoviesRow")) document.getElementById("homeMoviesRow").innerHTML = mapJikanData(homeMovies, "anime").map(createPosterCard).join("");
+
+  // 8. Manga
+  if (document.getElementById("homeMangaRow")) document.getElementById("homeMangaRow").innerHTML = mapJikanData(homeManga, "manga").map(createPosterCard).join("");
+
+
+  // -------- RENDER OTHER TABS & EXTRA SECTIONS --------
+
+  // Characters (Null Check Added)
   if (document.getElementById("topCharactersRow")) {
     document.getElementById("topCharactersRow").innerHTML = charsData.map(c => {
-      return `<div class="poster-card" onclick="window.open('https://myanimelist.net/character/${c.mal_id}', '_blank')"><img src="${c.images.webp.image_url}" class="poster-img" style="border-radius:50%; width:150px; height:150px; margin:15px auto; display:block; object-fit:cover;" loading="lazy"><div class="poster-meta" style="text-align:center;"><div class="poster-title">${c.name}</div><div class="poster-cat">${c.favorites} Favorites</div></div></div>`;
+      const imgUrl = c.images?.webp?.image_url || '';
+      return `<div class="poster-card" onclick="window.location.href='https://myanimelist.net/character/${c.mal_id}'"><img src="${imgUrl}" class="poster-img" style="border-radius:50%; width:150px; height:150px; margin:15px auto; display:block; object-fit:cover;" loading="lazy"><div class="poster-meta" style="text-align:center;"><div class="poster-title">${c.name}</div><div class="poster-cat">${c.favorites} Favorites</div></div></div>`;
     }).join("");
   }
 
-  // -------- RENDER MANGA TAB --------
+  // Manhwa & Manhua
   if (document.getElementById("mangaManhwaRow")) document.getElementById("mangaManhwaRow").innerHTML = mapJikanData(manhwaData, "manga").map(createPosterCard).join("");
   if (document.getElementById("mangaManhuaRow")) document.getElementById("mangaManhuaRow").innerHTML = mapJikanData(manhuaData, "manga").map(createPosterCard).join("");
 
-  // -------- RENDER REVIEWS --------
+  // Reviews (Null Check Added)
   if (document.getElementById("reviewsGrid")) {
     document.getElementById("reviewsGrid").innerHTML = reviewsData.filter(r => r.entry).map(r => {
-      return `<article class="news-card" onclick="openDetailsPage(${r.entry.mal_id}, 'anime')"><div class="news-tag">Review • ${r.user.username}</div><h3 class="news-title">${r.entry.title}</h3><div class="news-meta">Score Given: ${r.score}</div><p class="news-summary">${r.review.slice(0, 160)}...</p></article>`;
+      const safeReviewText = (r.review || "No review text available.").slice(0, 160);
+      return `<article class="news-card" onclick="openDetailsPage(${r.entry.mal_id}, 'anime')"><div class="news-tag">Review • ${r.user.username}</div><h3 class="news-title">${r.entry.title}</h3><div class="news-meta">Score Given: ${r.score}</div><p class="news-summary">${safeReviewText}...</p></article>`;
     }).join("");
   }
 
-  // -------- RENDER GENRES --------
+  // Genres (Same tab target)
   if (document.getElementById("categoriesGrid")) {
-    document.getElementById("categoriesGrid").innerHTML = jikanGenres.map(g => `<div class="anime-card category-card" onclick="window.open('view-all.html?type=genre_jikan&id=${g.id}&name=${g.name}', '_blank')"><div class="anime-card-body"><h3 class="anime-name">${g.name}</h3><span style="font-size:0.8rem; color:var(--text-muted);">Browse on MAL</span></div></div>`).join("");
+    document.getElementById("categoriesGrid").innerHTML = jikanGenres.map(g => `<div class="anime-card category-card" onclick="window.location.href='view-all.html?type=genre_jikan&id=${g.id}&name=${g.name}'"><div class="anime-card-body"><h3 class="anime-name">${g.name}</h3><span style="font-size:0.8rem; color:var(--text-muted);">Browse on MAL</span></div></div>`).join("");
   }
+  
   document.getElementById("statAnimeCount").textContent = "38,000+";
 }
 
@@ -222,8 +259,8 @@ function createPosterCard(item) {
     <div class="poster-meta"><div class="poster-title">${item.title}</div><div class="poster-cat">${item.genre.split(",")[0] || item.type}</div></div></div>`;
 }
 
-// Search & Random Button
-document.getElementById("searchBtn").onclick = (e) => { e.preventDefault(); const q = searchInput.value.trim(); if (q) window.open(`view-all.html?type=search&val=${q}`, '_blank'); };
+// Search & Random Button (Same tab target)
+document.getElementById("searchBtn").onclick = (e) => { e.preventDefault(); const q = searchInput.value.trim(); if (q) window.location.href = `view-all.html?type=search&val=${q}`; };
 searchInput.onkeydown = (e) => { if (e.key === "Enter") document.getElementById("searchBtn").click(); };
 const btnRandom = document.getElementById("randomAnimeBtn");
 if (btnRandom) {
