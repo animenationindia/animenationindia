@@ -123,12 +123,12 @@
 
         // Set Content
         document.title = `${d.title} - Anime Nation India`;
-        document.getElementById('detPoster').src = d.images.webp.large_image_url;
+        document.getElementById('detPoster').src = d.images?.webp?.large_image_url || d.images?.jpg?.large_image_url || '';
         document.getElementById('detTitle').innerText = d.title_english || d.title;
         document.getElementById('detScore').innerText = d.score || 'N/A';
         document.getElementById('detRank').innerText = `#${d.rank || '?'}`;
         document.getElementById('detPop').innerText = `#${d.popularity || '?'}`;
-        document.getElementById('detFav').innerText = d.favorites.toLocaleString();
+        document.getElementById('detFav').innerText = d.favorites ? d.favorites.toLocaleString() : '0';
         document.getElementById('detSynop').innerText = d.synopsis || 'No summary available.';
         
         document.getElementById('detStatus').innerText = d.status;
@@ -139,7 +139,7 @@
         document.getElementById('detStudio').innerText = d.studios?.[0]?.name || d.authors?.[0]?.name || 'Unknown';
 
         // Genres
-        document.getElementById('detGenres').innerHTML = d.genres.map(g => `<span class="genre-btn">${g.name}</span>`).join('');
+        document.getElementById('detGenres').innerHTML = (d.genres || []).map(g => `<span class="genre-btn">${g.name}</span>`).join('');
 
         // Trailer
         if(d.trailer?.embed_url) {
@@ -156,24 +156,45 @@
     }
 
     async function fetchRecs() {
-      const res = await fetch(`https://api.jikan.moe/v4/${type}/${id}/recommendations`);
-      const json = await res.json();
-      const recs = json.data.slice(0, 10);
-      document.getElementById('detRecsRow').innerHTML = recs.map(r => `
-        <div class="poster-card" onclick="window.location.href='details.html?id=${r.entry.mal_id}&type=${type}'">
-          <img src="${r.entry.images.webp.large_image_url}" class="poster-img">
-          <div class="poster-meta"><div class="poster-title">${r.entry.title}</div></div>
-        </div>
-      `).join('');
+      try {
+        const res = await fetch(`https://api.jikan.moe/v4/${type}/${id}/recommendations`);
+        const json = await res.json();
+        const recs = (json.data || []).slice(0, 10);
+        document.getElementById('detRecsRow').innerHTML = recs.map(r => {
+          const imgUrl = r.entry.images?.webp?.large_image_url || '';
+          return `
+          <div class="poster-card" onclick="window.location.href='details.html?id=${r.entry.mal_id}&type=${type}'">
+            <img src="${imgUrl}" class="poster-img">
+            <div class="poster-meta"><div class="poster-title">${r.entry.title}</div></div>
+          </div>
+        `}).join('');
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    // Watch Button 3-Click Logic (Re-used)
+    // Watch Button 3-Click Logic (Fixed & Connected)
     const btn = document.getElementById('detWatchBtn');
     let count = parseInt(localStorage.getItem("watchBtnClicks")) || 0;
+    
+    if (count >= 2) {
+      btn.href = "https://animeyy.com/"; 
+    } else {
+      btn.href = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80"; 
+    }
+
     btn.onclick = () => {
       count++;
-      if (count >= 3) { localStorage.setItem("watchBtnClicks", 0); btn.href = "https://www.effectivegatecpm.com/nr48k2kn7k..."; }
-      else { localStorage.setItem("watchBtnClicks", count); if (count === 2) btn.href = "https://animeyy.com/"; }
+      if (count >= 3) { 
+        localStorage.setItem("watchBtnClicks", 0); 
+        setTimeout(() => btn.href = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80", 500); 
+      }
+      else { 
+        localStorage.setItem("watchBtnClicks", count); 
+        if (count === 2) {
+          setTimeout(() => btn.href = "https://animeyy.com/", 500); 
+        } 
+      }
     };
 
     window.onload = loadFullDetails;
