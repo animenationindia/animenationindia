@@ -10,37 +10,52 @@
   <link rel="icon" type="image/png" href="ani-logo.png">
   <style>
     /* PREMIUM DETAILS LAYOUT */
-    .details-page { padding-top: 7rem; }
-    .details-container { display: flex; gap: 2.5rem; flex-wrap: wrap; }
+    .hero-banner { width: 100%; height: 400px; background-size: cover; background-position: center; position: absolute; top: 0; left: 0; z-index: -1; filter: brightness(0.4) blur(3px); }
+    .hero-gradient { position: absolute; top: 0; left: 0; width: 100%; height: 400px; background: linear-gradient(to bottom, rgba(5,7,22,0.1), var(--bg-main) 95%); z-index: -1; }
+    
+    .details-page { padding-top: 10rem; position: relative; }
+    .details-container { display: flex; gap: 3rem; flex-wrap: wrap; background: rgba(5,7,26,0.85); backdrop-filter: blur(15px); padding: 2.5rem; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
     
     /* LEFT PANEL: Poster & Stats */
-    .details-left { flex: 0 0 320px; }
-    .details-poster { width: 100%; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); margin-bottom: 1.5rem; }
+    .details-left { flex: 0 0 280px; margin-top: -6rem; }
+    .details-poster { width: 100%; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.9); margin-bottom: 1.5rem; border: 2px solid rgba(255,255,255,0.1); }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 1rem; }
     .stat-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.08); }
-    .stat-val { display: block; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+    .stat-val { display: block; font-size: 1.1rem; font-weight: 700; color: var(--success); }
     .stat-lbl { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
 
     /* RIGHT PANEL: Info & Trailer */
     .details-right { flex: 1; min-width: 300px; }
-    .info-title { font-size: 2.2rem; line-height: 1.2; margin-bottom: 1rem; color: #fff; }
-    .info-synopsis { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.7; }
+    .info-title { font-size: 2.5rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.5rem; color: #fff; }
+    .info-sub { font-size: 1rem; color: var(--text-muted); margin-bottom: 1.5rem; font-style: italic; }
+    .info-synopsis { color: #d0d5e0; font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.8; }
     
     .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 2rem; }
-    .info-tag { background: rgba(255,255,255,0.04); padding: 8px 15px; border-radius: 8px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.06); }
-    .info-tag strong { color: var(--primary-soft); margin-right: 5px; }
+    .info-tag { background: rgba(0,0,0,0.4); padding: 10px 15px; border-radius: 10px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.06); }
+    .info-tag strong { color: var(--accent); margin-right: 5px; display: block; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 3px;}
 
     .genre-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 2rem; }
-    .genre-btn { background: var(--accent); color: #000; padding: 5px 15px; border-radius: 99px; font-size: 0.8rem; font-weight: 700; }
+    .genre-btn { background: rgba(255,77,210,0.15); color: var(--primary-soft); padding: 6px 18px; border-radius: 99px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(255,77,210,0.3); text-transform: capitalize; }
 
     /* VIDEO SECTION */
-    .trailer-box { margin-top: 2rem; border-radius: 20px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; /* 16:9 Aspect Ratio */ }
+    .trailer-box { margin-top: 2rem; border-radius: 20px; overflow: hidden; background: #000; position: relative; padding-top: 56.25%; box-shadow: 0 15px 35px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
     .trailer-box iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
+    /* CHARACTERS (AniList Style) */
+    .char-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-top: 2rem; }
+    .char-card { display: flex; background: rgba(255,255,255,0.03); border-radius: 8px; overflow: hidden; height: 80px; }
+    .char-img { width: 60px; height: 100%; object-fit: cover; }
+    .char-info { padding: 10px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .char-name { font-size: 0.9rem; font-weight: 600; color: #fff; }
+    .char-role { font-size: 0.75rem; color: var(--text-muted); }
+
     @media(max-width: 768px) {
-      .details-left { flex: 1 1 100%; text-align: center; }
-      .details-poster { max-width: 280px; }
-      .info-title { font-size: 1.6rem; }
+      .details-container { padding: 1.5rem; gap: 1.5rem; }
+      .details-left { flex: 1 1 100%; text-align: center; margin-top: -4rem; }
+      .details-poster { max-width: 220px; margin: 0 auto 1.5rem; }
+      .info-title { font-size: 1.8rem; }
+      .hero-banner, .hero-gradient { height: 300px; }
+      .details-page { padding-top: 6rem; }
     }
   </style>
 </head>
@@ -53,12 +68,14 @@
       </a>
       <div class="nav-right">
         <div class="social-row">
-          <a class="social-btn" target="_blank" href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="><i class="fab fa-instagram"></i></a>
-          <a class="social-btn" target="_blank" href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ"><i class="fab fa-youtube"></i></a>
+          <a class="social-btn" target="_blank" href="https://www.instagram.com/animenationindia"><i class="fab fa-instagram"></i></a>
         </div>
       </div>
     </nav>
   </header>
+
+  <div id="heroBanner" class="hero-banner"></div>
+  <div class="hero-gradient"></div>
 
   <main class="page-wrap details-page">
     <div id="loadingDetails" class="loader-box" style="text-align:center; padding: 5rem;"><i class="fas fa-spinner fa-spin fa-3x"></i></div>
@@ -66,42 +83,48 @@
     <div class="details-container" id="detailsContent" style="display:none;">
       <div class="details-left">
         <img id="detPoster" src="" class="details-poster">
-        <div class="stat-grid">
-          <div class="stat-item"><span id="detScore" class="stat-val">0.0</span><span class="stat-lbl">Score</span></div>
-          <div class="stat-item"><span id="detRank" class="stat-val">#0</span><span class="stat-lbl">Rank</span></div>
-          <div class="stat-item"><span id="detPop" class="stat-val">#0</span><span class="stat-lbl">Popularity</span></div>
-          <div class="stat-item"><span id="detFav" class="stat-val">0</span><span class="stat-lbl">Favorites</span></div>
-        </div>
         
-        <a id="detWatchBtn" href="#" target="_blank" class="btn-primary" style="margin-top:2rem; width:100%; justify-content:center;">
+        <a id="detWatchBtn" href="#" target="_blank" class="btn-primary" style="width:100%; justify-content:center; padding: 12px; font-size: 1rem; margin-bottom: 1rem;">
           <i class="fas fa-play-circle"></i> WATCH NOW
         </a>
+
+        <div class="stat-grid">
+          <div class="stat-item"><span class="stat-lbl">Score</span><span id="detScore" class="stat-val">0.0</span></div>
+          <div class="stat-item"><span class="stat-lbl">Rank</span><span id="detRank" class="stat-val" style="color:var(--text-main)">#0</span></div>
+          <div class="stat-item"><span class="stat-lbl">Popularity</span><span id="detPop" class="stat-val" style="color:var(--text-main)">#0</span></div>
+          <div class="stat-item"><span class="stat-lbl">Members</span><span id="detFav" class="stat-val" style="color:var(--text-main)">0</span></div>
+        </div>
       </div>
 
       <div class="details-right">
         <h1 id="detTitle" class="info-title">Loading...</h1>
+        <p id="detSub" class="info-sub"></p>
         <div class="genre-row" id="detGenres"></div>
+        
         <p id="detSynop" class="info-synopsis"></p>
 
         <div class="info-grid">
-          <div class="info-tag"><strong>Status:</strong> <span id="detStatus">?</span></div>
-          <div class="info-tag"><strong>Episodes:</strong> <span id="detEps">?</span></div>
-          <div class="info-tag"><strong>Duration:</strong> <span id="detDur">?</span></div>
-          <div class="info-tag"><strong>Season:</strong> <span id="detSeason">?</span></div>
-          <div class="info-tag"><strong>Aired:</strong> <span id="detAired">?</span></div>
-          <div class="info-tag"><strong>Studio:</strong> <span id="detStudio">?</span></div>
+          <div class="info-tag"><strong>Format</strong> <span id="detType">?</span></div>
+          <div class="info-tag"><strong>Episodes</strong> <span id="detEps">?</span></div>
+          <div class="info-tag"><strong>Status</strong> <span id="detStatus">?</span></div>
+          <div class="info-tag"><strong>Season</strong> <span id="detSeason">?</span></div>
+          <div class="info-tag"><strong>Studios</strong> <span id="detStudio">?</span></div>
+          <div class="info-tag"><strong>Source</strong> <span id="detSource">?</span></div>
         </div>
 
-        <h3 class="section-title"><i class="fab fa-youtube" style="color:#ff0000"></i> Official Trailer</h3>
-        <div class="trailer-box" id="trailerContainer">
+        <h3 class="section-title" id="trailerTitle" style="display:none;"><i class="fab fa-youtube" style="color:#ff0000"></i> Official Trailer</h3>
+        <div class="trailer-box" id="trailerContainer" style="display:none;">
           <iframe id="detTrailer" src="" allowfullscreen></iframe>
         </div>
+
+        <h3 class="section-title" id="charTitle" style="margin-top: 3rem; display:none;"><i class="fas fa-users" style="color:var(--accent)"></i> Main Characters</h3>
+        <div class="char-grid" id="charGrid"></div>
       </div>
     </div>
 
-    <section class="carousel-section" style="margin-top:4rem;">
+    <section class="carousel-section" style="margin-top:4rem;" id="recSection">
       <div class="section-head">
-        <div><h2 class="section-title">✨ Recommended for You</h2><p class="section-sub">Similar titles from MyAnimeList</p></div>
+        <div><h2 class="section-title">✨ Recommendations</h2><p class="section-sub">Similar titles you might like</p></div>
       </div>
       <div class="poster-row" id="detRecsRow"></div>
     </section>
@@ -109,79 +132,172 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const id = urlParams.get('id');
+    const jikanId = urlParams.get('id');
+    const anilistId = urlParams.get('anilist_id');
     const type = urlParams.get('type') || 'anime';
 
-    async function loadFullDetails() {
+    async function loadDetails() {
+      // If Anilist ID exists, fetch from Anilist (For Top 100 Dubs)
+      if (anilistId) {
+        await fetchFromAnilist(anilistId);
+      } else {
+        // Otherwise use default Jikan
+        await fetchFromJikan(jikanId, type);
+      }
+    }
+
+    // ================= ANILIST FETCH =================
+    async function fetchFromAnilist(id) {
+      const query = `
+      query ($id: Int) {
+        Media (id: $id, type: ANIME) {
+          title { english romaji native }
+          coverImage { large extraLarge }
+          bannerImage
+          description
+          averageScore rank popularity
+          status episodes season seasonYear format source
+          genres
+          studios(isMain: true) { nodes { name } }
+          trailer { id site }
+          characters(sort: ROLE, perPage: 6) {
+            edges { role node { name { full } image { large } } }
+          }
+          recommendations(sort: RATING_DESC, perPage: 10) {
+            nodes { mediaRecommendation { id title { english romaji } coverImage { large } } }
+          }
+        }
+      }`;
+
+      try {
+        const res = await fetch("https://graphql.anilist.co", {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, variables: { id: parseInt(id) } })
+        });
+        const json = await res.json();
+        const d = json.data.Media;
+
+        renderUI(
+          d.title.english || d.title.romaji, d.title.native,
+          d.coverImage.extraLarge || d.coverImage.large, d.bannerImage,
+          d.description, d.averageScore ? `${d.averageScore}%` : 'N/A',
+          d.rank || 'N/A', d.popularity.toLocaleString(), d.popularity.toLocaleString(),
+          d.status, d.episodes, `${d.season || ''} ${d.seasonYear || ''}`,
+          d.studios.nodes[0]?.name || 'Unknown', d.format, d.source,
+          d.genres,
+          d.trailer?.site === 'youtube' ? `https://www.youtube.com/embed/${d.trailer.id}` : null
+        );
+
+        // Characters
+        if (d.characters.edges.length > 0) {
+          document.getElementById('charTitle').style.display = 'block';
+          document.getElementById('charGrid').innerHTML = d.characters.edges.map(c => `
+            <div class="char-card">
+              <img src="${c.node.image.large}" class="char-img">
+              <div class="char-info">
+                <div class="char-name">${c.node.name.full}</div>
+                <div class="char-role">${c.role}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // Recommendations
+        if (d.recommendations.nodes.length > 0) {
+          document.getElementById('detRecsRow').innerHTML = d.recommendations.nodes.map(r => {
+            const rec = r.mediaRecommendation;
+            if(!rec) return '';
+            return `
+            <div class="poster-card" onclick="window.location.href='details.html?anilist_id=${rec.id}&type=anime'">
+              <img src="${rec.coverImage.large}" class="poster-img">
+              <div class="poster-meta"><div class="poster-title">${rec.title.english || rec.title.romaji}</div></div>
+            </div>
+          `}).join('');
+        } else {
+          document.getElementById('recSection').style.display = 'none';
+        }
+
+      } catch (err) { console.error(err); }
+    }
+
+    // ================= JIKAN FETCH =================
+    async function fetchFromJikan(id, type) {
       try {
         const res = await fetch(`https://api.jikan.moe/v4/${type}/${id}/full`);
         const json = await res.json();
         const d = json.data;
 
-        document.getElementById('loadingDetails').style.display = 'none';
-        document.getElementById('detailsContent').style.display = 'flex';
+        renderUI(
+          d.title_english || d.title, d.title_japanese,
+          d.images.webp.large_image_url, null,
+          d.synopsis, d.score ? d.score : 'N/A',
+          d.rank || 'N/A', d.popularity || 'N/A', d.members ? d.members.toLocaleString() : '0',
+          d.status, d.episodes || d.chapters || '?', `${d.season || ''} ${d.year || ''}`,
+          d.studios?.[0]?.name || d.authors?.[0]?.name || 'Unknown', d.type, d.source || 'Manga',
+          d.genres.map(g => g.name),
+          d.trailer?.embed_url
+        );
 
-        // Set Content
-        document.title = `${d.title} - Anime Nation India`;
-        document.getElementById('detPoster').src = d.images?.webp?.large_image_url || d.images?.jpg?.large_image_url || '';
-        document.getElementById('detTitle').innerText = d.title_english || d.title;
-        document.getElementById('detScore').innerText = d.score || 'N/A';
-        document.getElementById('detRank').innerText = `#${d.rank || '?'}`;
-        document.getElementById('detPop').innerText = `#${d.popularity || '?'}`;
-        document.getElementById('detFav').innerText = d.favorites ? d.favorites.toLocaleString() : '0';
-        document.getElementById('detSynop').innerText = d.synopsis || 'No summary available.';
-        
-        document.getElementById('detStatus').innerText = d.status;
-        document.getElementById('detEps').innerText = d.episodes || d.chapters || '?';
-        document.getElementById('detDur').innerText = d.duration || 'N/A';
-        document.getElementById('detSeason').innerText = `${d.season || ''} ${d.year || ''}`;
-        document.getElementById('detAired').innerText = d.aired?.string || d.published?.string || 'N/A';
-        document.getElementById('detStudio').innerText = d.studios?.[0]?.name || d.authors?.[0]?.name || 'Unknown';
+        // Fetch Recs Jikan
+        const recRes = await fetch(`https://api.jikan.moe/v4/${type}/${id}/recommendations`);
+        const recJson = await recRes.json();
+        const recs = recJson.data.slice(0, 10);
+        if(recs.length > 0){
+          document.getElementById('detRecsRow').innerHTML = recs.map(r => `
+            <div class="poster-card" onclick="window.location.href='details.html?id=${r.entry.mal_id}&type=${type}'">
+              <img src="${r.entry.images.webp.large_image_url}" class="poster-img">
+              <div class="poster-meta"><div class="poster-title">${r.entry.title}</div></div>
+            </div>
+          `).join('');
+        } else { document.getElementById('recSection').style.display = 'none'; }
 
-        // Genres
-        document.getElementById('detGenres').innerHTML = (d.genres || []).map(g => `<span class="genre-btn">${g.name}</span>`).join('');
+      } catch (err) { console.error(err); }
+    }
 
-        // Trailer
-        if(d.trailer?.embed_url) {
-          document.getElementById('detTrailer').src = d.trailer.embed_url;
-        } else {
-          document.getElementById('trailerContainer').style.display = 'none';
-        }
 
-        // Recommendations
-        fetchRecs();
-      } catch (err) {
-        console.error(err);
+    // ================= COMMON RENDER UI =================
+    function renderUI(title, sub, poster, banner, synop, score, rank, pop, fav, status, eps, season, studio, type, source, genres, trailerUrl) {
+      document.getElementById('loadingDetails').style.display = 'none';
+      document.getElementById('detailsContent').style.display = 'flex';
+
+      document.title = `${title} - Anime Nation India`;
+      document.getElementById('detTitle').innerText = title;
+      document.getElementById('detSub').innerText = sub || '';
+      document.getElementById('detPoster').src = poster;
+      
+      if(banner) {
+        document.getElementById('heroBanner').style.backgroundImage = `url(${banner})`;
+      } else {
+        document.getElementById('heroBanner').style.backgroundImage = `url(${poster})`;
+      }
+
+      document.getElementById('detSynop').innerHTML = synop || 'No summary available.';
+      document.getElementById('detScore').innerText = score;
+      document.getElementById('detRank').innerText = `#${rank}`;
+      document.getElementById('detPop').innerText = `#${pop}`;
+      document.getElementById('detFav').innerText = fav;
+      
+      document.getElementById('detStatus').innerText = status || '?';
+      document.getElementById('detEps').innerText = eps || '?';
+      document.getElementById('detSeason').innerText = season.trim() === '' ? 'N/A' : season;
+      document.getElementById('detStudio').innerText = studio;
+      document.getElementById('detType').innerText = type || 'TV';
+      document.getElementById('detSource').innerText = source || 'Original';
+
+      document.getElementById('detGenres').innerHTML = genres.map(g => `<span class="genre-btn">${g}</span>`).join('');
+
+      if(trailerUrl) {
+        document.getElementById('trailerTitle').style.display = 'block';
+        document.getElementById('trailerContainer').style.display = 'block';
+        document.getElementById('detTrailer').src = trailerUrl;
       }
     }
 
-    async function fetchRecs() {
-      try {
-        const res = await fetch(`https://api.jikan.moe/v4/${type}/${id}/recommendations`);
-        const json = await res.json();
-        const recs = (json.data || []).slice(0, 10);
-        document.getElementById('detRecsRow').innerHTML = recs.map(r => {
-          const imgUrl = r.entry.images?.webp?.large_image_url || '';
-          return `
-          <div class="poster-card" onclick="window.location.href='details.html?id=${r.entry.mal_id}&type=${type}'">
-            <img src="${imgUrl}" class="poster-img">
-            <div class="poster-meta"><div class="poster-title">${r.entry.title}</div></div>
-          </div>
-        `}).join('');
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Watch Button 3-Click Logic (Fixed & Connected)
+    // Watch Button Logic
     const btn = document.getElementById('detWatchBtn');
     let count = parseInt(localStorage.getItem("watchBtnClicks")) || 0;
-    
-    if (count >= 2) {
-      btn.href = "https://animeyy.com/"; 
-    } else {
-      btn.href = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80"; 
-    }
+    if (count >= 2) btn.href = "https://animeyy.com/"; 
+    else btn.href = "https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80"; 
 
     btn.onclick = () => {
       count++;
@@ -191,13 +307,11 @@
       }
       else { 
         localStorage.setItem("watchBtnClicks", count); 
-        if (count === 2) {
-          setTimeout(() => btn.href = "https://animeyy.com/", 500); 
-        } 
+        if (count === 2) setTimeout(() => btn.href = "https://animeyy.com/", 500); 
       }
     };
 
-    window.onload = loadFullDetails;
+    window.onload = loadDetails;
   </script>
 </body>
 </html>
