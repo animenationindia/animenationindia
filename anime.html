@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anime Details - Anime Nation India</title>
+  
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-EZS80QT1HJ"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-EZS80QT1HJ');</script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="ani-logo.png">
+</head>
+
+<body>
+  <button class="scroll-top" id="scrollTopBtn"><i class="fas fa-chevron-up"></i></button>
+
+  <header class="header">
+    <nav class="nav-wrap">
+     <a href="index.html" class="brand">
+        <div class="brand-logo"><img src="ani-logo.png" style="width:100%;height:100%;object-fit:cover;border-radius:18px;"></div>
+        <div class="brand-text"><span class="brand-title">Anime Nation India</span><span class="brand-sub">LIVE CALENDAR • NEWS</span></div>
+      </a>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="index.html" class="nav-link">Home</a></li>
+        <li><a href="view-all.html?type=allTimePopular" class="nav-link">Top Anime</a></li>
+        <li><a href="view-all.html?type=topManga" class="nav-link">Top Manga</a></li>
+        <li><a href="#popular-season" class="nav-link">Popular</a></li>
+      </ul>
+      <div class="nav-right">
+        <div class="social-row">
+          <a class="social-btn" target="_blank" href="https://www.instagram.com/animenationindia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="><i class="fab fa-instagram"></i></a>
+          <a class="social-btn" target="_blank" href="https://www.youtube.com/channel/UCnG6Pq8kh8BuueSF6Ni7-UQ"><i class="fab fa-youtube"></i></a>
+        </div>
+        <div class="menu-toggle" id="menuToggle"><span></span><span></span><span></span></div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-wrap" id="home">
+    <section class="hero-grid">
+      <div class="hero-left">
+        <div class="hero-kicker"><span><i class="fas fa-bolt"></i> Ultimate Anime DB</span><span>|</span><span id="heroSeasonText">Explore Titles</span></div>
+        <h1 class="hero-title">Discover your next <span class="hero-title-highlight">favorite anime</span>.</h1>
+        <p class="hero-desc">Explore thousands of anime series, movies, and specials across various genres and seasons.</p>
+        <div class="hero-tags"><span class="tag-pill">Jikan API</span><span class="tag-pill">AniList API</span><span class="tag-pill">Real-time Data</span></div>
+      </div>
+
+      <aside class="spotlight-card" id="spotlightCard" style="cursor:pointer;">
+        <div class="spotlight-media">
+          <img src="" class="spotlight-img" id="spotlightImg" alt="Spotlight">
+          <div class="spotlight-gradient"></div>
+          <button id="spotlightPrev" class="spotlight-nav-btn prev"><i class="fas fa-chevron-left"></i></button>
+          <button id="spotlightNext" class="spotlight-nav-btn next"><i class="fas fa-chevron-right"></i></button>
+          <div class="spotlight-badge"><i class="fas fa-fire"></i> <span id="spotlightBadgeText">#1 Spotlight</span></div>
+          <div class="spotlight-meta-row">
+            <div class="spotlight-meta-left">
+              <h2 class="spotlight-title" id="spotlightTitle">Loading…</h2>
+              <div class="spotlight-pill-row" id="spotlightGenres"></div>
+            </div>
+          </div>
+        </div>
+        <div class="spotlight-body">
+          <p class="spotlight-desc" id="spotlightDesc" style="overflow-y: auto; max-height: 80px; scrollbar-width: thin; padding-right: 5px;">Fetching live details...</p>
+        </div>
+      </aside>
+    </section>
+
+    <div class="main-tabs-container">
+      <div class="main-tabs">
+        <a href="index.html" class="main-tab-btn"><i class="fas fa-home"></i> Home</a>
+        <a href="anime.html" class="main-tab-btn active"><i class="fas fa-tv"></i> Anime Details</a>
+        <a href="manga.html" class="main-tab-btn"><i class="fas fa-book-open"></i> Manga Lib</a>
+      </div>
+    </div>
+
+    <section class="search-row" id="search" style="margin-top:2.5rem;">
+      <div class="search-input-wrap">
+        <i class="fas fa-search"></i>
+        <input id="searchInput" class="search-input" placeholder="Search anime, characters...">
+        <button id="searchBtn" class="search-btn"><i class="fas fa-arrow-right"></i> Search</button>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center;">
+      <button id="randomAnimeBtn" class="filter-chip"><i class="fas fa-dice"></i> Random Anime</button>
+      <a href="view-all.html?type=recommendations" class="filter-chip"><i class="fas fa-thumbs-up"></i> Recommendations</a>
+      <a href="view-all.html?type=top100anilist" class="filter-chip"><i class="fas fa-trophy"></i> Top 100 Anime</a>
+    </div>
+
+    <div style="text-align: center; margin: 20px 0; width: 100%;">
+      <a href="https://www.effectivegatecpm.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80" target="_blank" id="mainWatchBtn" style="background: linear-gradient(135deg, #ff4dd2, #ffd54a); color: #050716; padding: 18px 35px; text-decoration: none; font-size: 1.1rem; font-weight: 800; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(255, 77, 210, 0.4);">
+         <i class="fas fa-play-circle"></i> WATCH LIVE ANIME STREAMING NOW
+      </a>
+    </div>
+
+    <section class="carousel-section" style="margin-top: 3rem;">
+      <div class="section-head">
+        <div><h2 class="section-title">🎬 Latest Anime Trailers</h2><p class="section-sub">Catch the newest PVs and trailers.</p></div>
+        <div class="carousel-controls" style="display:flex; align-items:center; gap:10px;">
+          <a href="view-all.html?type=trailers" class="view-all-btn">View All</a>
+          <button class="row-nav prev" data-target="animeTrailersRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="animeTrailersRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="animeTrailersRow" style="scroll-behavior: smooth;"></div>
+    </section>
+
+    <section class="carousel-section">
+      <div class="section-head">
+        <div><h2 class="section-title">🌸 Current Seasonal Anime</h2><p class="section-sub">What's broadcasting right now.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="animeSeasonalRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="animeSeasonalRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="animeSeasonalRow"></div>
+    </section>
+
+    <section class="carousel-section">
+      <div class="section-head">
+        <div><h2 class="section-title">📅 Upcoming Next Season</h2><p class="section-sub">Highly anticipated anime releasing soon.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="animeUpcomingRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="animeUpcomingRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="animeUpcomingRow"></div>
+    </section>
+
+    <section class="carousel-section">
+      <div class="section-head">
+        <div><h2 class="section-title">📡 Top Airing Anime</h2><p class="section-sub">Highest rated shows currently on TV.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="animeTopAiringRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="animeTopAiringRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="animeTopAiringRow"></div>
+    </section>
+
+    <section id="popular-season" style="margin-top: 3rem;">
+      <div class="section-head">
+        <div><h2 class="section-title">⭐ Most Popular Anime</h2><p class="section-sub">Most watched shows by the community.</p></div>
+        <a href="view-all.html?type=popularSeason" class="view-all-btn">View All</a>
+      </div>
+      <div class="grid-wrap" id="popularAnimeGrid"></div>
+    </section>
+
+    <section class="carousel-section" style="margin-top: 3rem;">
+      <div class="section-head">
+        <div><h2 class="section-title">🗡️ Top Action Anime</h2><p class="section-sub">Epic battles and high stakes.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="actionRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="actionRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="actionRow"></div>
+    </section>
+
+    <section class="carousel-section">
+      <div class="section-head">
+        <div><h2 class="section-title">💖 Popular Romance Anime</h2><p class="section-sub">Feel-good love stories and dramas.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="romanceRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="romanceRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="romanceRow"></div>
+    </section>
+
+    <section class="carousel-section">
+      <div class="section-head">
+        <div><h2 class="section-title">🛡️ Best Isekai Anime</h2><p class="section-sub">Transported to another world adventures.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="isekaiRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="isekaiRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="isekaiRow"></div>
+    </section>
+
+    <section id="industry-figures" style="margin-top: 3rem;">
+      <div class="section-head">
+        <div><h2 class="section-title">🦸‍♂️ Most Favorited Characters</h2><p class="section-sub">Top characters voted by MAL community.</p></div>
+        <div class="carousel-controls">
+          <button class="row-nav prev" data-target="charsRow"><i class="fas fa-chevron-left"></i></button>
+          <button class="row-nav next" data-target="charsRow"><i class="fas fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="poster-row" id="charsRow"></div>
+    </section>
+
+    <div class="ad-placeholder" style="margin-top: 3rem;">
+      <script type="text/javascript">
+        atOptions = { 'key' : 'cb071bb67e4808c6e6560437d566b4a9', 'format' : 'iframe', 'height' : 60, 'width' : 468, 'params' : {} };
+      </script>
+      <script src="https://www.highperformanceformat.com/cb071bb67e4808c6e6560437d566b4a9/invoke.js"></script>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <p class="footer-copy">© 2026 Anime Nation India. Powered by MyAnimeList (Jikan API). Not a streaming site.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
