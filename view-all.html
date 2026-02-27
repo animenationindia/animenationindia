@@ -33,7 +33,7 @@
   <main class="page-wrap view-all-container">
     <div class="page-title-box">
       <h1 id="viewAllTitle" class="hero-title-highlight">Loading List...</h1>
-      <p id="viewAllSub" class="section-sub">Fetching the latest data from MyAnimeList</p>
+      <p id="viewAllSub" class="section-sub">Fetching the latest data...</p>
     </div>
 
     <div id="loader" class="loader-box"><i class="fas fa-spinner fa-spin"></i></div>
@@ -48,23 +48,67 @@
   </main>
 
   <footer class="footer">
-    <p class="footer-copy">© 2026 Anime Nation India. Jikan API (V4).</p>
+    <p class="footer-copy">© 2026 Anime Nation India. Jikan & AniList API.</p>
   </footer>
 
   <script>
     const JIKAN_API = "https://api.jikan.moe/v4";
+    const ANILIST_URL = "https://graphql.anilist.co";
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type');
-    const val = urlParams.get('val'); // For search
-    const genreId = urlParams.get('id'); // For genre
+    const val = urlParams.get('val'); 
+    const genreId = urlParams.get('id'); 
     const genreName = urlParams.get('name');
 
     async function fetchViewAll() {
+      // 🏆 NEW: 1 to 100 AniList Integration 🏆
+      if (type === 'top100anilist') {
+         document.getElementById('viewAllTitle').innerText = "🏆 Top 100 Anime";
+         document.getElementById('viewAllSub').innerText = "Highest rated anime of all time (AniList).";
+         
+         const query = `query { Page(page: 1, perPage: 100) { media(type: ANIME, sort: SCORE_DESC, isAdult: false) { id title { english romaji } coverImage { large } averageScore format } } }`;
+         
+         try {
+           const res = await fetch(ANILIST_URL, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ query })
+           });
+           const json = await res.json();
+           const data = json.data.Page.media || [];
+           
+           document.getElementById('loader').style.display = 'none';
+           
+           // 🔥 LINK FIX: ekhon tomar nijer page e jabe 🔥
+           document.getElementById('viewAllGrid').innerHTML = data.map((item, index) => {
+             const score = item.averageScore ? `${item.averageScore}%` : 'N/A';
+             const format = item.format === 'TV' ? 'TV Show' : item.format || 'Anime';
+             return `
+               <article class="anime-card" onclick="window.location.href='details.html?anilist_id=${item.id}&type=anime'">
+                 <img src="${item.coverImage.large}" class="anime-card-img" loading="lazy">
+                 <div class="anime-card-body">
+                   <h3 class="anime-name" style="color:var(--accent);">#${index + 1} ${item.title.english || item.title.romaji}</h3>
+                   <div class="anime-meta-row">
+                     <span>${format}</span>
+                     <span class="badge-status badge-ongoing">${score} <i class="fas fa-smile" style="color:#3edfa4"></i></span>
+                   </div>
+                 </div>
+               </article>
+             `;
+           }).join('');
+         } catch (err) {
+           document.getElementById('loader').innerHTML = "Failed to load Top 100.";
+         }
+         return; 
+      }
+
+      // --- Jikan Logic (For other pages) ---
       let endpoint = "/top/anime";
       let title = "Popular Anime";
 
       if (type === 'trending') { endpoint = "/seasons/now"; title = "Trending Now"; }
       else if (type === 'upcoming') { endpoint = "/seasons/upcoming"; title = "Upcoming Next Season"; }
+      else if (type === 'popularSeason') { endpoint = "/top/anime?filter=bypopularity"; title = "Popular Anime"; }
       else if (type === 'topManga') { endpoint = "/top/manga"; title = "Top Manga List"; }
       else if (type === 'search') { endpoint = `/anime?q=${val}`; title = `Search results for: ${val}`; }
       else if (type === 'genre_jikan') { endpoint = `/anime?genres=${genreId}`; title = `Genre: ${genreName}`; }
@@ -77,9 +121,8 @@
         const data = json.data || [];
         
         document.getElementById('loader').style.display = 'none';
-        const grid = document.getElementById('viewAllGrid');
         
-        grid.innerHTML = data.map(item => {
+        document.getElementById('viewAllGrid').innerHTML = data.map(item => {
           const isManga = type === 'topManga' || item.type === 'Manga';
           const itemType = isManga ? 'manga' : 'anime';
           const score = item.score ? item.score : 'N/A';
@@ -91,7 +134,7 @@
               <div class="anime-card-body">
                 <h3 class="anime-name">${item.title_english || item.title}</h3>
                 <div class="anime-meta-row">
-                  <span>${item.type}</span>
+                  <span>${item.type || 'TV'}</span>
                   <span class="badge-status badge-ongoing">${score} <i class="fas fa-star" style="color:gold"></i></span>
                 </div>
               </div>
@@ -99,7 +142,6 @@
           `;
         }).join('');
       } catch (err) {
-        console.error(err);
         document.getElementById('loader').innerHTML = "Failed to load data. Please refresh.";
       }
     }
