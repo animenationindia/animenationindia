@@ -49,8 +49,8 @@ function openDetailsPage(id, type) {
 }
 
 function openAniListDetails(id) {
-  // Opening external Anilist page for now since IDs differ from Jikan
-  window.open(`https://anilist.co/anime/${id}`, '_blank');
+  // Ebar theke anilist e jabe na, tomar nijer details page e (same tab) jabe
+  window.location.href = `details.html?anilist_id=${id}&type=anime`;
 }
 
 function mapJikanData(list, type = "anime") {
@@ -347,3 +347,4 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   loadPageData();
 });
+
