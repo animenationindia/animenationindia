@@ -48,8 +48,8 @@ function openDetailsPage(id, type) {
   window.location.href = `details.html?id=${id}&type=${type}`;
 }
 
+// 🔥 FIXED: Ebar direct tomar details page e jabe (Same Tab e) 🔥
 function openAniListDetails(id) {
-  // Ebar theke anilist e jabe na, tomar nijer details page e (same tab) jabe
   window.location.href = `details.html?anilist_id=${id}&type=anime`;
 }
 
@@ -84,18 +84,36 @@ function createPosterCard(item) {
 }
 
 function createAniListItem(item, index) {
-  const rankClass = index < 3 ? "top-3" : "";
-  const genres = item.genres.slice(0, 3).map(g => `<span class="ani-genre-pill">${g}</span>`).join("");
   const score = item.averageScore ? `${item.averageScore}%` : "N/A";
+  const format = item.format === 'TV' ? 'TV Show' : item.format || 'Anime';
+  const eps = item.episodes ? `${item.episodes} eps` : 'Ongoing';
   
+  const colors = ['pill-green', 'pill-red', 'pill-blue', 'pill-yellow'];
+  const genres = item.genres.slice(0, 3).map((g, i) => {
+    let colorClass = colors[i % colors.length];
+    if(g === 'Action') colorClass = 'pill-red';
+    if(g === 'Adventure') colorClass = 'pill-green';
+    if(g === 'Drama') colorClass = 'pill-blue';
+    return `<span class="ani-genre-pill ${colorClass}">${g.toLowerCase()}</span>`;
+  }).join("");
+  
+  // 🔥 Same here, dynamically using openAniListDetails 🔥
   return `<div class="anilist-list-item" onclick="openAniListDetails(${item.id})">
-      <div class="ani-rank ${rankClass}">#${index + 1}</div>
-      <img src="${item.coverImage.large}" class="ani-poster" loading="lazy">
-      <div class="ani-info">
-        <div class="ani-title">${item.title.english || item.title.romaji}</div>
-        <div class="ani-genres">${genres}</div>
+      <div class="ani-left">
+        <div class="ani-rank ${index < 3 ? 'top-3' : ''}">#${index + 1}</div>
+        <img src="${item.coverImage.large}" class="ani-poster" loading="lazy">
+        <div class="ani-title-row">
+          <div class="ani-title">${item.title.english || item.title.romaji}</div>
+          <div class="ani-genres">${genres}</div>
+        </div>
       </div>
-      <div class="ani-score"><i class="fas fa-smile" style="color:#3edfa4;"></i> ${score}</div>
+      <div class="ani-right">
+        <div class="ani-score"><i class="fas fa-smile" style="color:#3edfa4;"></i> ${score}</div>
+        <div class="ani-type">
+          <span style="color:#fff;">${format}</span>
+          <span style="color:#8ba0b2">${eps}</span>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -174,7 +192,6 @@ async function loadCalendarFast() {
   const todayDate = new Date();
   let currentDayIndex = todayDate.getDay();
 
-  // Create Tabs
   let tabsHtml = "";
   for(let i = -1; i <= 5; i++) {
     let d = new Date();
@@ -185,20 +202,19 @@ async function loadCalendarFast() {
     
     tabsHtml += `<button class="tab-btn ${activeClass}" onclick="fetchDaySchedule('${jikanDay}', this)">${dayName}</button>`;
   }
-  document.getElementById("calendarTabs").innerHTML = tabsHtml;
+  if(document.getElementById("calendarTabs")) document.getElementById("calendarTabs").innerHTML = tabsHtml;
 
-  // Load Today Default
   fetchDaySchedule(days[currentDayIndex].toLowerCase(), document.querySelector('#calendarTabs .active'));
 }
 
 window.fetchDaySchedule = async function(dayString, btnElement) {
-  // UI Update
+  if(!document.getElementById("calendarGrid")) return;
+
   document.querySelectorAll('#calendarTabs .tab-btn').forEach(b => b.classList.remove('active'));
   if(btnElement) btnElement.classList.add('active');
   const grid = document.getElementById("calendarGrid");
   grid.innerHTML = `<div style="padding:20px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading schedule...</div>`;
 
-  // Fetch
   const scheduleData = await fetchJikan(`/schedules?filter=${dayString}`);
   const safeScheds = mapJikanData(scheduleData, "anime");
 
@@ -215,8 +231,7 @@ window.fetchDaySchedule = async function(dayString, btnElement) {
 /* ================= DATA LOADING (Jikan + AniList) ================= */
 async function loadPageData() {
   try {
-    // ---- 1. ANI-LIST FETCHES (Top 100 & Dubbed) ----
-    const top10Query = `query { Page(page: 1, perPage: 10) { media(type: ANIME, sort: SCORE_DESC, isAdult: false) { id title { english romaji } coverImage { large } averageScore genres } } }`;
+    const top10Query = `query { Page(page: 1, perPage: 10) { media(type: ANIME, sort: SCORE_DESC, isAdult: false) { id title { english romaji } coverImage { large } episodes format averageScore genres } } }`;
     const popularQuery = `query { Page(page: 1, perPage: 15) { media(type: ANIME, sort: POPULARITY_DESC, isAdult: false, format: TV) { id title { english romaji } coverImage { large } genres } } }`;
 
     const aniTopData = await fetchAniList(top10Query);
@@ -229,7 +244,6 @@ async function loadPageData() {
       document.getElementById("homeDubbedRow").innerHTML = aniPopData.Page.media.map(item => createAniListPoster(item)).join("");
     }
 
-    // ---- 2. JIKAN BATCH 1 ----
     const [homeTrending, homeManga, homePopularData] = await Promise.all([
       fetchJikan("/seasons/now?limit=15"),
       fetchJikan("/top/manga?filter=bypopularity&limit=15"),
@@ -237,7 +251,6 @@ async function loadPageData() {
     ]);
     await delay(1100);
 
-    // Render Batch 1
     const mappedTrending = mapJikanData(homeTrending, "anime");
     if (document.getElementById("homeTrendingRow")) document.getElementById("homeTrendingRow").innerHTML = mappedTrending.map(createPosterCard).join("");
     if (document.getElementById("homeMangaRow")) document.getElementById("homeMangaRow").innerHTML = mapJikanData(homeManga, "manga").map(createPosterCard).join("");
@@ -249,13 +262,11 @@ async function loadPageData() {
       startSpotlightTimer();
     }
 
-    // ---- 3. JIKAN BATCH 2 (Reviews & Industry) ----
     const [reviewsData, peopleData] = await Promise.all([
       fetchJikan("/reviews/anime?limit=8"),
       fetchJikan("/top/people?limit=15")
     ]);
 
-    // Render Reviews with Thumbnail
     if (document.getElementById("reviewsGrid")) {
       document.getElementById("reviewsGrid").innerHTML = reviewsData.filter(r => r.entry).map(r => {
         const safeReviewText = (r.review || "No review text available.").slice(0, 150);
@@ -275,7 +286,6 @@ async function loadPageData() {
       }).join("");
     }
 
-    // Render Industry Figures
     if (document.getElementById("peopleRow")) {
       document.getElementById("peopleRow").innerHTML = peopleData.map(p => {
         const imgUrl = p.images?.jpg?.image_url || 'ani-logo.png';
@@ -283,19 +293,17 @@ async function loadPageData() {
       }).join("");
     }
 
-    // Render Genres
     if (document.getElementById("categoriesGrid")) {
       document.getElementById("categoriesGrid").innerHTML = jikanGenres.map(g => `<div class="anime-card category-card" onclick="window.location.href='view-all.html?type=genre_jikan&id=${g.id}&name=${g.name}'"><div class="anime-card-body"><h3 class="anime-name">${g.name}</h3><span style="font-size:0.8rem; color:var(--text-muted);">Browse on MAL</span></div></div>`).join("");
     }
     
-    document.getElementById("statAnimeCount").textContent = "38,000+";
+    if(document.getElementById("statAnimeCount")) document.getElementById("statAnimeCount").textContent = "38,000+";
     
-    // Load Calendar
     loadCalendarFast();
 
   } catch (err) {
     console.error("Critical loading error handled safely:", err);
-    document.getElementById("statAnimeCount").textContent = "API Error";
+    if(document.getElementById("statAnimeCount")) document.getElementById("statAnimeCount").textContent = "API Error";
   }
 }
 
@@ -328,7 +336,6 @@ if (btnRandom) {
 const jumpTodayBtn = document.getElementById("jumpTodayBtn");
 if (jumpTodayBtn) jumpTodayBtn.onclick = () => document.getElementById("airing").scrollIntoView({ behavior: "smooth" });
 
-// Watch Button 3-Click Logic (Untouched)
 const mainWatchBtn = document.getElementById("mainWatchBtn");
 if (mainWatchBtn) {
   let clickCount = parseInt(localStorage.getItem("watchBtnClicks")) || 0;
@@ -347,4 +354,3 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   loadPageData();
 });
-
