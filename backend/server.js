@@ -191,15 +191,15 @@ app.post('/api/contact', async (req, res) => {
     const newMessage = new Message({ name, email, subject, message });
     await newMessage.save();
 
-    // 2. Transporter toiri kora (Nodemailer magic)
+    // 2. Transporter toiri kora (SAFE VERSION)
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'animenationindia.global@gmail.com', // 🔥 Tomar notun email
-        pass: 'sxtt gjri xzbu dzmv'           // ⚠️ EKHANE NOTUN EMAIL ER APP PASSWORD BOSHABE
+        user: process.env.EMAIL_USER, // 🔒 .env theke asbe
+        pass: process.env.EMAIL_PASS  // 🔒 .env theke asbe
       }
     });
-
+    
     // 3. Mail er format
     const mailOptions = {
       from: `"${name}" <${email}>`,
