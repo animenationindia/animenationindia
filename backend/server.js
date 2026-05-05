@@ -6,7 +6,6 @@ const cors = require('cors');
 // 🔥 Modules import kora holo
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer'); // 🔥 ADDED NODEMAILER HERE
 
 // ==========================================
 // 🔥 RSS Parser for Custom News API 🔥
@@ -178,7 +177,7 @@ app.delete('/api/watchlist/:userId/:mal_id', async (req, res) => {
 });
 
 // ==========================================
-// 🔥 UPDATED: CONTACT FORM API ROUTE (NODEMAILER ADDED) 🔥
+// 🔥 UPDATED: CONTACT FORM API ROUTE (SHUDHU DATABASE - NO SMTP) 🔥
 // ==========================================
 app.post('/api/contact', async (req, res) => {
   try {
@@ -187,51 +186,17 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ success: false, message: "Please fill all required fields!" });
     }
     
-    // 1. Database-e save kora holo (Future record-er jonno)
+    // 1. Shudhu Database-e save koro
     const newMessage = new Message({ name, email, subject, message });
     await newMessage.save();
 
-    // 2. Transporter toiri kora (RENDER FREE TIER BYPASS)
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // 587 port-er jonno eta false rakhte hoy
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      },
-      tls: {
-        rejectUnauthorized: false // Eita cloud server-e block atkay
-      }
-    });
-    
-    // 3. Mail er format
-    const mailOptions = {
-      from: `"${name}" <${email}>`,
-      to: 'animenationindia.global@gmail.com',     // 🔥 Inbox jekhane mail asbe
-      subject: `Anime Nation India: ${subject}`,
-      text: `
-      🎉 You got a new message from Anime Nation India!
-      
-      👤 Name: ${name}
-      ✉️ Email: ${email}
-      📌 Subject: ${subject}
-      
-      📝 Message:
-      ${message}
-      `
-    };
-
-    // 4. Mail pathano
-    await transporter.sendMail(mailOptions);
-    
+    // 2. Direct Success message pathiye dao
     res.status(201).json({ success: true, message: "Message sent successfully! We will get back to you soon." });
   } catch (error) {
     console.error("Contact Error:", error);
     res.status(500).json({ success: false, message: "Failed to send message." });
   }
 });
-
 
 // ==========================================
 // 🔥 OTHER DATA ROUTES 🔥
