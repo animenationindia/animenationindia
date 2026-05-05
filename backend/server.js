@@ -191,12 +191,17 @@ app.post('/api/contact', async (req, res) => {
     const newMessage = new Message({ name, email, subject, message });
     await newMessage.save();
 
-    // 2. Transporter toiri kora (SAFE VERSION)
+    // 2. Transporter toiri kora (RENDER FREE TIER BYPASS)
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // 587 port-er jonno eta false rakhte hoy
       auth: {
-        user: process.env.EMAIL_USER, // 🔒 .env theke asbe
-        pass: process.env.EMAIL_PASS  // 🔒 .env theke asbe
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false // Eita cloud server-e block atkay
       }
     });
     
