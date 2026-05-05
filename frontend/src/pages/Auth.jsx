@@ -22,7 +22,7 @@ const Auth = () => {
     setLoading(true);
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const url = `http://localhost:5000${endpoint}`;
+    const url = `[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)${endpoint}`;
 
     try {
       const payload = isLogin 

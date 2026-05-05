@@ -82,7 +82,7 @@ const Header = () => {
       if (searchQuery.length >= 3) {
         setIsSearching(true);
         try {
-          const response = await fetch(`http://localhost:5000/api/anime/search?q=${searchQuery}`);
+          const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/anime/search?q=${searchQuery}`);
           const data = await response.json();
           setSearchResults(data);
         } catch (error) {

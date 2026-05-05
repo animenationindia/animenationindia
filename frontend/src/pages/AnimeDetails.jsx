@@ -32,7 +32,7 @@ const AnimeDetails = () => {
         
         await new Promise(resolve => setTimeout(resolve, 800));
 
-        const resRecs = await fetch(`http://localhost:5000/api/anime/${id}/recommendations`);
+        const resRecs = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/anime/${id}/recommendations`);
         if (resRecs.ok) {
           const recData = await resRecs.json();
           setRecommendations(recData.data ? recData.data.slice(0, 8) : []);
@@ -73,7 +73,7 @@ const AnimeDetails = () => {
     if (!anime) return;
     
     try {
-        const response = await fetch('http://localhost:5000/api/watchlist', {
+        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ anime: anime }) 

@@ -13,7 +13,7 @@ const MangaDetails = () => {
     const fetchMangaDetails = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/manga/${id}`);
+        const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/manga/${id}`);
         const data = await response.json();
         
         if (data.data) {
@@ -45,7 +45,7 @@ const MangaDetails = () => {
     }
 
     try {
-        const response = await fetch('http://localhost:5000/api/watchlist', {
+        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

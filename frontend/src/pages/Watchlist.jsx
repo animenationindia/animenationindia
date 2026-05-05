@@ -19,7 +19,7 @@ const Watchlist = () => {
 
       try {
         // 🔥 DIRECT CALL TO MongoDB 🔥
-        const response = await fetch(`http://localhost:5000/api/watchlist/${userId}`);
+        const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist/${userId}`);
         if (response.ok) {
           const data = await response.json();
           setWatchlist(data);
@@ -45,7 +45,7 @@ const Watchlist = () => {
     
     if(window.confirm(`Are you sure you want to remove ${title} from your watchlist?`)) {
         try {
-            const response = await fetch(`http://localhost:5000/api/watchlist/${userId}/${mal_id}`, {
+            const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist/${userId}/${mal_id}`, {
                 method: 'DELETE'
             });
 

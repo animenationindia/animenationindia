@@ -45,7 +45,7 @@ const Profile = () => {
     // 🔥 BULLETPROOF COUNT LOGIC 🔥
     const fetchUserStats = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/watchlist/${userId}`);
+        const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist/${userId}`);
         if (response.ok) {
           const data = await response.json();
           
