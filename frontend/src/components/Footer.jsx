@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 const Footer = () => {
   return (
     <footer style={{ background: '#0a0c1a', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '60px', paddingBottom: '20px', marginTop: '50px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px', marginBottom: '40px' }}>
+      {/* 🔥 FIX: minmax 250px theke 200px kora holo jate chhoto mobile-e na bhenge jay 🔥 */}
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px', marginBottom: '40px' }}>
         
         {/* Brand Section */}
         <div>
