@@ -22,7 +22,8 @@ const Auth = () => {
     setLoading(true);
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const url = `[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)${endpoint}`;
+    // 🔥 EKDOM THIK KORA LINK (Kono bracket ba quote nei) 🔥
+    const url = `https://animenationindia-backend.onrender.com${endpoint}`;
 
     try {
       const payload = isLogin 
