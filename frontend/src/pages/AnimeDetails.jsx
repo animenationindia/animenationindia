@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const AnimeDetails = () => {
   const { id } = useParams();
@@ -32,7 +33,7 @@ const AnimeDetails = () => {
         
         await new Promise(resolve => setTimeout(resolve, 800));
 
-        const resRecs = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/anime/${id}/recommendations`);
+        const resRecs = await fetch(`${API_URL}/api/anime/${id}/recommendations`);
         if (resRecs.ok) {
           const recData = await resRecs.json();
           setRecommendations(recData.data ? recData.data.slice(0, 8) : []);
@@ -73,7 +74,7 @@ const AnimeDetails = () => {
     if (!anime) return;
     
     try {
-        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ anime: anime }) 
@@ -175,7 +176,7 @@ const AnimeDetails = () => {
                     <button 
                       onClick={() => setShowTrailerModal(true)}
                       className="btn-primary hover-scale" 
-                      style={{ width: '100%', marginTop: '20px', padding: '15px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', cursor: 'pointer', background: '#ff0000', color: '#fff', border: 'none', transition: '0.3s' }}
+                      style={{ width: '100%', marginTop: '20px', padding: '15px 10px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', cursor: 'pointer', background: '#ff0000', color: '#fff', border: 'none', transition: '0.3s' }}
                     >
                         <i className="fab fa-youtube" style={{ fontSize: '1.3rem' }}></i> Watch Trailer
                     </button>
