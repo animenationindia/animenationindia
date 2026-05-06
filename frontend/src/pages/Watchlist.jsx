@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const Watchlist = () => {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Watchlist = () => {
 
       try {
         // 🔥 DIRECT CALL TO MongoDB 🔥
-        const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist/${userId}`);
+        const response = await fetch(`${API_URL}/api/watchlist/${userId}`);
         if (response.ok) {
           const data = await response.json();
           setWatchlist(data);
@@ -45,7 +46,7 @@ const Watchlist = () => {
     
     if(window.confirm(`Are you sure you want to remove ${title} from your watchlist?`)) {
         try {
-            const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist/${userId}/${mal_id}`, {
+            const response = await fetch(`${API_URL}/api/watchlist/${userId}/${mal_id}`, {
                 method: 'DELETE'
             });
 
