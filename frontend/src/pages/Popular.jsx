@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const Popular = () => {
   const navigate = useNavigate();
@@ -95,7 +96,7 @@ const Popular = () => {
     }
 
     try {
-        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -136,7 +137,7 @@ const Popular = () => {
       
       {/* ================= HEADER ================= */}
       <div style={{ textAlign: 'center', marginBottom: '3rem', padding: '0 20px' }}>
-          <h1 className="section-title" style={{ fontSize: '3rem', color: '#fff', marginBottom: '10px' }}>
+          <h1 className="section-title" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', color: '#fff', marginBottom: '10px' }}>
               🔥 Most Popular Anime
           </h1>
           <p className="section-sub" style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
