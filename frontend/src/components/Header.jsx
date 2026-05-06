@@ -323,6 +323,7 @@ const Header = () => {
       </nav>
 
       {/* ================= SETTINGS MODAL ================= */}
+      {/* ================= 🔥 SETTINGS MODAL (RESTORED) 🔥 ================= */}
       {showSettings && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ width: '90%', maxWidth: '400px', background: '#121429', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}>
@@ -330,7 +331,9 @@ const Header = () => {
                     <h3 style={{ color: '#fff', margin: 0, fontSize: '1.2rem' }}><i className="fas fa-sliders-h" style={{ color: 'var(--primary)', marginRight: '10px' }}></i> Preferences</h3>
                     <button onClick={() => setShowSettings(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}><i className="fas fa-times"></i></button>
                 </div>
+                
                 <div style={{ padding: '25px' }}>
+                    {/* Theme Toggle */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                         <div>
                             <div style={{ color: '#fff', fontWeight: 'bold', marginBottom: '5px' }}>App Theme</div>
@@ -341,7 +344,34 @@ const Header = () => {
                             <button onClick={() => setSettings({...settings, theme: 'dark'})} style={{ background: settings.theme === 'dark' ? 'var(--primary)' : 'transparent', color: settings.theme === 'dark' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}><i className="fas fa-moon"></i></button>
                         </div>
                     </div>
+
+                    {/* Default Audio (Restored) */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                        <div>
+                            <div style={{ color: '#fff', fontWeight: 'bold', marginBottom: '5px' }}>Default Audio</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Preferred playback language</div>
+                        </div>
+                        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.5)', borderRadius: '8px', padding: '3px' }}>
+                            <button onClick={() => setSettings({...settings, subDub: 'sub'})} style={{ background: settings.subDub === 'sub' ? 'var(--primary)' : 'transparent', color: settings.subDub === 'sub' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '6px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>Sub</button>
+                            <button onClick={() => setSettings({...settings, subDub: 'dub'})} style={{ background: settings.subDub === 'dub' ? 'var(--primary)' : 'transparent', color: settings.subDub === 'dub' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '6px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>Dub</button>
+                        </div>
+                    </div>
+
+                    {/* Autoplay (Restored) */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div>
+                            <div style={{ color: '#fff', fontWeight: 'bold', marginBottom: '5px' }}>Autoplay Next Episode</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Automatically start next episode</div>
+                        </div>
+                        <div 
+                            onClick={() => toggleSetting('autoplay')}
+                            style={{ width: '45px', height: '24px', background: settings.autoplay ? 'var(--primary)' : 'rgba(255,255,255,0.1)', borderRadius: '99px', position: 'relative', cursor: 'pointer', transition: '0.3s' }}
+                        >
+                            <div style={{ width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.autoplay ? '23px' : '2px', transition: '0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}></div>
+                        </div>
+                    </div>
                 </div>
+
                 <div style={{ padding: '15px 25px', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'right' }}>
                     <button onClick={() => setShowSettings(false)} className="btn-primary" style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.9rem' }}>Save Changes</button>
                 </div>
