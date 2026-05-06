@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
+// 🔥 FIX: config.js theke API URL import kora holo 🔥
+import { API_URL } from '../api/config';
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -18,15 +20,12 @@ const Header = () => {
   // ---> Settings Modal State <---
   const [showSettings, setShowSettings] = useState(false);
   
-  // 🔥 FIX: Added 'theme' to settings state and initialized from localStorage 🔥
   const [settings, setSettings] = useState(() => {
     const savedTheme = localStorage.getItem('app_theme') || 'dark';
     return { subDub: 'sub', autoplay: true, theme: savedTheme };
   });
 
   const searchRef = useRef(null);
-  
-  // 🔥 FIX: Added Refs for detecting clicks outside Dropdown and Notifications 🔥
   const profileMenuRef = useRef(null);
   const notificationMenuRef = useRef(null);
   
@@ -66,7 +65,6 @@ const Header = () => {
     return () => window.removeEventListener('auth-change', checkAuthStatus);
   }, []);
 
-  // 🔥 FIX: Apply theme to the document body when settings.theme changes 🔥
   useEffect(() => {
     if (settings.theme === 'light') {
       document.body.classList.add('light-mode');
@@ -82,7 +80,8 @@ const Header = () => {
       if (searchQuery.length >= 3) {
         setIsSearching(true);
         try {
-          const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/anime/search?q=${searchQuery}`);
+          // 🔥 FIX: Markdown link muche config.js er API_URL use kora holo 🔥
+          const response = await fetch(`${API_URL}/api/anime/search?q=${searchQuery}`);
           const data = await response.json();
           setSearchResults(data);
         } catch (error) {
@@ -98,19 +97,15 @@ const Header = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
 
-  // 🔥 FIX: Global Click Handler to close ALL dropdowns if clicked outside 🔥
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close Search
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setSearchResults([]);
         setSearchQuery('');
       }
-      // Close Profile Menu
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
-      // Close Notifications Menu
       if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target)) {
         setShowNotifications(false);
       }
@@ -141,13 +136,6 @@ const Header = () => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const toggleTheme = () => {
-    setSettings(prev => ({
-      ...prev,
-      theme: prev.theme === 'dark' ? 'light' : 'dark'
-    }));
-  };
-
   return (
     <>
       <header className="header">
@@ -165,7 +153,7 @@ const Header = () => {
           </Link>
 
           {/* ================= MIDDLE: NAV LINKS ================= */}
-          <ul className={`nav-menu ${isMobileMenuOpen ? 'active' : ''}`} style={{ margin: '0 auto', flex: 1, display: 'flex', justifyContent: 'center', gap: '1vw' }}>
+          <ul className={`nav-menu ${isMobileMenuOpen ? 'open' : ''}`} style={{ margin: '0 auto', flex: 1, display: 'flex', justifyContent: 'center', gap: '1vw' }}>
             <li><Link to="/" className="nav-link active" onClick={() => setIsMobileMenuOpen(false)}>Home</Link></li>
             <li><Link to="/schedule" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Schedule</Link></li>
             <li><Link to="/top-anime" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Top Anime</Link></li>
@@ -195,6 +183,7 @@ const Header = () => {
                     borderRadius: '20px',
                     outline: 'none',
                     width: '180px',
+                    maxWidth: '100%',
                     fontSize: '0.85rem',
                     transition: '0.3s'
                   }}
@@ -205,7 +194,7 @@ const Header = () => {
               {/* Live Search Dropdown Box */}
               {(searchResults.length > 0 || isSearching) && searchQuery.length >= 3 && (
                 <div style={{
-                  position: 'absolute', top: '45px', right: '0', width: '300px',
+                  position: 'absolute', top: '45px', right: '0', width: '300px', maxWidth: '90vw',
                   background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
                   borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
                   overflow: 'hidden', zIndex: 1000, maxHeight: '400px', overflowY: 'auto'
@@ -245,7 +234,7 @@ const Header = () => {
               <>
                 <Link to="/watchlist" className="social-btn" title="Watchlist" style={{ color: 'var(--text-color, #fff)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-bookmark"></i></Link>
 
-                {/* 🔥 FIX: Notifications Wrapper Ref 🔥 */}
+                {/* Notifications Wrapper */}
                 <div ref={notificationMenuRef} style={{ position: 'relative' }}>
                   <button 
                     className="social-btn" 
@@ -262,7 +251,7 @@ const Header = () => {
 
                   {/* Notification Dropdown Box */}
                   {showNotifications && (
-                    <div style={{ position: 'absolute', top: '50px', right: '-15px', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '16px', width: '320px', boxShadow: '0 15px 40px rgba(0,0,0,0.8)', zIndex: 1000, overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: '50px', right: '-10px', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '16px', width: '320px', maxWidth: '90vw', boxShadow: '0 15px 40px rgba(0,0,0,0.8)', zIndex: 1000, overflow: 'hidden' }}>
                       <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.06))', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 'bold', color: 'var(--text-color, #fff)', fontSize: '1.1rem' }}>Notifications</span>
                         {unreadCount > 0 && (
@@ -283,7 +272,6 @@ const Header = () => {
                         ))}
                       </div>
                       <div style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.06))', background: 'var(--bg-elevated, rgba(0,0,0,0.2))' }}>
-                        {/* 🔥 FIX: Changed Link to Button to open Settings Modal directly 🔥 */}
                         <button 
                           onClick={() => { setShowSettings(true); setShowNotifications(false); }} 
                           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}
@@ -295,7 +283,7 @@ const Header = () => {
                   )}
                 </div>
 
-                {/* 🔥 FIX: Profile Menu Wrapper Ref 🔥 */}
+                {/* Profile Menu Wrapper */}
                 <div ref={profileMenuRef} style={{ position: 'relative' }}>
                   <div 
                     onClick={() => { setShowDropdown(!showDropdown); setShowNotifications(false); }} 
@@ -309,7 +297,7 @@ const Header = () => {
                   </div>
 
                   {showDropdown && (
-                    <div style={{ position: 'absolute', top: '50px', right: '0', transform: 'translateX(-10px)', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', padding: '10px', width: '200px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 1000 }}>
+                    <div style={{ position: 'absolute', top: '50px', right: '0', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', padding: '10px', width: '200px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 1000 }}>
                       <Link to="/profile" onClick={() => setShowDropdown(false)} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', textDecoration: 'none' }} className="hover-bg-change">
                         <i className="fas fa-user-circle"></i> My Profile
                       </Link>
@@ -332,7 +320,8 @@ const Header = () => {
               </>
             )}
 
-            <div className="menu-icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} style={{ cursor: 'pointer', marginLeft: '10px', fontSize: '1.5rem', color: 'var(--text-color, #fff)', display: 'none' }}>
+            {/* 🔥 FIX: Mobile menu toggle class changed to match index.css 🔥 */}
+            <div className="menu-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} style={{ cursor: 'pointer', marginLeft: '10px', fontSize: '1.5rem', color: 'var(--text-color, #fff)' }}>
               <i className={isMobileMenuOpen ? 'fas fa-times' : 'fas fa-bars'}></i>
             </div>
 
@@ -351,7 +340,7 @@ const Header = () => {
                 
                 <div style={{ padding: '25px' }}>
                     
-                    {/* 🔥 NEW: Theme Toggle 🔥 */}
+                    {/* Theme Toggle */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                         <div>
                             <div style={{ color: 'var(--text-color, #fff)', fontWeight: 'bold', marginBottom: '5px' }}>App Theme</div>
