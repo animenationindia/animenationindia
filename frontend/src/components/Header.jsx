@@ -153,7 +153,7 @@ const Header = () => {
           </Link>
 
           {/* ================= MIDDLE: NAV LINKS ================= */}
-          <ul className={`nav-menu ${isMobileMenuOpen ? 'open' : ''}`} style={{ margin: '0 auto', flex: 1, display: 'flex', justifyContent: 'center', gap: '1vw' }}>
+          <ul className={`nav-menu ${isMobileMenuOpen ? 'open' : ''}`}>
             <li><Link to="/" className="nav-link active" onClick={() => setIsMobileMenuOpen(false)}>Home</Link></li>
             <li><Link to="/schedule" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Schedule</Link></li>
             <li><Link to="/top-anime" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Top Anime</Link></li>
