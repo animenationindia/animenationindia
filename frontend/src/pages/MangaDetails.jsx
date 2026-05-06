@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const MangaDetails = () => {
   const { id } = useParams();
@@ -13,7 +14,7 @@ const MangaDetails = () => {
     const fetchMangaDetails = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/manga/${id}`);
+        const response = await fetch(`${API_URL}/api/manga/${id}`);
         const data = await response.json();
         
         if (data.data) {
@@ -45,7 +46,7 @@ const MangaDetails = () => {
     }
 
     try {
-        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -158,7 +159,7 @@ const MangaDetails = () => {
                 </div>
                 
                 {/* 🔥 Titles (English Force) 🔥 */}
-                <h1 style={{ fontSize: '3rem', color: '#fff', fontWeight: '800', marginBottom: '10px', lineHeight: '1.2' }}>
+                <h1 style={{ fontSize: 'clamp(1.8rem, 5vw, 3rem)', color: '#fff', fontWeight: '800', marginBottom: '10px', lineHeight: '1.2' }}>
                   {manga.title_english || manga.title}
                 </h1>
                 <h2 style={{ fontSize: '1.2rem', color: 'var(--text-muted)', fontWeight: 'normal', marginBottom: '30px' }}>
