@@ -2,6 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const nodemailer = require('nodemailer');
+
+// 🔥 Email Pathanor Setup (Nodemailer) 🔥
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER, // Tomar Gmail
+    pass: process.env.EMAIL_PASS  // Gmail App Password
+  }
+});
 
 // 🔥 Modules import kora holo
 const bcrypt = require('bcryptjs');
@@ -177,7 +187,7 @@ app.delete('/api/watchlist/:userId/:mal_id', async (req, res) => {
 });
 
 // ==========================================
-// 🔥 UPDATED: CONTACT FORM API ROUTE (SHUDHU DATABASE - NO SMTP) 🔥
+// 🔥 CONTACT FORM API ROUTE (Database + Email) 🔥
 // ==========================================
 app.post('/api/contact', async (req, res) => {
   try {
@@ -186,11 +196,21 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ success: false, message: "Please fill all required fields!" });
     }
     
-    // 1. Shudhu Database-e save koro
+    // 1. Database-e save koro
     const newMessage = new Message({ name, email, subject, message });
     await newMessage.save();
 
-    // 2. Direct Success message pathiye dao
+    // 2. Tomar mail-e email pathao
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER, // Ekhane email ta tomar nijer inbox-e asbe
+      replyTo: email, // Reply korle jate direct user-er mail e jay
+      subject: `New Anime Nation India Message: ${subject}`,
+      text: `You got a new message from ${name} (${email}):\n\n${message}`
+    };
+
+    await transporter.sendMail(mailOptions);
+
     res.status(201).json({ success: true, message: "Message sent successfully! We will get back to you soon." });
   } catch (error) {
     console.error("Contact Error:", error);
