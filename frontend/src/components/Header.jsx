@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom'; 
-// 🔥 FIX: config.js theke API URL import kora holo 🔥
 import { API_URL } from '../api/config';
 
 const Header = () => {
@@ -31,13 +30,11 @@ const Header = () => {
   
   const navigate = useNavigate();
 
-  // Notifications Data
   const [notifications, setNotifications] = useState([
     { id: 1, text: "New Episode of Demon Slayer is out! 🔥", time: "Just now", icon: "fa-play-circle", color: "var(--danger)", read: false },
     { id: 2, text: "Welcome to Anime Nation India! 🎉", time: "2 hours ago", icon: "fa-star", color: "var(--accent)", read: false }
   ]);
 
-  // Auth Check
   const checkAuthStatus = () => {
     const token = localStorage.getItem('user_token') || localStorage.getItem('token'); 
     const name = localStorage.getItem('user_name') || localStorage.getItem('user'); 
@@ -74,13 +71,11 @@ const Header = () => {
     localStorage.setItem('app_theme', settings.theme);
   }, [settings.theme]);
 
-  // Debounced API Call for Search
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (searchQuery.length >= 3) {
         setIsSearching(true);
         try {
-          // 🔥 FIX: Markdown link muche config.js er API_URL use kora holo 🔥
           const response = await fetch(`${API_URL}/api/anime/search?q=${searchQuery}`);
           const data = await response.json();
           setSearchResults(data);
@@ -138,8 +133,94 @@ const Header = () => {
 
   return (
     <>
-      <header className="header">
-        <nav className="nav-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', width: '100%', maxWidth: '1600px', margin: '0 auto' }}>
+      {/* ================= 🔥 MOBILE RESPONSIVE CSS INJECTED HERE 🔥 ================= */}
+      <style>
+        {`
+          .nav-menu {
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            gap: 1.5vw;
+            list-style: none;
+            padding: 0;
+            transition: 0.3s ease-in-out;
+          }
+          .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            color: #fff;
+            cursor: pointer;
+            margin-left: 10px;
+          }
+          
+          /* 📱 MOBILE SCREEN CSS 📱 */
+          @media (max-width: 992px) {
+            .nav-menu {
+              display: none;
+              position: absolute;
+              top: 70px;
+              left: 0;
+              width: 100%;
+              background: #121326;
+              flex-direction: column;
+              align-items: center;
+              padding: 20px 0;
+              box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+              border-bottom: 1px solid rgba(255,255,255,0.1);
+              z-index: 1000;
+            }
+            .nav-menu.open {
+              display: flex;
+            }
+            .nav-menu li {
+              width: 100%;
+              text-align: center;
+              padding: 10px 0;
+            }
+            .nav-link {
+               display: block;
+               width: 100%;
+               font-size: 1.2rem;
+            }
+            .menu-toggle {
+              display: block;
+            }
+            .nav-right {
+              gap: 10px !important;
+            }
+            .search-box-input {
+              width: 130px !important; 
+            }
+            .brand-sub {
+              display: none !important; 
+            }
+            .brand-title {
+              font-size: 1.1rem !important; 
+            }
+          }
+
+          /* 📱 VERY SMALL MOBILE (Like iPhone SE) 📱 */
+          @media (max-width: 480px) {
+             .brand-text {
+                 display: none !important; 
+             }
+             .search-box-input {
+                 width: 110px !important;
+             }
+             .social-btn i {
+                 font-size: 1rem;
+             }
+             .social-btn {
+                 width: 35px;
+                 height: 35px;
+             }
+          }
+        `}
+      </style>
+
+      <header className="header" style={{ position: 'relative', zIndex: 999 }}>
+        <nav className="nav-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', width: '100%', maxWidth: '1600px', margin: '0 auto' }}>
           
           {/* ================= LEFT: BRAND LOGO ================= */}
           <Link to="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', flexShrink: 0 }}>
@@ -165,14 +246,15 @@ const Header = () => {
           </ul>
 
           {/* ================= RIGHT: SEARCH, ICONS & PROFILE ================= */}
-          <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '15px', flexShrink: 0, paddingRight: '10px' }}>
+          <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '15px', flexShrink: 0 }}>
             
             {/* Live Search Bar */}
             <div ref={searchRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
-                  placeholder="Search anime..."
+                  className="search-box-input"
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
@@ -183,7 +265,6 @@ const Header = () => {
                     borderRadius: '20px',
                     outline: 'none',
                     width: '180px',
-                    maxWidth: '100%',
                     fontSize: '0.85rem',
                     transition: '0.3s'
                   }}
@@ -193,25 +274,12 @@ const Header = () => {
 
               {/* Live Search Dropdown Box */}
               {(searchResults.length > 0 || isSearching) && searchQuery.length >= 3 && (
-                <div style={{
-                  position: 'absolute', top: '45px', right: '0', width: '300px', maxWidth: '90vw',
-                  background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))',
-                  borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
-                  overflow: 'hidden', zIndex: 1000, maxHeight: '400px', overflowY: 'auto'
-                }}>
+                <div style={{ position: 'absolute', top: '45px', right: '0', width: '300px', maxWidth: '90vw', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)', overflow: 'hidden', zIndex: 1000, maxHeight: '400px', overflowY: 'auto' }}>
                   {isSearching ? (
-                    <div style={{ padding: '15px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> Searching...
-                    </div>
+                    <div style={{ padding: '15px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}><i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i> Searching...</div>
                   ) : (
                     searchResults.map(anime => (
-                      <Link 
-                        key={anime.mal_id} 
-                        to={`/anime/${anime.mal_id}`} 
-                        onClick={() => { setSearchQuery(''); setSearchResults([]); setIsMobileMenuOpen(false); }} 
-                        style={{ display: 'flex', gap: '10px', padding: '10px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))', textDecoration: 'none', color: 'var(--text-color, #fff)', transition: '0.2s' }} 
-                        className="hover-bg-change"
-                      >
+                      <Link key={anime.mal_id} to={`/anime/${anime.mal_id}`} onClick={() => { setSearchQuery(''); setSearchResults([]); setIsMobileMenuOpen(false); }} style={{ display: 'flex', gap: '10px', padding: '10px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.05))', textDecoration: 'none', color: 'var(--text-color, #fff)', transition: '0.2s' }} className="hover-bg-change">
                         <img src={anime.images.jpg.small_image_url} alt={anime.title} style={{ width: '40px', height: '55px', objectFit: 'cover', borderRadius: '4px' }} loading="lazy" />
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                           <span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{anime.title}</span>
@@ -234,19 +302,10 @@ const Header = () => {
               <>
                 <Link to="/watchlist" className="social-btn" title="Watchlist" style={{ color: 'var(--text-color, #fff)', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-bookmark"></i></Link>
 
-                {/* Notifications Wrapper */}
                 <div ref={notificationMenuRef} style={{ position: 'relative' }}>
-                  <button 
-                    className="social-btn" 
-                    onClick={() => { setShowNotifications(!showNotifications); setShowDropdown(false); }}
-                    style={{ position: 'relative', cursor: 'pointer', background: showNotifications ? 'var(--bg-elevated, rgba(255,255,255,0.2))' : '' }}
-                  >
+                  <button className="social-btn" onClick={() => { setShowNotifications(!showNotifications); setShowDropdown(false); }} style={{ position: 'relative', cursor: 'pointer', background: showNotifications ? 'var(--bg-elevated, rgba(255,255,255,0.2))' : '' }}>
                     <i className="fas fa-bell"></i>
-                    {unreadCount > 0 && (
-                      <span style={{ position: 'absolute', top: '-2px', right: '-2px', background: 'var(--danger)', color: '#fff', fontSize: '0.65rem', padding: '2px 5px', borderRadius: '50%', fontWeight: 'bold', border: '2px solid var(--bg-color, #0c0f25)' }}>
-                        {unreadCount}
-                      </span>
-                    )}
+                    {unreadCount > 0 && <span style={{ position: 'absolute', top: '-2px', right: '-2px', background: 'var(--danger)', color: '#fff', fontSize: '0.65rem', padding: '2px 5px', borderRadius: '50%', fontWeight: 'bold', border: '2px solid var(--bg-color, #0c0f25)' }}>{unreadCount}</span>}
                   </button>
 
                   {/* Notification Dropdown Box */}
@@ -254,16 +313,12 @@ const Header = () => {
                     <div style={{ position: 'absolute', top: '50px', right: '-10px', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '16px', width: '320px', maxWidth: '90vw', boxShadow: '0 15px 40px rgba(0,0,0,0.8)', zIndex: 1000, overflow: 'hidden' }}>
                       <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.06))', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 'bold', color: 'var(--text-color, #fff)', fontSize: '1.1rem' }}>Notifications</span>
-                        {unreadCount > 0 && (
-                            <button onClick={markAllRead} style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold' }}>Mark all read</button>
-                        )}
+                        {unreadCount > 0 && <button onClick={markAllRead} style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold' }}>Mark all read</button>}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', maxHeight: '350px', overflowY: 'auto' }}>
                         {notifications.map(n => (
                           <div key={n.id} style={{ padding: '15px 20px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.03))', display: 'flex', gap: '15px', background: n.read ? 'transparent' : 'var(--bg-elevated, rgba(255,75,107,0.05))', cursor: 'pointer', transition: '0.2s' }}>
-                             <div style={{ width: '40px', height: '40px', background: 'var(--bg-elevated, rgba(255,255,255,0.05))', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                               <i className={`fas ${n.icon}`} style={{ color: n.color, fontSize: '1.1rem' }}></i>
-                             </div>
+                             <div style={{ width: '40px', height: '40px', background: 'var(--bg-elevated, rgba(255,255,255,0.05))', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><i className={`fas ${n.icon}`} style={{ color: n.color, fontSize: '1.1rem' }}></i></div>
                              <div style={{ flex: 1 }}>
                                <div style={{ color: n.read ? 'var(--text-muted)' : 'var(--text-color, #fff)', fontSize: '0.9rem', lineHeight: '1.4', fontWeight: n.read ? 'normal' : 'bold' }}>{n.text}</div>
                                <div style={{ color: 'var(--primary-soft, var(--primary))', fontSize: '0.75rem', marginTop: '6px', fontWeight: 'bold' }}>{n.time}</div>
@@ -271,57 +326,31 @@ const Header = () => {
                           </div>
                         ))}
                       </div>
-                      <div style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.06))', background: 'var(--bg-elevated, rgba(0,0,0,0.2))' }}>
-                        <button 
-                          onClick={() => { setShowSettings(true); setShowNotifications(false); }} 
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}
-                        >
-                          View All Settings
-                        </button>
-                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Profile Menu Wrapper */}
                 <div ref={profileMenuRef} style={{ position: 'relative' }}>
-                  <div 
-                    onClick={() => { setShowDropdown(!showDropdown); setShowNotifications(false); }} 
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', background: showDropdown ? 'var(--bg-elevated, rgba(255,255,255,0.15))' : 'var(--bg-elevated, rgba(255,255,255,0.1))', padding: '5px 12px', borderRadius: '99px', transition: '0.3s' }}
-                  >
-                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                      {userName.charAt(0).toUpperCase()}
-                    </div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-color, #fff)' }}>{userName}</span>
+                  <div onClick={() => { setShowDropdown(!showDropdown); setShowNotifications(false); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', background: showDropdown ? 'var(--bg-elevated, rgba(255,255,255,0.15))' : 'var(--bg-elevated, rgba(255,255,255,0.1))', padding: '5px 12px', borderRadius: '99px', transition: '0.3s' }}>
+                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '0.9rem' }}>{userName.charAt(0).toUpperCase()}</div>
                     <i className="fas fa-caret-down" style={{ color: 'var(--text-color, #fff)' }}></i>
                   </div>
 
                   {showDropdown && (
                     <div style={{ position: 'absolute', top: '50px', right: '0', background: 'var(--bg-color, #121326)', border: '1px solid var(--border-color, rgba(255,255,255,0.1))', borderRadius: '12px', padding: '10px', width: '200px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 1000 }}>
-                      <Link to="/profile" onClick={() => setShowDropdown(false)} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', textDecoration: 'none' }} className="hover-bg-change">
-                        <i className="fas fa-user-circle"></i> My Profile
-                      </Link>
-
-                      <Link to="/watchlist" onClick={() => setShowDropdown(false)} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', textDecoration: 'none' }} className="hover-bg-change">
-                        <i className="fas fa-bookmark"></i> Watchlist
-                      </Link>
-                      
-                      <button onClick={() => { setShowSettings(true); setShowDropdown(false); }} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }} className="hover-bg-change">
-                        <i className="fas fa-cog"></i> Settings
-                      </button>
-                      
+                      <Link to="/profile" onClick={() => setShowDropdown(false)} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', textDecoration: 'none' }} className="hover-bg-change"><i className="fas fa-user-circle"></i> My Profile</Link>
+                      <Link to="/watchlist" onClick={() => setShowDropdown(false)} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', textDecoration: 'none' }} className="hover-bg-change"><i className="fas fa-bookmark"></i> Watchlist</Link>
+                      <button onClick={() => { setShowSettings(true); setShowDropdown(false); }} style={{ color: 'var(--text-color, #fff)', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }} className="hover-bg-change"><i className="fas fa-cog"></i> Settings</button>
                       <hr style={{ borderColor: 'var(--border-color, rgba(255,255,255,0.06))', margin: '5px 0' }} />
-                      <button onClick={handleLogout} style={{ color: '#ff4b6b', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px' }} className="hover-bg-change">
-                        <i className="fas fa-sign-out-alt"></i> Log Out
-                      </button>
+                      <button onClick={handleLogout} style={{ color: '#ff4b6b', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', gap: '10px', padding: '8px 10px', borderRadius: '8px' }} className="hover-bg-change"><i className="fas fa-sign-out-alt"></i> Log Out</button>
                     </div>
                   )}
                 </div>
               </>
             )}
 
-            {/* 🔥 FIX: Mobile menu toggle class changed to match index.css 🔥 */}
-            <div className="menu-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} style={{ cursor: 'pointer', marginLeft: '10px', fontSize: '1.5rem', color: 'var(--text-color, #fff)' }}>
+            {/* Mobile Menu Toggle (Hamburger) */}
+            <div className="menu-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               <i className={isMobileMenuOpen ? 'fas fa-times' : 'fas fa-bars'}></i>
             </div>
 
@@ -360,19 +389,6 @@ const Header = () => {
                         <div style={{ display: 'flex', background: 'var(--bg-elevated, rgba(0,0,0,0.5))', borderRadius: '8px', padding: '3px' }}>
                             <button onClick={() => setSettings({...settings, subDub: 'sub'})} style={{ background: settings.subDub === 'sub' ? 'var(--primary)' : 'transparent', color: settings.subDub === 'sub' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '6px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>Sub</button>
                             <button onClick={() => setSettings({...settings, subDub: 'dub'})} style={{ background: settings.subDub === 'dub' ? 'var(--primary)' : 'transparent', color: settings.subDub === 'dub' ? '#fff' : 'var(--text-muted)', border: 'none', padding: '6px 15px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>Dub</button>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                        <div>
-                            <div style={{ color: 'var(--text-color, #fff)', fontWeight: 'bold', marginBottom: '5px' }}>Autoplay Next Episode</div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Automatically start next episode</div>
-                        </div>
-                        <div 
-                            onClick={() => toggleSetting('autoplay')}
-                            style={{ width: '45px', height: '24px', background: settings.autoplay ? 'var(--primary)' : 'var(--border-color, rgba(255,255,255,0.1))', borderRadius: '99px', position: 'relative', cursor: 'pointer', transition: '0.3s' }}
-                        >
-                            <div style={{ width: '20px', height: '20px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.autoplay ? '23px' : '2px', transition: '0.3s', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}></div>
                         </div>
                     </div>
                 </div>
