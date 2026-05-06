@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const TopManga = () => {
   const navigate = useNavigate();
@@ -65,7 +66,7 @@ const TopManga = () => {
   useEffect(() => {
     const getTopManga = async () => {
       setLoadingTop(true);
-      const data = await fetchJikan('ani_top_manga_3', '[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/manga/top');
+      const data = await fetchJikan('ani_top_manga_3', `${API_URL}/api/manga/top`);
       if (data && data.data) {
         setTopManga(removeDuplicates(data.data));
       }
@@ -85,7 +86,7 @@ const TopManga = () => {
 
       const cacheKey = `ani_all_manga_page_${currentPage}`;
       // 🔥 FIX: bypassCache=true hata diya — ab cache use hoga, rate limit nahi lagega
-      const data = await fetchJikan(cacheKey, `[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/manga/all?page=${currentPage}`);
+      const data = await fetchJikan(cacheKey, `${API_URL}/api/manga/all?page=${currentPage}`);
       
       if (data && data.data) {
         setAllManga(removeDuplicates(data.data));
@@ -108,7 +109,7 @@ const TopManga = () => {
       if (searchQuery.length > 2) {
         setIsSearching(true);
         try {
-          const res = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/manga/search?q=${searchQuery}`);
+          const res = await fetch(`${API_URL}/api/manga/search?q=${searchQuery}`);
           if (res.ok) {
               const data = await res.json();
               setSearchResults(removeDuplicates(data.data)); 
@@ -138,7 +139,7 @@ const TopManga = () => {
     }
 
     try {
-        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
