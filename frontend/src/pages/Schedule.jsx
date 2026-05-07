@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const Schedule = () => {
   const navigate = useNavigate();
   
-  // Days Array
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const todayStr = new Date().toLocaleString('en-US', {weekday: 'long'}).toLowerCase();
   
@@ -12,7 +12,6 @@ const Schedule = () => {
   const [scheduleData, setScheduleData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Time Calculator
   const getDayTimestamps = (targetDayName) => {
       const daysMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const now = new Date();
@@ -32,7 +31,6 @@ const Schedule = () => {
       };
   };
 
-  // 🔥 ANILIST GRAPHQL FETCHER 🔥
   useEffect(() => {
       const fetchSchedule = async () => {
           setLoading(true);
@@ -78,7 +76,7 @@ const Schedule = () => {
               if (aniRes.ok) {
                   const aniData = await aniRes.json();
                   const mappedData = aniData.data.Page.airingSchedules
-                      .filter(item => item.media.idMal) 
+                      .filter(item => item.media && item.media.idMal) 
                       .map(item => ({
                           mal_id: item.media.idMal,
                           title_english: item.media.title.english || item.media.title.romaji,
@@ -103,9 +101,6 @@ const Schedule = () => {
       fetchSchedule();
   }, [activeDay]);
 
-  // ===============================================================
-  // 🔥 PERSONAL DATABASE SAVE LOGIC 🔥
-  // ===============================================================
   const addToWatchlist = async (e, anime) => {
     e.stopPropagation(); 
     e.preventDefault(); 
@@ -119,7 +114,7 @@ const Schedule = () => {
     }
 
     try {
-        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -234,7 +229,7 @@ const Schedule = () => {
                               {/* Floating Watchlist Button */}
                               <button 
                                   onClick={(e) => addToWatchlist(e, anime)} 
-                                  style={{ position: 'absolute', bottom: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, transition: '0.3s' }}
+                                  style={{ position: 'absolute', bottom: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justify-content: 'center', zIndex: 10, transition: '0.3s' }}
                                   onMouseOver={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.border = 'none'; }}
                                   onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.6)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.2)'; }}
                               >
