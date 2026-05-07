@@ -25,36 +25,37 @@ const AnimeDetails = () => {
       setError(false);
       setShowAllEpisodes(false); 
       setShowTrailerModal(false); 
+      
       try {
+        // 1. Prothome main details ta fetch korchi
         const resAnime = await fetch(`https://api.jikan.moe/v4/anime/${id}/full`);
         if (!resAnime.ok) throw new Error("Anime not found");
         const animeData = await resAnime.json();
         setAnime(animeData.data);
         
-        await new Promise(resolve => setTimeout(resolve, 800));
+        // 🔥 OPTIMIZED: Promise.all diye baki api gulo eksathe (parallel) call korchi
+        // Kono 800ms er delay nei!
+        const isTv = animeData.data.type === 'TV';
+        
+        const [resRecs, resChars, resEps] = await Promise.all([
+          fetch(`${API_URL}/api/anime/${id}/recommendations`).catch(() => null),
+          fetch(`https://api.jikan.moe/v4/anime/${id}/characters`).catch(() => null),
+          isTv ? fetch(`https://api.jikan.moe/v4/anime/${id}/episodes`).catch(() => null) : Promise.resolve(null)
+        ]);
 
-        const resRecs = await fetch(`${API_URL}/api/anime/${id}/recommendations`);
-        if (resRecs.ok) {
+        if (resRecs && resRecs.ok) {
           const recData = await resRecs.json();
           setRecommendations(recData.data ? recData.data.slice(0, 8) : []);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        const resChars = await fetch(`https://api.jikan.moe/v4/anime/${id}/characters`);
-        if (resChars.ok) {
+        if (resChars && resChars.ok) {
           const charData = await resChars.json();
-          setCharacters(charData.data.slice(0, 10));
+          setCharacters(charData.data?.slice(0, 10) || []);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 800));
-
-        if (animeData.data.type === 'TV') {
-          const resEps = await fetch(`https://api.jikan.moe/v4/anime/${id}/episodes`);
-          if (resEps.ok) {
-            const epData = await resEps.json();
-            setEpisodes(epData.data || []);
-          }
+        if (resEps && resEps.ok) {
+          const epData = await resEps.json();
+          setEpisodes(epData.data || []);
         }
 
       } catch (err) {
