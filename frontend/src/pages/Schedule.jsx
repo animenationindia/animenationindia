@@ -229,7 +229,7 @@ const Schedule = () => {
                               {/* Floating Watchlist Button */}
                               <button 
                                   onClick={(e) => addToWatchlist(e, anime)} 
-                                  style={{ position: 'absolute', bottom: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justify-content: 'center', zIndex: 10, transition: '0.3s' }}
+                                  style={{ position: 'absolute', bottom: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, transition: '0.3s' }}
                                   onMouseOver={(e) => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.border = 'none'; }}
                                   onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.6)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.border = '1px solid rgba(255,255,255,0.2)'; }}
                               >
