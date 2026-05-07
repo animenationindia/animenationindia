@@ -364,7 +364,7 @@ const Home = () => {
             <h2 className="section-title">🔥 Trending Airing Anime</h2>
             <p className="section-sub">What's hot right now on MAL.</p>
           </div>
-          <Link to="/seasons" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
+          <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
           {trendingAnime.length > 0 ? trendingAnime.map((anime) => (
