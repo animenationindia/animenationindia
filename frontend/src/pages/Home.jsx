@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import LatestTrailersSection from '../components/LatestTrailersSection';
+import { API_URL } from '../api/config';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -240,7 +241,7 @@ const Home = () => {
     }
 
     try {
-        const response = await fetch('https://animenationindia-backend.onrender.com/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
