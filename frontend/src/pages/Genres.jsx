@@ -126,7 +126,7 @@ const Genres = () => {
     }
 
     try {
-        const response = await fetch('[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist', {
+        const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
