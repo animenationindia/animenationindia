@@ -114,6 +114,8 @@ const Header = () => {
             <li><Link to="/top-anime" className="nav-link">Top Anime</Link></li>
             <li><Link to="/manga" className="nav-link">Top Manga</Link></li>
             <li><Link to="/popular" className="nav-link">Popular</Link></li>
+            {/* 🔥 Genres Restored Here 🔥 */}
+            <li><Link to="/genres" className="nav-link">Genres</Link></li>
             <li><Link to="/contact" className="nav-link">Contact</Link></li>
           </ul>
 
