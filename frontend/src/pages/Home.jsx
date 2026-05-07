@@ -364,7 +364,8 @@ const Home = () => {
             <h2 className="section-title">🔥 Trending Airing Anime</h2>
             <p className="section-sub">What's hot right now on MAL.</p>
           </div>
-          <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
+          {/* 🔥 SEASONS LINK 🔥 */}
+          <Link to="/seasons" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
           {trendingAnime.length > 0 ? trendingAnime.map((anime) => (
@@ -387,7 +388,7 @@ const Home = () => {
             <h2 className="section-title">🌸 Upcoming Seasonal Anime</h2>
             <p className="section-sub">Anticipated releases for the next season.</p>
           </div>
-          {/* 🔥 EKHANE LINK TA CHANGE KORA HOYECHE 🔥 */}
+          {/* 🔥 UPCOMING LINK 🔥 */}
           <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
