@@ -23,6 +23,7 @@ import TopMovies from './pages/TopMovies';
 import TopTvSeries from './pages/TopTvSeries';
 import ReviewsPage from './pages/ReviewsPage';
 import SeasonalAnime from './pages/SeasonalAnime';
+import UpcomingAnime from './pages/UpcomingAnime';
 
 const ComingSoon = ({ title }) => (
   <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -59,6 +60,7 @@ function App() {
           <Route path="/tv-series" element={<TopTvSeries />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/seasons" element={<SeasonalAnime />} />
+          <Route path="/upcoming" element={<UpcomingAnime />} />
        </Routes>
       </main>
       <Footer />
