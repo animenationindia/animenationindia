@@ -117,6 +117,7 @@ const Header = () => {
             {/* 🔥 Genres Restored Here 🔥 */}
             <li><Link to="/genres" className="nav-link">Genres</Link></li>
             <li><Link to="/contact" className="nav-link">Contact</Link></li>
+            <li><Link to="/watchlist" className="nav-link">Watchlist</Link></li>
           </ul>
 
           <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
