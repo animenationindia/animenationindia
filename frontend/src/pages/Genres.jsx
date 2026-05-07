@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const Genres = () => {
   const navigate = useNavigate();
