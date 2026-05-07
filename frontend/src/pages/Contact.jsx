@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../api/config';
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
@@ -22,7 +23,7 @@ const Contact = () => {
 
     try {
       // 🔥 EKDOM THIK KORA LINK (Kono bracket nei) 🔥
-      const response = await fetch('https://animenationindia-backend.onrender.com/api/contact', {
+      const response = await fetch(`${API_URL}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
