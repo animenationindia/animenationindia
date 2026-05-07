@@ -261,7 +261,7 @@ const Home = () => {
   const currentHero = heroAnime[heroIndex];
 
   return (
-    <div className="page-wrap" id="home">
+    <div className="page-wrap" id="home" style={{ overflowX: 'hidden' }}>
       {/* 🔥 INJECTED PREMIUM CSS 🔥 */}
       <style>
         {`
@@ -315,7 +315,7 @@ const Home = () => {
             transition: padding-bottom 0.3s ease;
           }
           .premium-card:hover .premium-meta-layer {
-            padding-bottom: 25px; /* Slight text lift on hover */
+            padding-bottom: 25px;
           }
           .card-watchlist-btn {
               position: absolute;
@@ -371,46 +371,69 @@ const Home = () => {
         )}
       </section>
 
-      {/* ================= CINEMATIC HERO SLIDER ================= */}
+      {/* ================= 🔥 CRUNCHYROLL-STYLE EDGE-TO-EDGE HERO SLIDER 🔥 ================= */}
       {currentHero ? (
-        <section key={currentHero.mal_id} className="animate-hero" style={{ position: 'relative', height: '480px', borderRadius: '32px', overflow: 'hidden', marginTop: '2.5rem', backgroundImage: `url(${currentHero.trailer?.images?.maximum_image_url || currentHero.images.webp.large_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,12,26,1) 0%, rgba(10,12,26,0.7) 45%, transparent 100%), linear-gradient(to top, rgba(10,12,26,0.9) 0%, transparent 40%)' }}></div>
+        <section key={currentHero.mal_id} className="animate-hero" style={{ 
+            position: 'relative', 
+            width: '100vw', 
+            marginLeft: 'calc(50% - 50vw)', // Breaks out of the container to go edge-to-edge
+            height: '70vh', 
+            minHeight: '550px',
+            maxHeight: '700px',
+            marginTop: '2rem', 
+            backgroundImage: `url(${currentHero.trailer?.images?.maximum_image_url || currentHero.images.webp.large_image_url})`, 
+            backgroundSize: 'cover', 
+            backgroundPosition: 'center top',
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            display: 'flex',
+            alignItems: 'center'
+        }}>
+          {/* Dark Gradient Overlay for Text Readability (Thicker on the left and bottom) */}
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #0a0c1a 0%, #0a0c1a 15%, rgba(10,12,26,0.6) 50%, transparent 100%), linear-gradient(0deg, #0a0c1a 0%, transparent 20%)' }}></div>
           
-          <div style={{ position: 'absolute', top: '50%', left: '4rem', transform: 'translateY(-50%)', maxWidth: '650px', zIndex: 10 }}>
+          <div style={{ position: 'relative', padding: '0 8%', maxWidth: '800px', zIndex: 10 }}>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-              <span style={{ background: 'var(--primary)', color: '#fff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px' }}>#1 AIRING</span>
-              <span style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>{currentHero.rating ? currentHero.rating.split(' ')[0] : 'PG-13'}</span>
+              <span style={{ background: 'var(--primary)', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px' }}>#1 AIRING</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '4px 12px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>{currentHero.rating ? currentHero.rating.split(' ')[0] : 'PG-13'}</span>
             </div>
             
-            <h1 style={{ fontSize: '3rem', fontWeight: '900', color: '#fff', marginBottom: '15px', textShadow: '0 10px 20px rgba(0,0,0,0.8)', lineHeight: '1.1' }}>
+            <h1 style={{ fontSize: '3.5rem', fontWeight: '900', color: '#fff', marginBottom: '15px', textShadow: '0 10px 20px rgba(0,0,0,0.8)', lineHeight: '1.1' }}>
               {currentHero.title_english || currentHero.title}
             </h1>
             
-            <div style={{ color: 'var(--accent)', fontSize: '0.9rem', marginBottom: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {currentHero.genres?.map(g => g.name).join(' • ')}
+            <div style={{ color: 'var(--accent)', fontSize: '1rem', marginBottom: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {currentHero.type || 'TV'} • {currentHero.genres?.map(g => g.name).join(' • ')}
             </div>
             
-            <p style={{ color: '#d0d5e0', fontSize: '1rem', marginBottom: '30px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+            <p style={{ color: '#d0d5e0', fontSize: '1.05rem', marginBottom: '35px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
               {currentHero.synopsis}
             </p>
             
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-              <button onClick={() => navigate(`/anime/${currentHero.mal_id}`)} className="btn-primary hover-scale" style={{ padding: '15px 35px', borderRadius: '99px', fontSize: '1.1rem', fontWeight: '800', boxShadow: '0 10px 25px rgba(255,75,107,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button onClick={() => navigate(`/anime/${currentHero.mal_id}`)} className="btn-primary hover-scale" style={{ padding: '15px 35px', borderRadius: '6px', fontSize: '1.1rem', fontWeight: '800', boxShadow: '0 10px 25px rgba(255,75,107,0.4)', display: 'flex', alignItems: 'center', gap: '10px', textTransform: 'uppercase' }}>
                 <i className="fas fa-play"></i> View Details
               </button>
-              <button onClick={(e) => addToWatchlist(e, currentHero)} className="hover-scale" style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '15px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '55px', height: '55px', fontSize: '1.2rem' }}>
+              <button onClick={(e) => addToWatchlist(e, currentHero)} className="hover-scale" style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '15px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '55px', height: '55px', fontSize: '1.2rem' }}>
                 <i className="fas fa-bookmark"></i>
               </button>
             </div>
           </div>
 
-          <div style={{ position: 'absolute', bottom: '20px', right: '30px', display: 'flex', gap: '10px', zIndex: 20 }}>
-            <button onClick={prevHero} className="hover-scale" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '45px', height: '45px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-chevron-left"></i></button>
-            <button onClick={nextHero} className="hover-scale" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '45px', height: '45px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-chevron-right"></i></button>
+          {/* Slider Controls (Left & Right Edges) */}
+          <button onClick={prevHero} className="hover-scale" style={{ position: 'absolute', left: '2%', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)', color: '#fff', border: 'none', borderRadius: '50%', width: '50px', height: '50px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20, fontSize: '1.2rem' }}><i className="fas fa-chevron-left"></i></button>
+          <button onClick={nextHero} className="hover-scale" style={{ position: 'absolute', right: '2%', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)', color: '#fff', border: 'none', borderRadius: '50%', width: '50px', height: '50px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20, fontSize: '1.2rem' }}><i className="fas fa-chevron-right"></i></button>
+
+          {/* Crunchyroll Style Progress Indicators */}
+          <div style={{ position: 'absolute', bottom: '30px', left: '8%', display: 'flex', gap: '8px', zIndex: 20 }}>
+              {heroAnime.map((_, idx) => (
+                  <div key={idx} style={{ height: '4px', width: idx === heroIndex ? '35px' : '15px', background: idx === heroIndex ? 'var(--primary)' : 'rgba(255,255,255,0.3)', borderRadius: '2px', transition: 'width 0.4s ease, background 0.4s ease', cursor: 'pointer' }} onClick={() => setHeroIndex(idx)}></div>
+              ))}
           </div>
+
         </section>
       ) : (
-        <section style={{ height: '480px', background: '#121426', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <section style={{ height: '550px', background: '#121426', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem', width: '100vw', marginLeft: 'calc(50% - 50vw)' }}>
            <i className="fas fa-circle-notch fa-spin fa-3x" style={{ color: 'var(--primary)' }}></i>
         </section>
       )}
