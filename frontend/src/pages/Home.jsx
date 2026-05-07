@@ -6,6 +6,8 @@ import { API_URL } from '../api/config';
 const Home = () => {
   const navigate = useNavigate();
   const dubbedRef = useRef(null);
+  const trendingRef = useRef(null);
+  const seasonalRef = useRef(null);
   
   // Data States
   const [heroAnime, setHeroAnime] = useState([]);
@@ -18,7 +20,7 @@ const Home = () => {
   const [reviews, setReviews] = useState([]);
   const [popularDubbed, setPopularDubbed] = useState([]);
   
-  // 🔥 NEW: Awards State 🔥
+  // Awards State
   const [awardContenders, setAwardContenders] = useState([]);
   
   // Search States
@@ -34,7 +36,7 @@ const Home = () => {
     return Array.from(new Map(animeArray.map(item => [item.mal_id || (item.entry && item.entry.mal_id), item])).values());
   };
 
-  // 🔥 BULLETPROOF FETCHER FOR JIKAN
+  // BULLETPROOF FETCHER FOR JIKAN
   const fetchJikan = async (cacheKey, url) => {
     const cachedData = localStorage.getItem(cacheKey);
     const cacheTime = localStorage.getItem(cacheKey + '_time');
@@ -82,7 +84,7 @@ const Home = () => {
         setTrendingAnime(trendData);
         await delay(500);
 
-        const seasonData = await fetchJikan('ani_seasonal', 'https://api.jikan.moe/v4/seasons/upcoming?limit=10&type=tv');
+        const seasonData = await fetchJikan('ani_seasonal', 'https://api.jikan.moe/v4/seasons/upcoming?limit=15&type=tv');
         setSeasonalAnime(seasonData);
         await delay(500);
 
@@ -94,7 +96,7 @@ const Home = () => {
         setTopTv(tvData);
         await delay(500);
 
-        // 🔥 ANILIST GRAPHQL FETCHER FOR TODAY'S SCHEDULE 🔥
+        // ANILIST GRAPHQL FETCHER FOR TODAY'S SCHEDULE
         const fetchAniListSchedule = async () => {
             const cacheKey = 'anilist_today_sched';
             const cachedData = localStorage.getItem(cacheKey);
@@ -164,7 +166,7 @@ const Home = () => {
         const reviewData = await fetchJikan('ani_reviews', 'https://api.jikan.moe/v4/reviews/anime?limit=12');
         setReviews(reviewData);
 
-        // 🔥 ANILIST GRAPHQL FETCHER FOR AWARDS (Auto-Updating) 🔥
+        // ANILIST GRAPHQL FETCHER FOR AWARDS
         const fetchAwards = async () => {
           const currentYear = new Date().getFullYear();
           const query = `
@@ -203,7 +205,7 @@ const Home = () => {
   // Hero Slider Auto-Scroll
   useEffect(() => {
     if (heroAnime.length > 0) {
-      const interval = setInterval(() => setHeroIndex((prev) => (prev + 1) % heroAnime.length), 5000);
+      const interval = setInterval(() => setHeroIndex((prev) => (prev + 1) % heroAnime.length), 6000);
       return () => clearInterval(interval);
     }
   }, [heroAnime]);
@@ -225,9 +227,9 @@ const Home = () => {
 
   const nextHero = () => setHeroIndex((prev) => (prev + 1) % heroAnime.length);
   const prevHero = () => setHeroIndex((prev) => (prev - 1 + heroAnime.length) % heroAnime.length);
-  const scrollDubbed = (dir) => { if(dubbedRef.current) dubbedRef.current.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' }); };
+  const scrollRef = (ref, dir) => { if(ref.current) ref.current.scrollBy({ left: dir === 'left' ? -350 : 350, behavior: 'smooth' }); };
 
-  // 🔥 PERSONAL DATABASE SAVE LOGIC 🔥
+  // PERSONAL DATABASE SAVE LOGIC
   const addToWatchlist = async (e, anime) => {
     e.stopPropagation(); 
     e.preventDefault(); 
@@ -244,19 +246,12 @@ const Home = () => {
         const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                anime: anime,
-                userId: userId
-            }) 
+            body: JSON.stringify({ anime: anime, userId: userId }) 
         });
 
         const data = await response.json();
-
-        if (response.ok) {
-            alert(`🎉 ${anime.title_english || anime.title} saved to your personal collection!`);
-        } else {
-            alert(`⚠️ ${data.message || "Already in your Watchlist!"}`);
-        }
+        if (response.ok) alert(`🎉 ${anime.title_english || anime.title} saved to your personal collection!`);
+        else alert(`⚠️ ${data.message || "Already in your Watchlist!"}`);
     } catch (error) {
         console.error("Database error", error);
         alert("❌ Failed to connect to Database.");
@@ -267,18 +262,68 @@ const Home = () => {
 
   return (
     <div className="page-wrap" id="home">
+      {/* 🔥 INJECTED PREMIUM CSS 🔥 */}
       <style>
         {`
-          @keyframes smoothFade { 0% { opacity: 0.2; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
-          .animate-hero { animation: smoothFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+          @keyframes smoothFade { 0% { opacity: 0.4; filter: blur(10px); transform: scale(1.02); } 100% { opacity: 1; filter: blur(0px); transform: scale(1); } }
+          .animate-hero { animation: smoothFade 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
           .hide-scrollbar::-webkit-scrollbar { display: none; }
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+          
+          /* Glowing Search Input */
+          .glow-search:focus-within {
+            box-shadow: 0 0 20px rgba(255, 75, 107, 0.3);
+            border-color: rgba(255, 75, 107, 0.5) !important;
+          }
+
+          /* Premium Full-Image Card */
+          .premium-card {
+            flex: 0 0 220px;
+            height: 330px;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255,255,255,0.05);
+            background: #0a0c1a;
+          }
+          .premium-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 15px rgba(255, 75, 107, 0.3);
+            border-color: rgba(255, 75, 107, 0.5);
+          }
+          .premium-card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s ease;
+          }
+          .premium-card:hover .premium-card-img {
+            transform: scale(1.1);
+          }
+          .premium-meta-layer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 60px 15px 15px;
+            background: linear-gradient(to top, rgba(10,12,26,1) 0%, rgba(10,12,26,0.8) 40%, transparent 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            transition: padding-bottom 0.3s ease;
+          }
+          .premium-card:hover .premium-meta-layer {
+            padding-bottom: 25px; /* Slight text lift on hover */
+          }
           .card-watchlist-btn {
               position: absolute;
               top: 10px;
               right: 10px;
               background: rgba(0,0,0,0.6);
-              border: none;
+              backdrop-filter: blur(5px);
+              border: 1px solid rgba(255,255,255,0.1);
               color: #fff;
               width: 35px;
               height: 35px;
@@ -289,183 +334,235 @@ const Home = () => {
               justify-content: center;
               z-index: 10;
               opacity: 0;
-              transition: 0.3s;
+              transition: all 0.3s ease;
           }
-          .poster-card:hover .card-watchlist-btn, .anime-card-wrap:hover .card-watchlist-btn {
+          .premium-card:hover .card-watchlist-btn, .anime-card-wrap:hover .card-watchlist-btn {
               opacity: 1;
-              transform: translateY(0);
+              transform: translateY(0) scale(1);
+          }
+          .card-watchlist-btn:hover {
+             background: var(--primary);
+             border-color: var(--primary);
+             transform: scale(1.1) !important;
           }
         `}
       </style>
 
-      {/* ================= LIVE SEARCH ================= */}
-      <section className="search-row" style={{ marginTop: '2rem', position: 'relative', zIndex: 50 }}>
-        <div className="search-input-wrap">
-          <i className="fas fa-search"></i>
-          <input type="text" className="search-input" placeholder="Search anime, manga, or characters..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          <button className="search-btn"><i className="fas fa-arrow-right"></i> Search</button>
+      {/* ================= PREMIUM LIVE SEARCH ================= */}
+      <section className="search-row glow-search" style={{ marginTop: '2rem', position: 'relative', zIndex: 50, transition: '0.3s' }}>
+        <div className="search-input-wrap" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '99px', padding: '5px 5px 5px 25px' }}>
+          <i className="fas fa-search" style={{ color: 'var(--text-muted)' }}></i>
+          <input type="text" className="search-input" placeholder="Search anime, manga, or characters..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ background: 'transparent' }} />
+          <button className="search-btn" style={{ borderRadius: '99px', padding: '12px 30px' }}><i className="fas fa-arrow-right"></i> Search</button>
         </div>
         {searchQuery.length > 2 && (
-          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#121326', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '15px', marginTop: '10px', boxShadow: '0 20px 40px rgba(0,0,0,0.8)', overflow: 'hidden' }}>
-            {isSearching ? <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}><i className="fas fa-spinner fa-spin"></i> Searching...</div>
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#121426', border: '1px solid rgba(255,75,107,0.3)', borderRadius: '15px', marginTop: '15px', boxShadow: '0 25px 50px rgba(0,0,0,0.9)', overflow: 'hidden', backdropFilter: 'blur(20px)' }}>
+            {isSearching ? <div style={{ padding: '30px', textAlign: 'center', color: 'var(--primary)' }}><i className="fas fa-circle-notch fa-spin fa-2x"></i></div>
             : searchResults.length > 0 ? searchResults.map((anime, index) => (
-                <Link to={`/anime/${anime.mal_id}`} key={index} style={{ display: 'flex', gap: '15px', padding: '15px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', alignItems: 'center', textDecoration: 'none' }}>
-                  <img src={anime.images?.webp?.large_image_url} alt="poster" style={{ width: '50px', height: '70px', borderRadius: '8px', objectFit: 'cover' }} />
+                <Link to={`/anime/${anime.mal_id}`} key={index} style={{ display: 'flex', gap: '15px', padding: '15px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer', alignItems: 'center', textDecoration: 'none', transition: '0.2s' }} className="hover-bg-change">
+                  <img src={anime.images?.webp?.large_image_url} alt="poster" style={{ width: '50px', height: '70px', borderRadius: '8px', objectFit: 'cover', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }} />
                   <div>
-                    <h4 style={{ color: '#fff', fontSize: '0.95rem', margin: 0 }}>{anime.title_english || anime.title}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--accent)', background: 'rgba(255,213,74,0.1)', padding: '2px 8px', borderRadius: '99px', marginTop: '5px', display: 'inline-block' }}>{anime.status}</span>
+                    <h4 style={{ color: '#fff', fontSize: '1rem', margin: '0 0 5px 0', fontWeight: 'bold' }}>{anime.title_english || anime.title}</h4>
+                    <span style={{ fontSize: '0.75rem', color: '#fff', background: 'rgba(255,75,107,0.2)', padding: '3px 10px', borderRadius: '6px', border: '1px solid rgba(255,75,107,0.3)' }}>{anime.status}</span>
                   </div>
                 </Link>
-              )) : <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No results found.</div>}
+              )) : <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>No results found in the database.</div>}
           </div>
         )}
       </section>
 
-      {/* ================= HERO SLIDER ================= */}
+      {/* ================= CINEMATIC HERO SLIDER ================= */}
       {currentHero ? (
-        <section key={currentHero.mal_id} className="animate-hero" style={{ position: 'relative', height: '400px', borderRadius: '32px', overflow: 'hidden', marginTop: '2rem', backgroundImage: `url(${currentHero.trailer?.images?.maximum_image_url || currentHero.images.webp.large_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,7,22,1) 10%, rgba(5,7,22,0.6) 50%, rgba(5,7,22,0) 100%)' }}></div>
-          <div style={{ position: 'absolute', top: '50%', left: '3rem', transform: 'translateY(-50%)', maxWidth: '600px', zIndex: 10 }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff', marginBottom: '10px', textShadow: '0 4px 10px rgba(0,0,0,0.8)' }}>
+        <section key={currentHero.mal_id} className="animate-hero" style={{ position: 'relative', height: '480px', borderRadius: '32px', overflow: 'hidden', marginTop: '2.5rem', backgroundImage: `url(${currentHero.trailer?.images?.maximum_image_url || currentHero.images.webp.large_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 25px 60px rgba(0,0,0,0.7)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(10,12,26,1) 0%, rgba(10,12,26,0.7) 45%, transparent 100%), linear-gradient(to top, rgba(10,12,26,0.9) 0%, transparent 40%)' }}></div>
+          
+          <div style={{ position: 'absolute', top: '50%', left: '4rem', transform: 'translateY(-50%)', maxWidth: '650px', zIndex: 10 }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <span style={{ background: 'var(--primary)', color: '#fff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px' }}>#1 AIRING</span>
+              <span style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' }}>{currentHero.rating ? currentHero.rating.split(' ')[0] : 'PG-13'}</span>
+            </div>
+            
+            <h1 style={{ fontSize: '3rem', fontWeight: '900', color: '#fff', marginBottom: '15px', textShadow: '0 10px 20px rgba(0,0,0,0.8)', lineHeight: '1.1' }}>
               {currentHero.title_english || currentHero.title}
             </h1>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-              <span style={{ background: '#fff', color: '#000', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>{currentHero.rating ? currentHero.rating.split(' ')[0] : 'PG-13'}</span>
-              <span style={{ color: '#fff', fontSize: '0.85rem' }}>{currentHero.genres?.map(g => g.name).join(', ')}</span>
+            
+            <div style={{ color: 'var(--accent)', fontSize: '0.9rem', marginBottom: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {currentHero.genres?.map(g => g.name).join(' • ')}
             </div>
-            <p style={{ color: '#d0d5e0', fontSize: '0.9rem', marginBottom: '20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            
+            <p style={{ color: '#d0d5e0', fontSize: '1rem', marginBottom: '30px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
               {currentHero.synopsis}
             </p>
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button className="btn-primary" style={{ padding: '10px 25px' }} onClick={(e) => addToWatchlist(e, currentHero)}>
-                <i className="fas fa-bookmark"></i> Add to Watchlist
+            
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <button onClick={() => navigate(`/anime/${currentHero.mal_id}`)} className="btn-primary hover-scale" style={{ padding: '15px 35px', borderRadius: '99px', fontSize: '1.1rem', fontWeight: '800', boxShadow: '0 10px 25px rgba(255,75,107,0.4)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className="fas fa-play"></i> View Details
               </button>
-              <button onClick={() => navigate(`/anime/${currentHero.mal_id}`)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 25px', borderRadius: '99px', cursor: 'pointer', fontWeight: 'bold' }}>
-                View Details
+              <button onClick={(e) => addToWatchlist(e, currentHero)} className="hover-scale" style={{ background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '15px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '55px', height: '55px', fontSize: '1.2rem' }}>
+                <i className="fas fa-bookmark"></i>
               </button>
             </div>
           </div>
-          <button onClick={prevHero} style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', zIndex: 20 }}><i className="fas fa-chevron-left"></i></button>
-          <button onClick={nextHero} style={{ position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', zIndex: 20 }}><i className="fas fa-chevron-right"></i></button>
+
+          <div style={{ position: 'absolute', bottom: '20px', right: '30px', display: 'flex', gap: '10px', zIndex: 20 }}>
+            <button onClick={prevHero} className="hover-scale" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '45px', height: '45px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-chevron-left"></i></button>
+            <button onClick={nextHero} className="hover-scale" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '45px', height: '45px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><i className="fas fa-chevron-right"></i></button>
+          </div>
         </section>
       ) : (
-        <section style={{ height: '400px', background: '#121326', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2rem' }}>
-           <i className="fas fa-spinner fa-spin fa-2x" style={{ color: 'var(--primary)' }}></i>
+        <section style={{ height: '480px', background: '#121426', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+           <i className="fas fa-circle-notch fa-spin fa-3x" style={{ color: 'var(--primary)' }}></i>
         </section>
       )}
 
       {/* 🔥 NEW COMPONENT INJECTED HERE 🔥 */}
       <LatestTrailersSection />
 
-      {/* ================= TRENDING ROW ================= */}
-      <section className="carousel-section" style={{ marginTop: '3rem' }}>
-        <div className="section-head">
+      {/* ================= TRENDING AIRING ROW ================= */}
+      <section style={{ marginTop: '4rem' }}>
+        <div className="section-head" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h2 className="section-title">🔥 Trending Airing Anime</h2>
-            <p className="section-sub">What's hot right now on MAL.</p>
+            <h2 style={{ fontSize: '2rem', color: '#fff', fontWeight: '800', margin: '0 0 5px 0' }}>🔥 Trending Airing Anime</h2>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '1rem' }}>What's hot right now on MAL.</p>
           </div>
-          {/* 🔥 SEASONS LINK 🔥 */}
-          <Link to="/seasons" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+               <button onClick={() => scrollRef(trendingRef, 'left')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-left"></i></button>
+               <button onClick={() => scrollRef(trendingRef, 'right')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-right"></i></button>
+            </div>
+            <Link to="/seasons" style={{ color: 'var(--primary)', fontWeight: 'bold', textDecoration: 'none', background: 'rgba(255,75,107,0.1)', padding: '8px 20px', borderRadius: '99px', border: '1px solid rgba(255,75,107,0.3)' }}>View All</Link>
+          </div>
         </div>
-        <div className="poster-row">
+
+        <div ref={trendingRef} className="hide-scrollbar" style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollBehavior: 'smooth' }}>
           {trendingAnime.length > 0 ? trendingAnime.map((anime) => (
-            <div key={anime.mal_id} className="poster-card hover-scale" style={{textDecoration: 'none', position: 'relative', cursor: 'pointer'}} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-              <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" />
+            <div key={anime.mal_id} className="premium-card" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+              <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="premium-card-img" />
               <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
-              <div className="poster-meta">
-                <div className="poster-title" style={{color: '#fff'}}>{anime.title_english || anime.title}</div>
-                <div className="poster-cat">{anime.genres && anime.genres[0] ? anime.genres[0].name : 'Anime'}</div>
+              
+              <div className="premium-meta-layer">
+                <div style={{ display: 'flex', gap: '5px', marginBottom: '8px' }}>
+                    <span style={{ background: 'rgba(255, 213, 74, 0.2)', backdropFilter: 'blur(5px)', color: '#ffd54a', border: '1px solid rgba(255, 213, 74, 0.4)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Sub | Dub</span>
+                </div>
+                <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: 'bold', margin: '0 0 5px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                  {anime.title_english || anime.title}
+                </h4>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>{anime.genres && anime.genres[0] ? anime.genres[0].name : 'Action'}</div>
               </div>
             </div>
-          )) : <div style={{ padding: '20px' }}><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
+          )) : <div style={{ color: 'var(--text-muted)' }}><i className="fas fa-circle-notch fa-spin"></i> Loading Trending...</div>}
         </div>
       </section>
 
       {/* ================= SEASONAL ANIME ================= */}
-      <section className="carousel-section" style={{ marginTop: '3rem' }}>
-        <div className="section-head">
+      <section style={{ marginTop: '4rem' }}>
+        <div className="section-head" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h2 className="section-title">🌸 Upcoming Seasonal Anime</h2>
-            <p className="section-sub">Anticipated releases for the next season.</p>
+            <h2 style={{ fontSize: '2rem', color: '#fff', fontWeight: '800', margin: '0 0 5px 0' }}>🌸 Upcoming Seasonal Anime</h2>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '1rem' }}>Anticipated releases for the next season.</p>
           </div>
-          {/* 🔥 UPCOMING LINK 🔥 */}
-          <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+               <button onClick={() => scrollRef(seasonalRef, 'left')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-left"></i></button>
+               <button onClick={() => scrollRef(seasonalRef, 'right')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-right"></i></button>
+            </div>
+            <Link to="/upcoming" style={{ color: 'var(--primary)', fontWeight: 'bold', textDecoration: 'none', background: 'rgba(255,75,107,0.1)', padding: '8px 20px', borderRadius: '99px', border: '1px solid rgba(255,75,107,0.3)' }}>View All</Link>
+          </div>
         </div>
-        <div className="poster-row">
+
+        <div ref={seasonalRef} className="hide-scrollbar" style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollBehavior: 'smooth' }}>
           {seasonalAnime.length > 0 ? seasonalAnime.map((anime) => (
-             <div key={anime.mal_id} className="poster-card hover-scale" style={{textDecoration: 'none', position: 'relative', cursor: 'pointer'}} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-               <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" />
+             <div key={anime.mal_id} className="premium-card" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+               <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="premium-card-img" />
                <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
-               <div className="poster-meta">
-                 <div className="poster-title" style={{color: '#fff'}}>{anime.title_english || anime.title}</div>
-                 <div className="poster-cat">{anime.type || 'TV'} • {anime.genres && anime.genres[0] ? anime.genres[0].name : 'Action'}</div>
+               
+               <div className="premium-meta-layer">
+                 <div style={{ display: 'flex', gap: '5px', marginBottom: '8px' }}>
+                     <span style={{ background: 'rgba(255, 75, 107, 0.2)', backdropFilter: 'blur(5px)', color: '#ff4b6b', border: '1px solid rgba(255, 75, 107, 0.4)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Upcoming</span>
+                 </div>
+                 <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: 'bold', margin: '0 0 5px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                   {anime.title_english || anime.title}
+                 </h4>
+                 <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>{anime.type || 'TV'} • {anime.genres && anime.genres[0] ? anime.genres[0].name : 'Action'}</div>
                </div>
              </div>
-          )) : <div style={{ padding: '20px' }}><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
+          )) : <div style={{ color: 'var(--text-muted)' }}><i className="fas fa-circle-notch fa-spin"></i> Loading Seasonal...</div>}
         </div>
       </section>
 
       {/* ================= TODAY'S SCHEDULE ================= */}
-      <section style={{ marginTop: '3rem' }}>
-        <div className="section-head">
+      <section style={{ marginTop: '5rem' }}>
+        <div className="section-head" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h2 className="section-title"><i className="fas fa-calendar-alt"></i> Today's Schedule</h2>
-            <p className="section-sub">Find out when your favorite anime airs today.</p>
+            <h2 style={{ fontSize: '2rem', color: '#fff', fontWeight: '800', margin: '0 0 5px 0' }}><i className="fas fa-satellite-dish" style={{ color: 'var(--primary)' }}></i> Today's Schedule</h2>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '1rem' }}>Find out when your favorite anime airs today.</p>
           </div>
-          <button className="view-all-btn" onClick={() => navigate('/schedule')}>View Full Calendar <i className="fas fa-chevron-right" style={{ fontSize: '0.7rem', marginLeft: '5px' }}></i></button>
+          <button className="hover-scale" onClick={() => navigate('/schedule')} style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            View Full Calendar <i className="fas fa-arrow-right"></i>
+          </button>
         </div>
-        <div style={{ background: 'linear-gradient(150deg,#10132a,#161938)', borderRadius: '24px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-           <h3 style={{ fontSize: '1rem', marginBottom: '1rem', color: 'var(--accent)', textTransform: 'capitalize' }}>{new Date().toLocaleString('en-US', {weekday: 'long'})}'s Releases</h3>
-           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+        
+        <div style={{ background: 'linear-gradient(135deg, rgba(18,20,38,1) 0%, rgba(10,12,26,1) 100%)', borderRadius: '24px', padding: '2rem', border: '1px solid rgba(255,255,255,0.05)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+           <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', color: '#fff', textTransform: 'uppercase', letterSpacing: '1px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+             <span style={{ color: 'var(--primary)' }}>{new Date().toLocaleString('en-US', {weekday: 'long'})}'s</span> Releases
+           </h3>
+           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
               {todaySchedule.length > 0 ? todaySchedule.slice(0,4).map((anime) => (
-                <div key={anime.mal_id} style={{ display: 'flex', gap: '15px', background: 'rgba(0,0,0,0.4)', padding: '10px', borderRadius: '12px', transition: '0.2s', textDecoration: 'none', position: 'relative', cursor: 'pointer' }} className="hover-scale anime-card-wrap" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-                  <img src={anime.images?.webp?.image_url} alt={anime.title} style={{ width: '50px', height: '60px', borderRadius: '6px', objectFit: 'cover' }} />
-                  <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn" style={{top: '10px', right: '10px', width: '25px', height: '25px', fontSize: '0.8rem'}}><i className="fas fa-bookmark"></i></button>
+                <div key={anime.mal_id} style={{ display: 'flex', gap: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '16px', transition: '0.3s', textDecoration: 'none', position: 'relative', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.02)' }} className="hover-scale anime-card-wrap" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+                  <img src={anime.images?.webp?.image_url} alt={anime.title} style={{ width: '65px', height: '85px', borderRadius: '10px', objectFit: 'cover', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }} />
+                  <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn" style={{top: '12px', right: '12px', width: '30px', height: '30px', fontSize: '0.8rem'}}><i className="fas fa-bookmark"></i></button>
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, minWidth: 0 }}>
-                     <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{anime.title_english || anime.title}</h4>
-                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{anime.episodes ? `Ep ${anime.episodes}` : 'Airing'} | Sub</span>
+                     <h4 style={{ fontSize: '1rem', margin: '0 0 5px 0', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>{anime.title_english || anime.title}</h4>
+                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{anime.episodes ? `Episode ${anime.episodes}` : 'Airing'} | Sub</span>
                   </div>
-                  <div style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>{anime.broadcast?.time || 'TBA'}</div>
+                  <div style={{ color: '#fff', fontWeight: '900', fontSize: '1rem', display: 'flex', alignItems: 'center', background: 'rgba(255,75,107,0.15)', padding: '0 15px', borderRadius: '12px', border: '1px solid rgba(255,75,107,0.3)' }}>
+                    {anime.broadcast?.time || 'TBA'}
+                  </div>
                 </div>
-              )) : <div style={{ color: 'var(--text-muted)' }}><i className="fas fa-spinner fa-spin"></i> Loading AniList Schedule...</div>}
+              )) : <div style={{ color: 'var(--text-muted)' }}><i className="fas fa-circle-notch fa-spin"></i> Syncing Satellite Signals...</div>}
            </div>
         </div>
       </section>
 
       {/* ================= 3 COLUMN GRID SECTION ================= */}
-      <section style={{ marginTop: '4rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
-        <div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>Top Movies</h3>
-              <Link to="/movies" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textDecoration: 'none' }}><i className="fas fa-external-link-alt"></i></Link>
+      <section style={{ marginTop: '5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2.5rem' }}>
+        
+        {/* TOP MOVIES */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: '#fff', fontWeight: '800', margin: 0 }}>Top Movies</h3>
+              <Link to="/movies" style={{ color: 'var(--text-muted)', fontSize: '1rem', textDecoration: 'none' }} className="hover-scale"><i className="fas fa-arrow-right"></i></Link>
            </div>
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-             {topMovies.map((movie) => (
-                <div key={movie.mal_id} style={{ display: 'flex', gap: '15px', background: 'var(--bg-elevated)', padding: '10px', borderRadius: '12px', alignItems: 'center', position: 'relative', cursor: 'pointer' }} className="hover-scale anime-card-wrap" onClick={() => navigate(`/anime/${movie.mal_id}`)}>
-                  <img src={movie.images?.webp?.image_url} alt="poster" style={{ width: '45px', height: '65px', borderRadius: '6px', objectFit: 'cover' }} />
-                  <button onClick={(e) => addToWatchlist(e, movie)} className="card-watchlist-btn" style={{top: '5px', right: '5px', width: '25px', height: '25px', fontSize: '0.7rem'}}><i className="fas fa-bookmark"></i></button>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+             {topMovies.map((movie, idx) => (
+                <div key={movie.mal_id} style={{ display: 'flex', gap: '15px', padding: '10px', borderRadius: '16px', alignItems: 'center', position: 'relative', cursor: 'pointer', transition: '0.2s' }} className="hover-bg-change anime-card-wrap" onClick={() => navigate(`/anime/${movie.mal_id}`)} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'rgba(255,255,255,0.1)', width: '25px', textAlign: 'center' }}>{idx + 1}</div>
+                  <img src={movie.images?.webp?.image_url} alt="poster" style={{ width: '50px', height: '70px', borderRadius: '8px', objectFit: 'cover', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }} />
+                  <button onClick={(e) => addToWatchlist(e, movie)} className="card-watchlist-btn" style={{top: '50%', right: '10px', transform: 'translateY(-50%)', width: '30px', height: '30px', fontSize: '0.8rem'}}><i className="fas fa-bookmark"></i></button>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <h4 style={{ fontSize: '0.9rem', color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{movie.title_english || movie.title}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Movie • {movie.score || 'N/A'} <i className="fas fa-star" style={{color: 'var(--accent)'}}></i></span>
+                    <h4 style={{ fontSize: '0.95rem', color: '#fff', margin: '0 0 5px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>{movie.title_english || movie.title}</h4>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Movie • {movie.score || 'N/A'} <i className="fas fa-star" style={{color: 'var(--accent)'}}></i></span>
                   </div>
                 </div>
              ))}
            </div>
         </div>
 
-        <div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>Top TV Series</h3>
-              <Link to="/tv-series" style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textDecoration: 'none' }}><i className="fas fa-external-link-alt"></i></Link>
+        {/* TOP TV SERIES */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: '#fff', fontWeight: '800', margin: 0 }}>Top TV Series</h3>
+              <Link to="/tv-series" style={{ color: 'var(--text-muted)', fontSize: '1rem', textDecoration: 'none' }} className="hover-scale"><i className="fas fa-arrow-right"></i></Link>
            </div>
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-             {topTv.map((tv) => (
-                <div key={tv.mal_id} style={{ display: 'flex', gap: '15px', background: 'var(--bg-elevated)', padding: '10px', borderRadius: '12px', alignItems: 'center', position: 'relative', cursor: 'pointer' }} className="hover-scale anime-card-wrap" onClick={() => navigate(`/anime/${tv.mal_id}`)}>
-                  <img src={tv.images?.webp?.image_url} alt="poster" style={{ width: '45px', height: '65px', borderRadius: '6px', objectFit: 'cover' }} />
-                  <button onClick={(e) => addToWatchlist(e, tv)} className="card-watchlist-btn" style={{top: '5px', right: '5px', width: '25px', height: '25px', fontSize: '0.7rem'}}><i className="fas fa-bookmark"></i></button>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+             {topTv.map((tv, idx) => (
+                <div key={tv.mal_id} style={{ display: 'flex', gap: '15px', padding: '10px', borderRadius: '16px', alignItems: 'center', position: 'relative', cursor: 'pointer', transition: '0.2s' }} className="hover-bg-change anime-card-wrap" onClick={() => navigate(`/anime/${tv.mal_id}`)} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'rgba(255,255,255,0.1)', width: '25px', textAlign: 'center' }}>{idx + 1}</div>
+                  <img src={tv.images?.webp?.image_url} alt="poster" style={{ width: '50px', height: '70px', borderRadius: '8px', objectFit: 'cover', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }} />
+                  <button onClick={(e) => addToWatchlist(e, tv)} className="card-watchlist-btn" style={{top: '50%', right: '10px', transform: 'translateY(-50%)', width: '30px', height: '30px', fontSize: '0.8rem'}}><i className="fas fa-bookmark"></i></button>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <h4 style={{ fontSize: '0.9rem', color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{tv.title_english || tv.title}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>TV • {tv.score || 'N/A'} <i className="fas fa-star" style={{color: 'var(--accent)'}}></i></span>
+                    <h4 style={{ fontSize: '0.95rem', color: '#fff', margin: '0 0 5px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>{tv.title_english || tv.title}</h4>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>TV Series • {tv.score || 'N/A'} <i className="fas fa-star" style={{color: 'var(--accent)'}}></i></span>
                   </div>
                 </div>
              ))}
@@ -473,58 +570,65 @@ const Home = () => {
         </div>
 
         {/* 🔥 DYNAMIC AWARDS COLUMN 🔥 */}
-        <div>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.2rem', color: '#fff' }}>The {new Date().getFullYear()} Awards</h3>
-              <i className="fas fa-trophy" style={{ color: 'var(--accent)' }}></i>
+        <div style={{ background: 'linear-gradient(135deg, rgba(255,213,74,0.05) 0%, rgba(255,255,255,0.01) 100%)', padding: '20px', borderRadius: '24px', border: '1px solid rgba(255,213,74,0.2)' }}>
+           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: '#fff', fontWeight: '800', margin: 0 }}>The {new Date().getFullYear()} Awards</h3>
+              <i className="fas fa-trophy" style={{ color: 'var(--accent)', fontSize: '1.2rem', textShadow: '0 0 10px var(--accent)' }}></i>
            </div>
-           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-             {awardContenders.length > 0 ? awardContenders.map((anime) => (
-                <div key={anime.idMal || anime.title.romaji} onClick={() => anime.idMal && navigate(`/anime/${anime.idMal}`)} style={{ display: 'flex', gap: '15px', background: 'var(--bg-elevated)', padding: '10px', borderRadius: '12px', alignItems: 'center', cursor: 'pointer' }} className="hover-scale">
-                  <div style={{ width: '45px', height: '65px', borderRadius: '6px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+             {awardContenders.length > 0 ? awardContenders.map((anime, idx) => (
+                <div key={anime.idMal || anime.title.romaji} onClick={() => anime.idMal && navigate(`/anime/${anime.idMal}`)} style={{ display: 'flex', gap: '15px', padding: '10px', borderRadius: '16px', alignItems: 'center', cursor: 'pointer', transition: '0.2s' }} className="hover-scale" onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,213,74,0.1)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ fontSize: '1.5rem', fontWeight: '900', color: idx === 0 ? 'var(--accent)' : 'rgba(255,255,255,0.2)', width: '25px', textAlign: 'center' }}>{idx + 1}</div>
+                  <div style={{ width: '50px', height: '70px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>
                     {anime.coverImage?.large ? (
                       <>
-                        <img src={anime.coverImage.large} alt="anime" style={{width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6}} />
-                        <i className="fas fa-crown" style={{ color: 'var(--accent)', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}></i>
+                        <img src={anime.coverImage.large} alt="anime" style={{width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8}} />
+                        {idx === 0 && <i className="fas fa-crown" style={{ color: 'var(--accent)', position: 'absolute', top: '-5px', right: '-5px', textShadow: '0 2px 4px rgba(0,0,0,0.8)', fontSize: '1.2rem', transform: 'rotate(15deg)' }}></i>}
                       </>
                     ) : (
                       <i className="fas fa-crown" style={{ color: 'var(--accent)' }}></i>
                     )}
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <h4 style={{ fontSize: '0.9rem', color: '#fff', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <h4 style={{ fontSize: '0.95rem', color: '#fff', margin: '0 0 5px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 'bold' }}>
                       {anime.title.english || anime.title.romaji}
                     </h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Anime of the Year Contender</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 'bold' }}>AOTY Contender</span>
                   </div>
                 </div>
              )) : (
-                 <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}><i className="fas fa-spinner fa-spin"></i> Loading Contenders...</div>
+                 <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px' }}><i className="fas fa-circle-notch fa-spin"></i> Analyzing Rankings...</div>
              )}
            </div>
         </div>
       </section>
 
       {/* ================= POPULAR DUBBED ================= */}
-      <section style={{ marginTop: '4rem' }}>
-        <div className="section-head">
+      <section style={{ marginTop: '5rem' }}>
+        <div className="section-head" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
-            <h2 className="section-title">🎙️ Popular Dubbed</h2>
-            <p className="section-sub">Fan favorites available in English Dub.</p>
+            <h2 style={{ fontSize: '2rem', color: '#fff', fontWeight: '800', margin: '0 0 5px 0' }}>🎙️ Popular Dubbed</h2>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '1rem' }}>Fan favorites available in English Dub.</p>
           </div>
-          <div style={{display: 'flex', gap: '10px'}}>
-             <button onClick={() => scrollDubbed('left')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-left"></i></button>
-             <button onClick={() => scrollDubbed('right')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-right"></i></button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+             <button onClick={() => scrollRef(dubbedRef, 'left')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-left"></i></button>
+             <button onClick={() => scrollRef(dubbedRef, 'right')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-right"></i></button>
           </div>
         </div>
-        <div ref={dubbedRef} className="poster-row hide-scrollbar" style={{ overflowX: 'auto', scrollBehavior: 'smooth', paddingBottom: '15px' }}>
+
+        <div ref={dubbedRef} className="hide-scrollbar" style={{ display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px', scrollBehavior: 'smooth' }}>
           {popularDubbed.map((anime) => (
-            <div key={`dub-${anime.mal_id}`} className="poster-card hover-scale" style={{ flex: '0 0 180px', position: 'relative', cursor: 'pointer' }} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-              <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" style={{height: '260px'}} />
+            <div key={`dub-${anime.mal_id}`} className="premium-card" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+              <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="premium-card-img" />
               <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
-              <div className="poster-meta">
-                <div className="poster-title" style={{color: '#fff'}}>{anime.title_english || anime.title}</div>
-                <div className="poster-cat">{anime.genres && anime.genres[0] ? anime.genres[0].name : 'Dubbed'}</div>
+              
+              <div className="premium-meta-layer">
+                <div style={{ display: 'flex', gap: '5px', marginBottom: '8px' }}>
+                    <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(5px)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.4)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 'bold', textTransform: 'uppercase' }}>English Dub</span>
+                </div>
+                <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: 'bold', margin: '0 0 5px 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                  {anime.title_english || anime.title}
+                </h4>
               </div>
             </div>
           ))}
@@ -532,22 +636,26 @@ const Home = () => {
       </section>
 
       {/* ================= COMMUNITY REVIEWS ================= */}
-      <section style={{ marginTop: '4rem', marginBottom: '2rem' }}>
-        <div className="section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 className="section-title" style={{ margin: 0 }}>💬 Community Reviews</h2>
-          <Link to="/reviews" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
+      <section style={{ marginTop: '5rem', marginBottom: '3rem' }}>
+        <div className="section-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
+          <div>
+            <h2 style={{ fontSize: '2rem', color: '#fff', fontWeight: '800', margin: '0 0 5px 0' }}>💬 Community Reviews</h2>
+            <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '1rem' }}>See what other otakus are saying.</p>
+          </div>
+          <Link to="/reviews" style={{ color: 'var(--primary)', fontWeight: 'bold', textDecoration: 'none', background: 'rgba(255,75,107,0.1)', padding: '8px 20px', borderRadius: '99px', border: '1px solid rgba(255,75,107,0.3)' }}>View All</Link>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-           {reviews.slice(0, 12).map((review, index) => (
-              <div key={index} style={{ background: 'var(--bg-elevated)', padding: '1.5rem', borderRadius: '20px', display: 'flex', gap: '15px' }}>
-                 <img src={review.entry.images?.webp?.image_url} alt="anime" style={{ width: '70px', height: '100px', borderRadius: '8px', objectFit: 'cover' }} />
-                 <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
-                      <span>SCORE: {review.score}</span>
-                      <span style={{ color: 'var(--text-muted)' }}>{review.user.username}</span>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem' }}>
+           {reviews.slice(0, 6).map((review, index) => (
+              <div key={index} style={{ background: 'rgba(255,255,255,0.02)', padding: '25px', borderRadius: '24px', display: 'flex', gap: '20px', border: '1px solid rgba(255,255,255,0.05)', transition: '0.3s' }} className="hover-scale">
+                 <img src={review.entry.images?.webp?.image_url} alt="anime" style={{ width: '80px', height: '120px', borderRadius: '12px', objectFit: 'cover', boxShadow: '0 10px 20px rgba(0,0,0,0.5)' }} />
+                 <div style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                      <span style={{ background: 'rgba(255,213,74,0.1)', color: 'var(--accent)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '900', border: '1px solid rgba(255,213,74,0.2)' }}><i className="fas fa-star"></i> {review.score}/10</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 'bold' }}>@{review.user.username}</span>
                     </div>
-                    <h4 style={{ color: '#fff', marginTop: '5px', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{review.entry.title}</h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.5', margin: 0 }}>{review.review}</p>
+                    <h4 style={{ color: '#fff', fontSize: '1.1rem', margin: '0 0 10px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '800' }}>{review.entry.title}</h4>
+                    <p style={{ fontSize: '0.9rem', color: '#a0a5b5', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: '1.6', margin: 0 }}>"{review.review}"</p>
                  </div>
               </div>
            ))}
