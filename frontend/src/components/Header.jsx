@@ -125,6 +125,7 @@ const Header = () => {
             <li><Link to="/manga" className="nav-link">Top Manga</Link></li>
             <li><Link to="/popular" className="nav-link">Popular</Link></li>
             <li><Link to="/genres" className="nav-link">Genres</Link></li>
+            <li><Link to="/watchlist" className="nav-link">Watchlist</Link></li>
             <li><Link to="/contact" className="nav-link">Contact</Link></li>
           </ul>
 
