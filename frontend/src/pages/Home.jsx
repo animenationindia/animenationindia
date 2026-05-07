@@ -387,7 +387,8 @@ const Home = () => {
             <h2 className="section-title">🌸 Upcoming Seasonal Anime</h2>
             <p className="section-sub">Anticipated releases for the next season.</p>
           </div>
-          <Link to="/schedule" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
+          {/* 🔥 EKHANE LINK TA CHANGE KORA HOYECHE 🔥 */}
+          <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
           {seasonalAnime.length > 0 ? seasonalAnime.map((anime) => (
