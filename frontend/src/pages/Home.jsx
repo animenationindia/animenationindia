@@ -379,8 +379,8 @@ const Home = () => {
         `}
       </style>
 
-      {/* ================= LIVE SEARCH ================= */}
-      <section className="search-row glow-search" style={{ marginTop: '2rem', position: 'relative', zIndex: 50, transition: '0.3s' }}>
+      {/* ================= LIVE SEARCH (Moved Higher) ================= */}
+      <section className="search-row glow-search" style={{ marginTop: '0.5rem', position: 'relative', zIndex: 50, transition: '0.3s' }}>
         <div className="search-input-wrap">
           <i className="fas fa-search"></i>
           <input type="text" className="search-input" placeholder="Search anime, manga, or characters..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -402,9 +402,9 @@ const Home = () => {
         )}
       </section>
 
-      {/* ================= HERO SLIDER (HORIZONTAL BOXED) ================= */}
+      {/* ================= HERO SLIDER (Made Bigger) ================= */}
       {heroAnime.length > 0 ? (
-        <section style={{ position: 'relative', height: '400px', borderRadius: '16px', overflow: 'hidden', marginTop: '2rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <section style={{ position: 'relative', height: '500px', borderRadius: '16px', overflow: 'hidden', marginTop: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
           <div style={{ display: 'flex', height: '100%', transition: 'transform 0.6s ease-in-out', transform: `translateX(-${heroIndex * 100}%)` }}>
              {heroAnime.map((anime) => (
                 <div key={anime.mal_id} style={{ flex: '0 0 100%', height: '100%', position: 'relative', backgroundImage: `url(${anime.trailer?.images?.maximum_image_url || anime.images.webp.large_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -431,7 +431,7 @@ const Home = () => {
           </div>
         </section>
       ) : (
-        <section style={{ height: '400px', background: '#121326', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2rem' }}>
+        <section style={{ height: '500px', background: '#121326', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1.5rem' }}>
            <i className="fas fa-spinner fa-spin fa-2x" style={{ color: 'var(--primary)' }}></i>
         </section>
       )}
@@ -446,17 +446,14 @@ const Home = () => {
             <h2 className="section-title">🔥 Trending Airing Anime</h2>
             <p className="section-sub">What's hot right now on MAL.</p>
           </div>
+          {/* 🔥 SEASONS LINK 🔥 */}
           <Link to="/seasons" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
           {trendingAnime.length > 0 ? trendingAnime.map((anime) => (
-            <div key={anime.mal_id} className="poster-card" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-              <div style={{ position: 'relative' }}>
-                <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" />
-                <span className="sub-badge">Sub</span>
-                <span className="dub-badge">Dub</span>
-                <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
-              </div>
+            <div key={anime.mal_id} className="poster-card hover-scale" style={{textDecoration: 'none', position: 'relative', cursor: 'pointer'}} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+              <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" />
+              <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
               <div className="poster-meta">
                 <div className="poster-title" style={{color: '#fff'}}>{anime.title_english || anime.title}</div>
                 <div className="poster-cat">{anime.genres && anime.genres[0] ? anime.genres[0].name : 'Anime'}</div>
@@ -473,16 +470,14 @@ const Home = () => {
             <h2 className="section-title">🌸 Upcoming Seasonal Anime</h2>
             <p className="section-sub">Anticipated releases for the next season.</p>
           </div>
+          {/* 🔥 UPCOMING LINK 🔥 */}
           <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
           {seasonalAnime.length > 0 ? seasonalAnime.map((anime) => (
-             <div key={anime.mal_id} className="poster-card" onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-               <div style={{ position: 'relative' }}>
-                 <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" />
-                 <span className="sub-badge">Upcoming</span>
-                 <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
-               </div>
+             <div key={anime.mal_id} className="poster-card hover-scale" style={{textDecoration: 'none', position: 'relative', cursor: 'pointer'}} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+               <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" />
+               <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
                <div className="poster-meta">
                  <div className="poster-title" style={{color: '#fff'}}>{anime.title_english || anime.title}</div>
                  <div className="poster-cat">{anime.type || 'TV'} • {anime.genres && anime.genres[0] ? anime.genres[0].name : 'Action'}</div>
@@ -600,18 +595,15 @@ const Home = () => {
             <p className="section-sub">Fan favorites available in English Dub.</p>
           </div>
           <div style={{display: 'flex', gap: '10px'}}>
-             <button onClick={() => scrollDubbed('left')} className="hero-nav-btn" style={{ width: '35px', height: '35px' }}><i className="fas fa-chevron-left"></i></button>
-             <button onClick={() => scrollDubbed('right')} className="hero-nav-btn" style={{ width: '35px', height: '35px' }}><i className="fas fa-chevron-right"></i></button>
+             <button onClick={() => scrollDubbed('left')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-left"></i></button>
+             <button onClick={() => scrollDubbed('right')} style={{width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', color: '#fff', border: 'none', cursor: 'pointer'}}><i className="fas fa-chevron-right"></i></button>
           </div>
         </div>
         <div ref={dubbedRef} className="poster-row hide-scrollbar" style={{ overflowX: 'auto', scrollBehavior: 'smooth', paddingBottom: '15px' }}>
           {popularDubbed.map((anime) => (
-            <div key={`dub-${anime.mal_id}`} className="poster-card" style={{ flex: '0 0 180px' }} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
-              <div style={{ position: 'relative' }}>
-                <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" style={{height: '260px'}} />
-                <span className="dub-badge">Dubbed</span>
-                <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
-              </div>
+            <div key={`dub-${anime.mal_id}`} className="poster-card hover-scale" style={{ flex: '0 0 180px', position: 'relative', cursor: 'pointer' }} onClick={() => navigate(`/anime/${anime.mal_id}`)}>
+              <img src={anime.images?.webp?.large_image_url} alt={anime.title} className="poster-img" style={{height: '260px'}} />
+              <button onClick={(e) => addToWatchlist(e, anime)} className="card-watchlist-btn"><i className="fas fa-bookmark"></i></button>
               <div className="poster-meta">
                 <div className="poster-title" style={{color: '#fff'}}>{anime.title_english || anime.title}</div>
                 <div className="poster-cat">{anime.genres && anime.genres[0] ? anime.genres[0].name : 'Dubbed'}</div>
