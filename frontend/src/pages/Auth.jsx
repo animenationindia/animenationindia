@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+// 🔥 API_URL import kora hochhe jate hardcode korte na hoy 🔥
+import { API_URL } from '../api/config';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  // 🔥 NOTUN: Password Show/Hide korar jonno State 🔥
   const [showPassword, setShowPassword] = useState(false);
-  
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -22,8 +21,8 @@ const Auth = () => {
     setLoading(true);
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    // 🔥 EKDOM THIK KORA LINK (Kono bracket ba quote nei) 🔥
-    const url = `https://animenationindia-backend.onrender.com${endpoint}`;
+    // 🔥 Eibar eikhane API_URL variable use korchi, hardcoded noye 🔥
+    const url = `${API_URL}${endpoint}`;
 
     try {
       const payload = isLogin 
@@ -36,10 +35,9 @@ const Auth = () => {
         body: JSON.stringify(payload)
       });
 
-      // Jodi backend text ba html dey json er bodole, sheta handle korar better error
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.indexOf("application/json") === -1) {
-          throw new Error("Server did not return JSON. Is your backend API route (/api/auth/...) setup and running?");
+          throw new Error("Server did not return JSON. Check your API route.");
       }
 
       const data = await response.json();
@@ -51,10 +49,12 @@ const Auth = () => {
       if (isLogin) {
         localStorage.setItem('user_token', data.token);
         localStorage.setItem('user_name', data.user.username);
-        localStorage.setItem('user_id', data.user.id);
+        // 🔥 MAIN FIX: MongoDB _id ba .id jeta asuk, otai dhore nebe 🔥
+        localStorage.setItem('user_id', data.user.id || data.user._id);
         
         navigate('/');
-        window.location.reload();
+        // Eita diyechi jate header automatically update hoye jay
+        window.dispatchEvent(new Event('auth-change'));
       } else {
         alert("Account created successfully! Please log in.");
         setIsLogin(true);
@@ -134,7 +134,6 @@ const Auth = () => {
             </div>
           </div>
 
-          {/* 🔥 UPDATED: Password Input with Eye Icon 🔥 */}
           <div>
             <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>Password</label>
             <div style={{ position: 'relative' }}>
@@ -152,7 +151,6 @@ const Auth = () => {
                   onBlur={(e) => e.target.style.border = '1px solid rgba(255,255,255,0.1)'}
                 />
                 
-                {/* The Eye Button */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -161,7 +159,6 @@ const Auth = () => {
                 >
                   <i className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}></i>
                 </button>
-
             </div>
           </div>
 
@@ -187,7 +184,7 @@ const Auth = () => {
                 setIsLogin(!isLogin);
                 setError('');
                 setFormData({ username: '', email: '', password: '' });
-                setShowPassword(false); // Toggle korle password abar hide hoye jabe
+                setShowPassword(false);
               }}
               style={{ color: 'var(--primary)', fontWeight: 'bold', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '0.95rem', padding: 0 }}
               onMouseOver={(e) => e.target.style.textDecoration = 'underline'}
