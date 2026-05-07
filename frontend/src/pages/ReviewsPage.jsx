@@ -20,8 +20,9 @@ const ReviewsPage = () => {
       
       if (data && data.data) {
           setReviews(data.data);
-          // Jikan API theke last visible page ta tule anchi
-          setTotalPages(data.pagination?.last_visible_page || 1);
+          // ⚠️ FIX: Max limit set for total pages to prevent array crash
+          const maxPages = data.pagination?.last_visible_page || 1;
+          setTotalPages(maxPages > 100 ? 100 : maxPages); 
       } else {
           setReviews([]);
       }
@@ -55,11 +56,21 @@ const ReviewsPage = () => {
     r.user.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // 🔥 NEW: Optimized Pagination Generator (No huge Array creation)
+  const getPageNumbers = () => {
+      let pages = [];
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+      if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+      for (let i = startPage; i <= endPage; i++) pages.push(i);
+      return pages;
+  };
+
   return (
     <div className="page-wrap" style={{ paddingTop: '100px', minHeight: '100vh', paddingBottom: '50px' }}>
       
       {/* Header Section */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '20px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', gap: '20px', padding: '0 20px' }}>
         <div>
           <h1 
             onClick={resetToAllReviews} 
@@ -75,7 +86,7 @@ const ReviewsPage = () => {
           <i className="fas fa-search" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}></i>
           <input 
             type="text" 
-            placeholder="Filter reviews by anime or username..." 
+            placeholder="Filter reviews..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ width: '100%', padding: '12px 15px 12px 40px', borderRadius: '99px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', outline: 'none' }}
@@ -91,7 +102,7 @@ const ReviewsPage = () => {
       ) : filteredReviews.length > 0 ? (
         <>
           {/* Reviews Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
+          <div style={{ padding: '0 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '2rem' }}>
             {filteredReviews.map((review, index) => (
               <div 
                 key={index} 
@@ -118,40 +129,33 @@ const ReviewsPage = () => {
             ))}
           </div>
 
-          {/* 🔥 PROFESSIONAL PAGINATION (Prev 1 2 3 ... Next) 🔥 */}
+          {/* 🔥 OPTIMIZED PAGINATION 🔥 */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '3rem' }}>
               <button 
                 onClick={() => handlePageChange(currentPage - 1)} 
                 disabled={currentPage === 1}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)', color: currentPage === 1 ? 'gray' : '#fff', transition: '0.3s' }}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', background: currentPage === 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)', color: currentPage === 1 ? 'gray' : '#fff', transition: '0.3s', fontWeight: 'bold' }}
               >
                 <i className="fas fa-chevron-left"></i> Prev
               </button>
 
-              {[...Array(totalPages)].map((_, index) => {
-                const pageNum = index + 1;
-                // Smart display: Only show first, last, and pages close to current
-                if (pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)) {
-                  return (
-                    <button 
-                      key={pageNum} 
-                      onClick={() => handlePageChange(pageNum)} 
-                      style={{ width: '35px', height: '35px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: currentPage === pageNum ? 'var(--primary)' : 'rgba(255,255,255,0.05)', color: currentPage === pageNum ? '#fff' : 'var(--text-muted)', transition: '0.3s' }}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
-                  return <span key={pageNum} style={{ color: 'var(--text-muted)' }}>...</span>;
-                }
-                return null;
-              })}
+              <div style={{ display: 'flex', gap: '5px' }}>
+                {getPageNumbers().map(num => (
+                  <button 
+                    key={num} 
+                    onClick={() => handlePageChange(num)} 
+                    style={{ width: '35px', height: '35px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', background: currentPage === num ? 'var(--primary)' : 'rgba(255,255,255,0.05)', color: currentPage === num ? '#fff' : 'var(--text-muted)', transition: '0.3s' }}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
 
               <button 
                 onClick={() => handlePageChange(currentPage + 1)} 
                 disabled={currentPage === totalPages}
-                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', background: currentPage === totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)', color: currentPage === totalPages ? 'gray' : '#fff', transition: '0.3s' }}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', background: currentPage === totalPages ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)', color: currentPage === totalPages ? 'gray' : '#fff', transition: '0.3s', fontWeight: 'bold' }}
               >
                 Next <i className="fas fa-chevron-right"></i>
               </button>
