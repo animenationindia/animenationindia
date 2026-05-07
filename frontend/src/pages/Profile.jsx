@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '../api/config';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ const Profile = () => {
     // 🔥 BULLETPROOF COUNT LOGIC 🔥
     const fetchUserStats = async () => {
       try {
-        const response = await fetch(`[https://animenationindia-backend.onrender.com](https://animenationindia-backend.onrender.com)/api/watchlist/${userId}`);
+        const response = await fetch(`${API_URL}/api/watchlist/${userId}`);
         if (response.ok) {
           const data = await response.json();
           
