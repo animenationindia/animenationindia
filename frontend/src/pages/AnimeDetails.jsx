@@ -72,12 +72,20 @@ const AnimeDetails = () => {
   // 🔥 THE ULTIMATE MERN BACKEND LOGIC: Save to MongoDB 🔥
   const addToWatchlist = async () => {
     if (!anime) return;
+
+    // 🔥 FIX: Check User Login & Get ID 🔥
+    const userId = localStorage.getItem('user_id');
+    if (!userId) {
+        alert("Please login first to save anime!");
+        return;
+    }
     
     try {
         const response = await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ anime: anime }) 
+            // 🔥 FIX: Send userId along with anime data 🔥
+            body: JSON.stringify({ anime: anime, userId: userId }) 
         });
 
         const data = await response.json();
@@ -89,7 +97,7 @@ const AnimeDetails = () => {
         }
     } catch (error) {
         console.error("Database connection error", error);
-        alert("Failed to connect to Database. Make sure your Node.js server is running on port 5000.");
+        alert("Failed to connect to Database. Make sure your Node.js server is running.");
     }
   };
 
