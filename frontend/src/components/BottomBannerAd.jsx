@@ -4,7 +4,6 @@ const BottomBannerAd = () => {
   const bannerRef = useRef(null);
 
   useEffect(() => {
-    // Eita check korche jate ad bar bar reload na hoy
     if (bannerRef.current && !bannerRef.current.firstChild) {
       const conf = document.createElement('script');
       const script = document.createElement('script');
@@ -21,7 +20,7 @@ const BottomBannerAd = () => {
       `;
       
       script.type = 'text/javascript';
-      script.src = "//www.topcreativeformat.com/cb071bb67e4808c6e6560437d566b4a9/invoke.js";
+      script.src = "https://www.highperformanceformat.com/cb071bb67e4808c6e6560437d566b4a9/invoke.js";
 
       bannerRef.current.append(conf);
       bannerRef.current.append(script);
@@ -30,7 +29,6 @@ const BottomBannerAd = () => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '40px 0 20px 0', overflow: 'hidden' }}>
-       {/* Ad Ekhane Load Hobe */}
        <div ref={bannerRef}></div>
     </div>
   );
