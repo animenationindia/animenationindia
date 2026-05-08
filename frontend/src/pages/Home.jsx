@@ -380,6 +380,29 @@ const Home = () => {
             background: #ff4dd2; 
             border-color: #ff4dd2; 
           }
+          
+          /* Smartlink Button Animation */
+          @keyframes glowing {
+             0% { box-shadow: 0 0 5px #ff4b6b; }
+             50% { box-shadow: 0 0 20px #ff4b6b, 0 0 30px #ff4b6b; }
+             100% { box-shadow: 0 0 5px #ff4b6b; }
+          }
+          .smartlink-btn {
+             background: linear-gradient(135deg, #ff4b6b 0%, #ff7eb3 100%);
+             color: white;
+             padding: 12px 30px;
+             border-radius: 99px;
+             font-weight: bold;
+             text-decoration: none;
+             display: inline-flex;
+             align-items: center;
+             gap: 10px;
+             transition: all 0.3s ease;
+             animation: glowing 2s infinite;
+          }
+          .smartlink-btn:hover {
+             transform: translateY(-3px) scale(1.05);
+          }
         `}
       </style>
 
