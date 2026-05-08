@@ -6,6 +6,8 @@ import { API_URL } from '../api/config';
 const Home = () => {
   const navigate = useNavigate();
   const dubbedRef = useRef(null);
+  const trendingRef = useRef(null);
+  const seasonalRef = useRef(null);
   
   // Data States
   const [heroAnime, setHeroAnime] = useState([]);
@@ -72,27 +74,51 @@ const Home = () => {
 
   // Load All Data Sequentially
   useEffect(() => {
-    const fetchHomeData = async () => {
+    const fetchAllJikanData = async () => {
       try {
         const heroData = await fetchJikan('ani_hero', 'https://api.jikan.moe/v4/top/anime?filter=airing&limit=10&type=tv');
-        setHeroAnime(heroData);
-        await delay(500);
+        setHeroAnime(heroData); // Data aslei sathe sathe screen e dekhiye debe
+        await delay(350); // Delay 500 theke komiye 350 korlam speed er jonno
 
         const trendData = await fetchJikan('ani_trending', 'https://api.jikan.moe/v4/seasons/now?limit=15&type=tv');
         setTrendingAnime(trendData);
-        await delay(500);
+        await delay(350);
 
-        const seasonData = await fetchJikan('ani_seasonal', 'https://api.jikan.moe/v4/seasons/upcoming?limit=10&type=tv');
+        const seasonData = await fetchJikan('ani_seasonal', 'https://api.jikan.moe/v4/seasons/upcoming?limit=15&type=tv');
         setSeasonalAnime(seasonData);
-        await delay(500);
+        await delay(350);
 
         const movieData = await fetchJikan('ani_movies', 'https://api.jikan.moe/v4/top/anime?type=movie&limit=4');
         setTopMovies(movieData);
-        await delay(500);
+        await delay(350);
 
         const tvData = await fetchJikan('ani_tv', 'https://api.jikan.moe/v4/top/anime?type=tv&limit=4');
         setTopTv(tvData);
-        await delay(500);
+        await delay(350);
+
+        const dubbedData = await fetchJikan('ani_dubbed', 'https://api.jikan.moe/v4/top/anime?filter=bypopularity&limit=15');
+        setPopularDubbed(dubbedData);
+        await delay(350);
+
+        const reviewData = await fetchJikan('ani_reviews', 'https://api.jikan.moe/v4/reviews/anime?limit=12');
+        setReviews(reviewData);
+      } catch (error) { console.error("Jikan Error:", error); }
+    };
+
+    // 2. ANILIST API FETCH (Eita Jikan er jonno wait korbe na, direct data ene debe)
+    const fetchAllAniListData = async () => {
+      // Tomar purono fetchAniListSchedule() function eitai thakbe
+      const schedData = await fetchAniListSchedule(); 
+      setTodaySchedule(schedData);
+
+      // Tomar purono fetchAwards() function
+      await fetchAwards(); 
+    };
+
+    // Duto eksathe call kore dao!
+    fetchAllJikanData();
+    fetchAllAniListData();
+  }, []);
 
         // 🔥 ANILIST GRAPHQL FETCHER FOR TODAY'S SCHEDULE 🔥
         const fetchAniListSchedule = async () => {
@@ -203,7 +229,7 @@ const Home = () => {
   // Hero Slider Auto-Scroll
   useEffect(() => {
     if (heroAnime.length > 0) {
-      const interval = setInterval(() => setHeroIndex((prev) => (prev + 1) % heroAnime.length), 5000);
+      const interval = setInterval(() => setHeroIndex((prev) => (prev + 1) % heroAnime.length), 6000);
       return () => clearInterval(interval);
     }
   }, [heroAnime]);
@@ -258,7 +284,7 @@ const Home = () => {
             alert(`⚠️ ${data.message || "Already in your Watchlist!"}`);
         }
     } catch (error) {
-        console.error("Database error", error);
+        console.error("Database connection error", error);
         alert("❌ Failed to connect to Database.");
     }
   };
@@ -266,40 +292,119 @@ const Home = () => {
   const currentHero = heroAnime[heroIndex];
 
   return (
-    <div className="page-wrap" id="home">
+    <div className="page-wrap" id="home" style={{ overflowX: 'hidden' }}>
+      {/* 🔥 INJECTED PREMIUM UI/UX ANIMATION CSS 🔥 */}
       <style>
         {`
-          @keyframes smoothFade { 0% { opacity: 0.2; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
-          .animate-hero { animation: smoothFade 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
           .hide-scrollbar::-webkit-scrollbar { display: none; }
           .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-          .card-watchlist-btn {
-              position: absolute;
-              top: 10px;
-              right: 10px;
-              background: rgba(0,0,0,0.6);
-              border: none;
-              color: #fff;
-              width: 35px;
-              height: 35px;
-              border-radius: 50%;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 10;
-              opacity: 0;
-              transition: 0.3s;
+
+          /* Glow Search */
+          .glow-search:focus-within {
+            box-shadow: 0 0 20px rgba(255, 75, 107, 0.3);
+            border-color: rgba(255, 75, 107, 0.5) !important;
           }
-          .poster-card:hover .card-watchlist-btn, .anime-card-wrap:hover .card-watchlist-btn {
-              opacity: 1;
-              transform: translateY(0);
+
+          /* Premium Hover & Neon Glow for Poster Cards */
+          .poster-card { 
+            background: #1a1c32; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            transition: all 0.3s ease; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            position: relative; 
+            cursor: pointer; 
+          }
+          .poster-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 0 20px rgba(255, 75, 107, 0.4); 
+            border-color: rgba(255, 75, 107, 0.5); 
+          }
+          
+          /* Image Zoom Effect */
+          .poster-img { 
+            width: 100%; 
+            height: 240px; 
+            object-fit: cover; 
+            transition: 0.5s ease; 
+          }
+          .poster-card:hover .poster-img { 
+            transform: scale(1.1); 
+          }
+
+          /* Sub / Dub Badges */
+          .sub-badge { 
+            position: absolute; 
+            bottom: 8px; 
+            left: 8px; 
+            background: rgba(0,0,0,0.7); 
+            color: #fff; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+            z-index: 5; 
+            backdrop-filter: blur(4px); 
+          }
+          .dub-badge { 
+            position: absolute; 
+            bottom: 8px; 
+            right: 8px; 
+            background: #ff4dd2; 
+            color: #fff; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+            z-index: 5; 
+          }
+
+          /* Watchlist Btn Animation */
+          .card-watchlist-btn { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            background: rgba(0,0,0,0.6); 
+            border: none; 
+            color: #fff; 
+            width: 35px; 
+            height: 35px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            opacity: 0; 
+            transition: 0.3s; 
+            z-index: 10; 
+          }
+          .poster-card:hover .card-watchlist-btn, .anime-card-wrap:hover .card-watchlist-btn { 
+            opacity: 1; 
+            transform: translateY(0); 
+          }
+
+          /* Hero Slider Navigation Arrows */
+          .hero-nav-btn { 
+            background: rgba(0,0,0,0.5); 
+            color: #fff; 
+            border: 1px solid rgba(255,255,255,0.2); 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: 0.3s; 
+          }
+          .hero-nav-btn:hover { 
+            background: #ff4dd2; 
+            border-color: #ff4dd2; 
           }
         `}
       </style>
 
-      {/* ================= LIVE SEARCH (Margin Changed to 0.5rem) ================= */}
-      <section className="search-row" style={{ marginTop: '0.5rem', position: 'relative', zIndex: 50 }}>
+      {/* ================= LIVE SEARCH (Moved Higher) ================= */}
+      <section className="search-row glow-search" style={{ marginTop: '0.5rem', position: 'relative', zIndex: 50, transition: '0.3s' }}>
         <div className="search-input-wrap">
           <i className="fas fa-search"></i>
           <input type="text" className="search-input" placeholder="Search anime, manga, or characters..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
@@ -321,35 +426,36 @@ const Home = () => {
         )}
       </section>
 
-      {/* ================= HERO SLIDER (Height Changed to 500px) ================= */}
-      {currentHero ? (
-        <section key={currentHero.mal_id} className="animate-hero" style={{ position: 'relative', height: '500px', borderRadius: '32px', overflow: 'hidden', marginTop: '2rem', backgroundImage: `url(${currentHero.trailer?.images?.maximum_image_url || currentHero.images.webp.large_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(5,7,22,1) 10%, rgba(5,7,22,0.6) 50%, rgba(5,7,22,0) 100%)' }}></div>
-          <div style={{ position: 'absolute', top: '50%', left: '3rem', transform: 'translateY(-50%)', maxWidth: '600px', zIndex: 10 }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff', marginBottom: '10px', textShadow: '0 4px 10px rgba(0,0,0,0.8)' }}>
-              {currentHero.title_english || currentHero.title}
-            </h1>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-              <span style={{ background: '#fff', color: '#000', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>{currentHero.rating ? currentHero.rating.split(' ')[0] : 'PG-13'}</span>
-              <span style={{ color: '#fff', fontSize: '0.85rem' }}>{currentHero.genres?.map(g => g.name).join(', ')}</span>
-            </div>
-            <p style={{ color: '#d0d5e0', fontSize: '0.9rem', marginBottom: '20px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-              {currentHero.synopsis}
-            </p>
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button className="btn-primary" style={{ padding: '10px 25px' }} onClick={(e) => addToWatchlist(e, currentHero)}>
-                <i className="fas fa-bookmark"></i> Add to Watchlist
-              </button>
-              <button onClick={() => navigate(`/anime/${currentHero.mal_id}`)} style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 25px', borderRadius: '99px', cursor: 'pointer', fontWeight: 'bold' }}>
-                View Details
-              </button>
-            </div>
+      {/* ================= HERO SLIDER (Made Bigger) ================= */}
+      {heroAnime.length > 0 ? (
+        <section style={{ position: 'relative', height: '500px', borderRadius: '16px', overflow: 'hidden', marginTop: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div style={{ display: 'flex', height: '100%', transition: 'transform 0.6s ease-in-out', transform: `translateX(-${heroIndex * 100}%)` }}>
+             {heroAnime.map((anime) => (
+                <div key={anime.mal_id} style={{ flex: '0 0 100%', height: '100%', position: 'relative', backgroundImage: `url(${anime.trailer?.images?.maximum_image_url || anime.images.webp.large_image_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #0f0f1a 0%, rgba(15,15,26,0.7) 40%, transparent 100%)' }}></div>
+                   <div style={{ position: 'absolute', top: '50%', left: '3rem', transform: 'translateY(-50%)', maxWidth: '600px', zIndex: 10 }}>
+                     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <span style={{ background: '#ff4dd2', color: '#fff', padding: '4px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>#1 AIRING</span>
+                        <span style={{ background: 'rgba(255,255,255,0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>{anime.rating?.split(' ')[0] || 'PG-13'}</span>
+                     </div>
+                     <h1 style={{ fontSize: '2.8rem', fontWeight: '900', color: '#fff', marginBottom: '10px' }}>{anime.title_english || anime.title}</h1>
+                     <div style={{ color: '#ffd54a', fontSize: '0.85rem', marginBottom: '15px', fontWeight: 'bold' }}>{anime.type || 'TV'} • {anime.genres?.map(g => g.name).join(' • ')}</div>
+                     <p style={{ color: '#d0d5e0', fontSize: '0.9rem', marginBottom: '25px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{anime.synopsis}</p>
+                     <div style={{ display: 'flex', gap: '15px' }}>
+                       <button onClick={() => navigate(`/anime/${anime.mal_id}`)} style={{ background: 'linear-gradient(90deg, #ff4dd2 0%, #ffd54a 100%)', color: '#000', border: 'none', padding: '12px 25px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}><i className="fas fa-play"></i> VIEW DETAILS</button>
+                       <button onClick={(e) => addToWatchlist(e, anime)} className="hero-nav-btn" style={{ borderRadius: '6px' }}><i className="fas fa-bookmark"></i></button>
+                     </div>
+                   </div>
+                </div>
+             ))}
           </div>
-          <button onClick={prevHero} style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', zIndex: 20 }}><i className="fas fa-chevron-left"></i></button>
-          <button onClick={nextHero} style={{ position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', zIndex: 20 }}><i className="fas fa-chevron-right"></i></button>
+          <div style={{ position: 'absolute', right: '2rem', bottom: '2rem', display: 'flex', gap: '10px', zIndex: 20 }}>
+            <button onClick={() => setHeroIndex(prev => (prev - 1 + heroAnime.length) % heroAnime.length)} className="hero-nav-btn"><i className="fas fa-chevron-left"></i></button>
+            <button onClick={() => setHeroIndex(prev => (prev + 1) % heroAnime.length)} className="hero-nav-btn"><i className="fas fa-chevron-right"></i></button>
+          </div>
         </section>
       ) : (
-        <section style={{ height: '500px', background: '#121326', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2rem' }}>
+        <section style={{ height: '500px', background: '#121326', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1.5rem' }}>
            <i className="fas fa-spinner fa-spin fa-2x" style={{ color: 'var(--primary)' }}></i>
         </section>
       )}
