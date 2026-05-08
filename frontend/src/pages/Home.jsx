@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import LatestTrailersSection from '../components/LatestTrailersSection';
 import BottomBannerAd from '../components/BottomBannerAd'; // 🔥 AD COMPONENT IMPORTED HERE 🔥
+import NativeBannerAd from '../components/NativeBannerAd';
 import { API_URL } from '../api/config';
 
 const Home = () => {
@@ -613,6 +614,9 @@ const Home = () => {
            </div>
         </div>
       </section>
+
+      {/* 🔥 TOMAR NATIVE AD EKHANE CHOLE ELO 🔥 */}
+      <NativeBannerAd />
 
       {/* ================= POPULAR DUBBED ================= */}
       <section style={{ marginTop: '4rem' }}>
