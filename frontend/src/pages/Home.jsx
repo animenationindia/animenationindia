@@ -639,6 +639,18 @@ const Home = () => {
            ))}
         </div>
       </section>
+      {/* 🔥 SMARTLINK SUPPORT BUTTON 🔥 */}
+      <div style={{ textAlign: 'center', marginTop: '3rem', marginBottom: '4rem' }}>
+         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '15px' }}>Help us keep Anime Nation India running! ❤️</p>
+         <a 
+           href="https://www.profitablecpmrate.com/nr48k2kn7k?key=9b16d89b068467ece9c425d8a6098f80" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           className="smartlink-btn"
+         >
+           <i className="fas fa-heart"></i> Support Anime Nation India
+         </a>
+      </div>
       
       {/* 🔥 TOMAR BANNER AD EKHANE CHOLE ELO 🔥 */}
       <BottomBannerAd />
