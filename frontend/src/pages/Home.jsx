@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import LatestTrailersSection from '../components/LatestTrailersSection';
+import BottomBannerAd from '../components/BottomBannerAd'; // 🔥 AD COMPONENT IMPORTED HERE 🔥
 import { API_URL } from '../api/config';
 
 const Home = () => {
@@ -449,6 +450,7 @@ const Home = () => {
             <h2 className="section-title">🔥 Trending Airing Anime</h2>
             <p className="section-sub">What's hot right now on MAL.</p>
           </div>
+          {/* 🔥 SEASONS LINK 🔥 */}
           <Link to="/seasons" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
@@ -472,6 +474,7 @@ const Home = () => {
             <h2 className="section-title">🌸 Upcoming Seasonal Anime</h2>
             <p className="section-sub">Anticipated releases for the next season.</p>
           </div>
+          {/* 🔥 UPCOMING LINK 🔥 */}
           <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
@@ -636,6 +639,9 @@ const Home = () => {
            ))}
         </div>
       </section>
+      
+      {/* 🔥 TOMAR BANNER AD EKHANE CHOLE ELO 🔥 */}
+      <BottomBannerAd />
 
     </div>
   );
