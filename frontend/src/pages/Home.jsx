@@ -77,8 +77,8 @@ const Home = () => {
     const fetchAllJikanData = async () => {
       try {
         const heroData = await fetchJikan('ani_hero', 'https://api.jikan.moe/v4/top/anime?filter=airing&limit=10&type=tv');
-        setHeroAnime(heroData); // Data aslei sathe sathe screen e dekhiye debe
-        await delay(350); // Delay 500 theke komiye 350 korlam speed er jonno
+        setHeroAnime(heroData); 
+        await delay(350); 
 
         const trendData = await fetchJikan('ani_trending', 'https://api.jikan.moe/v4/seasons/now?limit=15&type=tv');
         setTrendingAnime(trendData);
@@ -105,126 +105,105 @@ const Home = () => {
       } catch (error) { console.error("Jikan Error:", error); }
     };
 
-    // 2. ANILIST API FETCH (Eita Jikan er jonno wait korbe na, direct data ene debe)
+    // 2. ANILIST API FETCH
     const fetchAllAniListData = async () => {
-      // Tomar purono fetchAniListSchedule() function eitai thakbe
       const schedData = await fetchAniListSchedule(); 
       setTodaySchedule(schedData);
 
-      // Tomar purono fetchAwards() function
       await fetchAwards(); 
     };
 
-    // Duto eksathe call kore dao!
     fetchAllJikanData();
     fetchAllAniListData();
   }, []);
 
-        // 🔥 ANILIST GRAPHQL FETCHER FOR TODAY'S SCHEDULE 🔥
-        const fetchAniListSchedule = async () => {
-            const cacheKey = 'anilist_today_sched';
-            const cachedData = localStorage.getItem(cacheKey);
-            const cacheTime = localStorage.getItem(cacheKey + '_time');
-            const nowTime = new Date().getTime();
+  // 🔥 ANILIST GRAPHQL FETCHER FOR TODAY'S SCHEDULE 🔥
+  const fetchAniListSchedule = async () => {
+      const cacheKey = 'anilist_today_sched';
+      const cachedData = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(cacheKey + '_time');
+      const nowTime = new Date().getTime();
 
-            if (cachedData && cacheTime && nowTime - parseInt(cacheTime) < 6 * 60 * 60 * 1000) {
-              return JSON.parse(cachedData);
-            }
+      if (cachedData && cacheTime && nowTime - parseInt(cacheTime) < 6 * 60 * 60 * 1000) {
+        return JSON.parse(cachedData);
+      }
 
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-            const startTimestamp = Math.floor(startOfDay.getTime() / 1000);
-            const endTimestamp = Math.floor(endOfDay.getTime() / 1000);
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+      const startTimestamp = Math.floor(startOfDay.getTime() / 1000);
+      const endTimestamp = Math.floor(endOfDay.getTime() / 1000);
 
-            const query = `
-              query ($start: Int, $end: Int) {
-                Page(page: 1, perPage: 4) {
-                  airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
-                    airingAt
-                    episode
-                    media {
-                      idMal
-                      title { english romaji }
-                      coverImage { large }
-                    }
-                  }
-                }
-              }
-            `;
-            try {
-              const aniRes = await fetch('https://graphql.anilist.co', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ query, variables: { start: startTimestamp, end: endTimestamp } })
-              });
-              if (aniRes.ok) {
-                const aniData = await aniRes.json();
-                const mappedSchedule = aniData.data.Page.airingSchedules
-                  .filter(item => item.media.idMal) 
-                  .map(item => ({
-                    mal_id: item.media.idMal,
-                    title_english: item.media.title.english || item.media.title.romaji,
-                    title: item.media.title.romaji,
-                    images: { webp: { image_url: item.media.coverImage.large } },
-                    episodes: item.episode,
-                    broadcast: { time: new Date(item.airingAt * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
-                  }));
-                  
-                localStorage.setItem(cacheKey, JSON.stringify(mappedSchedule));
-                localStorage.setItem(cacheKey + '_time', nowTime.toString());
-                return mappedSchedule;
-              }
-            } catch (e) { console.error("AniList Error:", e); }
-            return [];
-        };
-
-        const schedData = await fetchAniListSchedule();
-        setTodaySchedule(schedData);
-        await delay(500);
-
-        const dubbedData = await fetchJikan('ani_dubbed', 'https://api.jikan.moe/v4/top/anime?filter=bypopularity&limit=15');
-        setPopularDubbed(dubbedData);
-        await delay(500);
-
-        const reviewData = await fetchJikan('ani_reviews', 'https://api.jikan.moe/v4/reviews/anime?limit=12');
-        setReviews(reviewData);
-
-        // 🔥 ANILIST GRAPHQL FETCHER FOR AWARDS (Auto-Updating) 🔥
-        const fetchAwards = async () => {
-          const currentYear = new Date().getFullYear();
-          const query = `
-            query {
-              Page(page: 1, perPage: 4) {
-                media(seasonYear: ${currentYear}, sort: SCORE_DESC, type: ANIME, format: TV) {
-                  idMal
-                  title { english romaji }
-                  coverImage { large }
-                }
+      const query = `
+        query ($start: Int, $end: Int) {
+          Page(page: 1, perPage: 4) {
+            airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
+              airingAt
+              episode
+              media {
+                idMal
+                title { english romaji }
+                coverImage { large }
               }
             }
-          `;
-          try {
-            const res = await fetch('https://graphql.anilist.co', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify({ query })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if(data?.data?.Page?.media){
-                   setAwardContenders(data.data.Page.media);
-              }
-            }
-          } catch (e) { console.error("Awards Fetch Error:", e); }
-        };
-        await fetchAwards();
+          }
+        }
+      `;
+      try {
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ query, variables: { start: startTimestamp, end: endTimestamp } })
+        });
+        if (aniRes.ok) {
+          const aniData = await aniRes.json();
+          const mappedSchedule = aniData.data.Page.airingSchedules
+            .filter(item => item.media.idMal) 
+            .map(item => ({
+              mal_id: item.media.idMal,
+              title_english: item.media.title.english || item.media.title.romaji,
+              title: item.media.title.romaji,
+              images: { webp: { image_url: item.media.coverImage.large } },
+              episodes: item.episode,
+              broadcast: { time: new Date(item.airingAt * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }
+            }));
+            
+          localStorage.setItem(cacheKey, JSON.stringify(mappedSchedule));
+          localStorage.setItem(cacheKey + '_time', nowTime.toString());
+          return mappedSchedule;
+        }
+      } catch (e) { console.error("AniList Error:", e); }
+      return [];
+  };
 
-      } catch (error) { console.error("Critical fetching error:", error); }
-    };
-    
-    fetchHomeData();
-  }, []);
+  // 🔥 ANILIST GRAPHQL FETCHER FOR AWARDS (Auto-Updating) 🔥
+  const fetchAwards = async () => {
+    const currentYear = new Date().getFullYear();
+    const query = `
+      query {
+        Page(page: 1, perPage: 4) {
+          media(seasonYear: ${currentYear}, sort: SCORE_DESC, type: ANIME, format: TV) {
+            idMal
+            title { english romaji }
+            coverImage { large }
+          }
+        }
+      }
+    `;
+    try {
+      const res = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if(data?.data?.Page?.media){
+             setAwardContenders(data.data.Page.media);
+        }
+      }
+    } catch (e) { console.error("Awards Fetch Error:", e); }
+  };
 
   // Hero Slider Auto-Scroll
   useEffect(() => {
@@ -470,7 +449,6 @@ const Home = () => {
             <h2 className="section-title">🔥 Trending Airing Anime</h2>
             <p className="section-sub">What's hot right now on MAL.</p>
           </div>
-          {/* 🔥 SEASONS LINK 🔥 */}
           <Link to="/seasons" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
@@ -494,7 +472,6 @@ const Home = () => {
             <h2 className="section-title">🌸 Upcoming Seasonal Anime</h2>
             <p className="section-sub">Anticipated releases for the next season.</p>
           </div>
-          {/* 🔥 UPCOMING LINK 🔥 */}
           <Link to="/upcoming" className="view-all-btn" style={{textDecoration: 'none'}}>View All</Link>
         </div>
         <div className="poster-row">
