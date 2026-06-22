@@ -1,6 +1,6 @@
-import { getAnimeFullDetails, getAnimeEpisodes } from '../../../lib/api';
+import { getAnimeFullDetails, getAnimeEpisodes } from '@/lib/api';
 import Link from 'next/link';
-import WatchPageContent from '../../../components/WatchPageContent';
+import WatchPageContent from '@/components/WatchPageContent';
 
 interface Params {
   id: string;
