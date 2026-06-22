@@ -1,0 +1,99 @@
+﻿{
+    "data":  {
+                 "mal_id":  71,
+                 "url":  "https://myanimelist.net/character/71/L_Lawliet",
+                 "images":  {
+                                "jpg":  {
+                                            "image_url":  "https://cdn.myanimelist.net/images/characters/10/249647.jpg"
+                                        },
+                                "webp":  {
+                                             "image_url":  "https://cdn.myanimelist.net/images/characters/10/249647.webp",
+                                             "small_image_url":  "https://cdn.myanimelist.net/images/characters/10/249647t.webp"
+                                         }
+                            },
+                 "name":  "L Lawliet",
+                 "name_kanji":  "エル ローライト",
+                 "nicknames":  [
+                                   "Ryuga Hideki",
+                                   "Ryuzaki",
+                                   "Eraldo Coil",
+                                   "Deneuve"
+                               ],
+                 "favorites":  131239,
+                 "about":  "Birthday: October 31, 1979 (1982 in anime)\nZodiac sign: Scorpio\nHeight: 179 cm (5\u002710\")\nWeight: 50 kg (110 lbs.)\nLikes: sweets\nDislikes: Wearing socks\n\nL, who also uses the aliases Hideki Ryuga, Ryuzaki, Eraldo Coil and Deneuve, the latter two for which he has developed reputations as the second—and third—best detectives in the world, is quite secretive and only communicates with the world through his assistant Watari. He never shows his face to the world, instead of representing himself with a capital L in Cloister Black font. After meeting the Kira investigation team, he requests that the task force refers to him as Ryuzaki for discretion. The Kira investigation team never learns his true name.\n\nL\u0027s disheveled and languid appearance masks his great powers of deduction and insight. He tends to second-guess everything he is presented with and is extremely meticulous and analytical. He has several quirks such as preferring to crouch rather than sit, eating only sweet foods like desserts and fruits, and holding items very delicately. He stayed in England for five years, and during that time he was the champion in tennis for the England Junior Cup.\n\nL suggests that even though he eats only sweet foods, he remains underweight because the brain uses the most calories of any organ in the body. He also says that if he sits normally, his reasoning ability would drop 40%.\n\n(Source: Wikipedia, Death Note Profiles)",
+                 "anime":  [
+                               {
+                                   "role":  "Main",
+                                   "anime":  "@{mal_id=1535; url=https://myanimelist.net/anime/1535/Death_Note; images=; title=Death Note}"
+                               },
+                               {
+                                   "role":  "Main",
+                                   "anime":  "@{mal_id=2994; url=https://myanimelist.net/anime/2994/Death_Note__Rewrite; images=; title=Death Note: Rewrite}"
+                               }
+                           ],
+                 "manga":  [
+                               {
+                                   "role":  "Main",
+                                   "manga":  "@{mal_id=21; url=https://myanimelist.net/manga/21/Death_Note; images=; title=Death Note}"
+                               },
+                               {
+                                   "role":  "Main",
+                                   "manga":  "@{mal_id=7458; url=https://myanimelist.net/manga/7458/Death_Note_Another_Note__Los_Angeles_BB_Renzoku_Satsujin_Jiken; images=; title=Death Note Another Note: Los Angeles BB Renzoku Satsujin Jiken}"
+                               },
+                               {
+                                   "role":  "Main",
+                                   "manga":  "@{mal_id=8158; url=https://myanimelist.net/manga/8158/L_Change_the_WorLd; images=; title=L Change the WorLd}"
+                               },
+                               {
+                                   "role":  "Main",
+                                   "manga":  "@{mal_id=132335; url=https://myanimelist.net/manga/132335/Death_Note_Tanpenshuu; images=; title=Death Note Tanpenshuu}"
+                               }
+                           ],
+                 "voices":  [
+                                {
+                                    "person":  "@{mal_id=67; url=https://myanimelist.net/people/67/Kappei_Yamaguchi; images=; name=Yamaguchi, Kappei}",
+                                    "language":  "Japanese"
+                                },
+                                {
+                                    "person":  "@{mal_id=505; url=https://myanimelist.net/people/505/Alessandro_Juliani; images=; name=Juliani, Alessandro}",
+                                    "language":  "English"
+                                },
+                                {
+                                    "person":  "@{mal_id=1499; url=https://myanimelist.net/people/1499/Guillaume_Lebon; images=; name=Lebon, Guillaume}",
+                                    "language":  "French"
+                                },
+                                {
+                                    "person":  "@{mal_id=6112; url=https://myanimelist.net/people/6112/Julien_Haggége; images=; name=Haggége, Julien}",
+                                    "language":  "German"
+                                },
+                                {
+                                    "person":  "@{mal_id=6420; url=https://myanimelist.net/people/6420/Stefano_Crescentini; images=; name=Crescentini, Stefano}",
+                                    "language":  "Italian"
+                                },
+                                {
+                                    "person":  "@{mal_id=7857; url=https://myanimelist.net/people/7857/Ottó_Viczián; images=; name=Viczián, Ottó}",
+                                    "language":  "Hungarian"
+                                },
+                                {
+                                    "person":  "@{mal_id=9612; url=https://myanimelist.net/people/9612/Sérgio_Cantú; images=; name=Cantú, Sérgio}",
+                                    "language":  "Portuguese (BR)"
+                                },
+                                {
+                                    "person":  "@{mal_id=14777; url=https://myanimelist.net/people/14777/Sang_Hyeon_Eom; images=; name=Eom, Sang Hyeon}",
+                                    "language":  "Korean"
+                                },
+                                {
+                                    "person":  "@{mal_id=24115; url=https://myanimelist.net/people/24115/Roger_Pera; images=; name=Pera, Roger}",
+                                    "language":  "Spanish"
+                                },
+                                {
+                                    "person":  "@{mal_id=34861; url=https://myanimelist.net/people/34861/Hugo_Núñez; images=; name=Núñez, Hugo}",
+                                    "language":  "Spanish"
+                                },
+                                {
+                                    "person":  "@{mal_id=46537; url=https://myanimelist.net/people/46537/Claudi_Domingo; images=; name=Domingo, Claudi}",
+                                    "language":  "Spanish"
+                                }
+                            ]
+             }
+}
