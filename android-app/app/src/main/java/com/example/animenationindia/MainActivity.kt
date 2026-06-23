@@ -36,15 +36,13 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -83,7 +81,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScreen() {
     val context = LocalContext.current
@@ -92,10 +89,6 @@ fun AppScreen() {
     var isOffline by remember { mutableStateOf(!isNetworkAvailable(context)) }
     var loadError by remember { mutableStateOf(false) }
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
-    
-    // Manage Pull-to-refresh
-    var isRefreshing by remember { mutableStateOf(false) }
-    val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     
     // Back Handler: Intercept Android back press to go back in WebView history
@@ -126,43 +119,38 @@ fun AppScreen() {
                 checkConnectionAndLoad()
             })
         } else {
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = {
+            WebViewContainer(
+                url = "https://animenationindia.vercel.app/",
+                onProgressChange = { newProgress ->
+                    progress = newProgress
+                    isLoading = newProgress < 100
+                },
+                onPageFinished = { swipeRefreshLayout ->
+                    isLoading = false
+                    swipeRefreshLayout?.isRefreshing = false
+                },
+                onReceivedError = {
+                    if (!isNetworkAvailable(context)) {
+                        isOffline = true
+                    } else {
+                        loadError = true
+                    }
+                },
+                webViewRef = webViewRef,
+                onRefresh = { swipeRefreshLayout ->
                     scope.launch {
-                        isRefreshing = true
                         if (isNetworkAvailable(context)) {
                             webViewRef.value?.reload()
                         } else {
                             isOffline = true
+                            swipeRefreshLayout.isRefreshing = false
                         }
-                        delay(1000)
-                        isRefreshing = false
+                        // Safety timeout to dismiss loading animation
+                        delay(6000)
+                        swipeRefreshLayout.isRefreshing = false
                     }
-                },
-                state = pullToRefreshState,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                WebViewContainer(
-                    url = "https://animenationindia.vercel.app/",
-                    onProgressChange = { newProgress ->
-                        progress = newProgress
-                        isLoading = newProgress < 100
-                    },
-                    onPageFinished = {
-                        isLoading = false
-                        isRefreshing = false
-                    },
-                    onReceivedError = {
-                        if (!isNetworkAvailable(context)) {
-                            isOffline = true
-                        } else {
-                            loadError = true
-                        }
-                    },
-                    webViewRef = webViewRef
-                )
-            }
+                }
+            )
             
             // Progress Bar
             AnimatedVisibility(
@@ -265,13 +253,20 @@ fun OfflineScreen(onRetry: () -> Unit) {
 fun WebViewContainer(
     url: String,
     onProgressChange: (Int) -> Unit,
-    onPageFinished: () -> Unit,
+    onPageFinished: (SwipeRefreshLayout?) -> Unit,
     onReceivedError: () -> Unit,
-    webViewRef: MutableState<WebView?>
+    webViewRef: MutableState<WebView?>,
+    onRefresh: (SwipeRefreshLayout) -> Unit
 ) {
     AndroidView(
         factory = { context ->
-            WebView(context).apply {
+            val swipeRefreshLayout = SwipeRefreshLayout(context).apply {
+                // Set size and styling matching deep space/pink theme
+                setColorSchemeColors(android.graphics.Color.parseColor("#FF4DD2"))
+                setProgressBackgroundColorSchemeColor(android.graphics.Color.parseColor("#121326"))
+            }
+
+            val webView = WebView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -290,7 +285,7 @@ fun WebViewContainer(
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        onPageFinished()
+                        onPageFinished(swipeRefreshLayout)
                     }
                     
                     override fun onReceivedError(
@@ -314,9 +309,16 @@ fun WebViewContainer(
                 loadUrl(url)
                 webViewRef.value = this
             }
+
+            swipeRefreshLayout.addView(webView)
+            swipeRefreshLayout.setOnRefreshListener {
+                onRefresh(swipeRefreshLayout)
+            }
+
+            swipeRefreshLayout
         },
         update = { webView ->
-            webViewRef.value = webView
+            // Update reference if needed
         }
     )
 }
