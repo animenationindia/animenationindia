@@ -20,6 +20,7 @@ import {
   getYearAwardsAniList,
   getNotForKidsAnimeAniList,
   getKickstartJourneyAnimeAniList,
+  getShounenZoneAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -62,7 +63,8 @@ export default async function Home() {
     topTVSeries,
     yearAwards,
     notForKidsAnime,
-    kickstartAnime
+    kickstartAnime,
+    shounenAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -82,7 +84,8 @@ export default async function Home() {
     getTopTVSeriesAniList(),
     getYearAwardsAniList(currentYear),
     getNotForKidsAnimeAniList(),
-    getKickstartJourneyAnimeAniList()
+    getKickstartJourneyAnimeAniList(),
+    getShounenZoneAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -116,6 +119,7 @@ export default async function Home() {
   const safeYearAwards = dedupe(yearAwards || []);
   const safeNotForKidsAnime = dedupe(notForKidsAnime || []);
   const safeKickstartAnime = dedupe(kickstartAnime || []);
+  const safeShounenAnime = dedupe(shounenAnime || []).slice(0, 20);
 
 
   return (
@@ -195,6 +199,14 @@ export default async function Home() {
           <SectionSlider 
             title="Kickstart Your Anime Journey" 
             data={safeKickstartAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* The Shounen Zone */}
+          <SectionSlider 
+            title="The Shounen Zone" 
+            data={safeShounenAnime as any} 
             type="anime" 
             viewAllLink="" 
           />
