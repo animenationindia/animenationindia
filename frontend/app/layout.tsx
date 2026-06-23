@@ -28,6 +28,15 @@ export const metadata: Metadata = {
   verification: {
     google: "Iy2BIme_V9-X_5NU_TMLqzs-PyR0x898Gkvdys1aSwg",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+    },
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
