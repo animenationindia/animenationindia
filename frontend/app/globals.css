@@ -25,6 +25,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-overflow-scrolling: touch; /* Momentum scrolling for mobile devices */
 }
 
 body {
@@ -33,6 +34,16 @@ body {
   font-family: var(--font-sans);
   overflow-x: hidden;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* Momentum scrolling for mobile devices */
+}
+
+/* 🚀 GPU Hardware Acceleration for heavy filters (Blurs, Backdrop-filters) to make scrolling buttery smooth on mobile */
+.glass-card,
+[class*="blur-["],
+[class*="backdrop-blur"] {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform, filter, backdrop-filter;
 }
 
 /* ✨ Premium Utility Animations & Effects */

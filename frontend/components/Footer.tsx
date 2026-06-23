@@ -100,16 +100,21 @@ export default function Footer() {
   return (
     <footer className="w-full relative z-10 mt-auto bg-[#030305] border-t border-white/5 overflow-hidden">
       {/* 3D Background Elements */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
+      <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden">
+        {/* Static blurs on mobile for scroll performance */}
+        <div className="md:hidden absolute -top-[200px] -left-[200px] w-[500px] h-[500px] bg-[#ff4dd2]/20 rounded-full blur-[120px]" />
+        <div className="md:hidden absolute -bottom-[200px] -right-[200px] w-[600px] h-[600px] bg-[#ff4dd2]/10 rounded-full blur-[150px]" />
+
+        {/* Animated GPU-accelerated blurs on desktop */}
         <motion.div 
           animate={{ rotate: 360, scale: [1, 1.2, 1] }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-[200px] -left-[200px] w-[500px] h-[500px] bg-[#ff4dd2]/20 rounded-full blur-[120px]"
+          className="hidden md:block absolute -top-[200px] -left-[200px] w-[500px] h-[500px] bg-[#ff4dd2]/20 rounded-full blur-[120px] transform-gpu"
         />
         <motion.div 
           animate={{ rotate: -360, scale: [1, 1.5, 1] }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-[200px] -right-[200px] w-[600px] h-[600px] bg-[#ff4dd2]/10 rounded-full blur-[150px]"
+          className="hidden md:block absolute -bottom-[200px] -right-[200px] w-[600px] h-[600px] bg-[#ff4dd2]/10 rounded-full blur-[150px] transform-gpu"
         />
       </div>
 
