@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Autoplay } from 'swiper/modules';
+import { Navigation, Autoplay, Mousewheel } from 'swiper/modules';
 import { Play, X } from 'lucide-react';
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -24,9 +24,13 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
       </div>
 
       <Swiper
-        modules={[Navigation, Autoplay]}
+        modules={[Navigation, Autoplay, Mousewheel]}
         spaceBetween={16}
         slidesPerView={1.2}
+        grabCursor={true}
+        mousewheel={{
+          forceToAxis: true,
+        }}
         navigation={{
           prevEl: '.trailer-prev',
           nextEl: '.trailer-next',
