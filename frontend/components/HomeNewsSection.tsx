@@ -17,6 +17,7 @@ export default function HomeNewsSection({ news }: HomeNewsSectionProps) {
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Kolkata',
         month: 'short',
         day: 'numeric',
         year: 'numeric',

@@ -27,7 +27,12 @@ export default function NewEpisodesList({ episodes }: { episodes: EpisodeData[] 
   const formatTime = (timestamp?: number) => {
     if (!timestamp) return 'TBA';
     const date = new Date(timestamp * 1000);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+    return date.toLocaleTimeString('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).toLowerCase();
   };
 
   const visibleEpisodes = episodes.slice(0, showCount);
