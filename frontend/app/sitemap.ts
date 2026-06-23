@@ -4,7 +4,7 @@ import { getNews } from '../lib/getNews';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // ওয়েবসাইটের সমস্ত পাবলিক পেজ (প্রাইভেট/লগইন পেজ বাদে)
+  // ওয়েবসাইটের সমস্ত পাবলিক পেজ (প্রাইভেট/লগইন পেজ বাদে) 
   const staticRoutes = [
     '',
     '/home',
