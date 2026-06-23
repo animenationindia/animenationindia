@@ -33,6 +33,7 @@ import {
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
+import HomeNewsSection from '../../components/HomeNewsSection';
 import HomeRecommendations from '../../components/HomeRecommendations';
 import HomeReviews from '../../components/HomeReviews';
 import HomeAnnouncementBanner from '../../components/HomeAnnouncementBanner';
@@ -340,6 +341,9 @@ export default async function Home() {
             type="anime" 
             viewAllLink="" 
           />
+
+          {/* Anime Nation News Section */}
+          <HomeNewsSection news={allNews} />
 
           {/* User Recommendations */}
           <HomeRecommendations />
