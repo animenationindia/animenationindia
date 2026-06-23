@@ -31,9 +31,15 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const hamburgerBtnRef = useRef<HTMLButtonElement>(null);
+
+  // 🌟 Mounted State for Hydration Mismatch Fix
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 🌟 Click outside to close profile dropdown & mobile menu
   useEffect(() => {
@@ -145,7 +151,7 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center h-full gap-0 xl:gap-1">
+          <nav className="hidden xl:flex items-center h-full gap-0 xl:gap-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.path;
               return (
@@ -187,7 +193,7 @@ export default function Navbar() {
           </button>
 
           {/* 🌟 Conditional Auth Button */}
-          {user ? (
+          {mounted && user ? (
             <div className="relative h-full flex items-center ml-2" ref={profileRef}>
               <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-b from-gray-700 to-gray-900 overflow-hidden flex items-center justify-center border border-white/20 shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(255,255,255,0.2)]">
@@ -248,7 +254,7 @@ export default function Navbar() {
           <button 
             ref={hamburgerBtnRef}
             onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 cursor-pointer ml-1 active:scale-90 ${
+            className={`xl:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 cursor-pointer ml-1 active:scale-90 ${
               isMenuOpen 
                 ? 'bg-[#ff4dd2] border border-[#ff4dd2] text-[#050716] shadow-[0_0_20px_rgba(255, 77, 210,0.8)]' 
                 : 'bg-transparent hover:bg-white/5 active:bg-[#1A1A24] border border-transparent hover:border-white/10 text-gray-300 hover:text-white'
