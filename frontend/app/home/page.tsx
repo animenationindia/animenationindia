@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import Hero from '../../components/Hero';
 import InstallAppButton from '../../components/InstallAppButton';
 import SectionSlider from '../../components/SectionSlider'; 
@@ -366,6 +367,32 @@ export default async function Home() {
 
           {/* 10. Community Reviews */}
           <HomeReviews />
+
+          {/* Still looking for something to watch? (Crunchyroll Style Library Callout) */}
+          <div className="flex flex-col items-center justify-center text-center my-10 gap-5">
+            <div className="relative w-48 h-24 md:w-56 md:h-28">
+              <Image 
+                src="/sleeping_cat.png" 
+                alt="Still looking for something to watch?" 
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <h3 className="text-lg md:text-xl font-bold text-white tracking-wide">
+                Still looking for something to watch?
+              </h3>
+              <p className="text-sm md:text-base font-bold text-white/80">
+                Check out our full library
+              </p>
+            </div>
+            <Link 
+              href="/browse" 
+              className="mt-2 inline-flex items-center justify-center border-2 border-[#ff6600] hover:bg-[#ff6600] text-white hover:text-white font-extrabold py-3 px-12 tracking-widest text-sm uppercase transition-all duration-300 rounded cursor-pointer"
+            >
+              VIEW ALL
+            </Link>
+          </div>
 
         </div>
       </main>
