@@ -1203,6 +1203,31 @@ export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]
   }
 }
 
+// Seasonal Romance Anime (Fetches top popular Romance anime from a given season and year)
+export async function getSeasonalRomanceAnimeAniList(year: number, season: string): Promise<AniListMedia[]> {
+  const query = `
+    query ($year: Int, $season: MediaSeason) {
+      Page(page: 1, perPage: 20) {
+        media(genre: "Romance", seasonYear: $year, season: $season, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { year, season } }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    return data.data.Page.media as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
 
 
 

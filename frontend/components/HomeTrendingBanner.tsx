@@ -20,9 +20,10 @@ interface TrendingBannerProps {
     };
     description: string | null;
   } | null;
+  subtitle?: string;
 }
 
-export default function HomeTrendingBanner({ anime }: TrendingBannerProps) {
+export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerProps) {
   if (!anime) return null;
 
   const title = anime.title.english || anime.title.romaji;
@@ -62,7 +63,7 @@ export default function HomeTrendingBanner({ anime }: TrendingBannerProps) {
         {/* Left Side: Info */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left max-w-2xl">
           <span className="text-[#ff4dd2] text-xs font-black tracking-[0.25em] uppercase mb-3 drop-shadow-md">
-            ★ Trending This Season
+            {subtitle || "★ Trending This Season"}
           </span>
           <h2 className="text-3xl md:text-5xl font-bebas text-white tracking-wide leading-none uppercase mb-4 drop-shadow-lg">
             {title}

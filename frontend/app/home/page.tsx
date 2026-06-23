@@ -25,6 +25,7 @@ import {
   getSimilarToSAOAnimeAniList,
   getFantasyZoneAnimeAniList,
   getSupernaturalWorldAnimeAniList,
+  getSeasonalRomanceAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -53,6 +54,15 @@ export default async function Home() {
 
   // Fetch all required data in parallel
   const currentYear = new Date().getFullYear();
+  const getCurrentSeason = () => {
+    const month = new Date().getMonth(); // 0-indexed: 0 = Jan, 11 = Dec
+    if (month >= 2 && month <= 4) return 'SPRING';
+    if (month >= 5 && month <= 7) return 'SUMMER';
+    if (month >= 8 && month <= 10) return 'FALL';
+    return 'WINTER';
+  };
+  const currentSeason = getCurrentSeason();
+
   const [
     todayData, 
     heroAnimeList, 
@@ -72,7 +82,8 @@ export default async function Home() {
     sportsAnime,
     saoSimilarAnime,
     fantasyAnime,
-    supernaturalAnime
+    supernaturalAnime,
+    romanceSeasonalAnimeList
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -97,7 +108,8 @@ export default async function Home() {
     getSportsZoneAnimeAniList(),
     getSimilarToSAOAnimeAniList(),
     getFantasyZoneAnimeAniList(),
-    getSupernaturalWorldAnimeAniList()
+    getSupernaturalWorldAnimeAniList(),
+    getSeasonalRomanceAnimeAniList(currentYear, currentSeason)
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -136,6 +148,9 @@ export default async function Home() {
   const safeSaoSimilarAnime = dedupe(saoSimilarAnime || []).slice(0, 20);
   const safeFantasyAnime = dedupe(fantasyAnime || []).slice(0, 20);
   const safeSupernaturalAnime = dedupe(supernaturalAnime || []).slice(0, 20);
+
+  // Find a Romance anime with a banner image from this season, or fall back
+  const romanceSeasonalAnime = romanceSeasonalAnimeList?.find(anime => anime.bannerImage) || romanceSeasonalAnimeList?.[0] || null;
 
 
   return (
@@ -269,6 +284,14 @@ export default async function Home() {
             type="anime" 
             viewAllLink="" 
           />
+
+          {/* Seasonal Romance Banner */}
+          {romanceSeasonalAnime && (
+            <HomeTrendingBanner 
+              anime={romanceSeasonalAnime} 
+              subtitle="★ Romance Pick of the Season" 
+            />
+          )}
 
           {/* User Recommendations */}
           <HomeRecommendations />
