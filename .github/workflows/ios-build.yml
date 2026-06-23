@@ -1,0 +1,49 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: |
+          cd ios-app
+          xcodegen generate
+
+      - name: Build iOS App (iOS Device SDK - Unsigned)
+        run: |
+          cd ios-app
+          xcodebuild build \
+            -project AnimeNationIndia.xcodeproj \
+            -scheme AnimeNationIndia \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CONFIGURATION_BUILD_DIR=build/Release-iphoneos
+
+      - name: Create Payload and IPA
+        run: |
+          cd ios-app
+          mkdir -p build/Release-iphoneos/Payload
+          cp -r build/Release-iphoneos/AnimeNationIndia.app build/Release-iphoneos/Payload/
+          cd build/Release-iphoneos
+          zip -r AnimeNationIndia.ipa Payload
+
+      - name: Upload Unsigned IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimeNationIndia-iOS-Device-Unsigned
+          path: ios-app/build/Release-iphoneos/AnimeNationIndia.ipa

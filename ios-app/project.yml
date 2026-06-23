@@ -1,0 +1,18 @@
+name: AnimeNationIndia
+options:
+  bundleIdPrefix: com.example
+targets:
+  AnimeNationIndia:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: AnimeNationIndia
+    settings:
+      base:
+        INFOPLIST_FILE: AnimeNationIndia/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.animenationindia.ios
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
