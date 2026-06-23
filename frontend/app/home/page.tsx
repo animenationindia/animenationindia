@@ -28,6 +28,7 @@ import {
   getSeasonalRomanceAnimeAniList,
   getSciFiAnimeAniList,
   getEvergreenAnimeAniList,
+  getSimilarToMHAAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -87,7 +88,8 @@ export default async function Home() {
     supernaturalAnime,
     romanceSeasonalAnimeList,
     sciFiAnime,
-    evergreenAnime
+    evergreenAnime,
+    mhaSimilarAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -115,7 +117,8 @@ export default async function Home() {
     getSupernaturalWorldAnimeAniList(),
     getSeasonalRomanceAnimeAniList(currentYear, currentSeason),
     getSciFiAnimeAniList(),
-    getEvergreenAnimeAniList()
+    getEvergreenAnimeAniList(),
+    getSimilarToMHAAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -156,6 +159,7 @@ export default async function Home() {
   const safeSupernaturalAnime = dedupe(supernaturalAnime || []).slice(0, 20);
   const safeSciFiAnime = dedupe(sciFiAnime || []).slice(0, 20);
   const safeEvergreenAnime = dedupe(evergreenAnime || []).slice(0, 25);
+  const safeMhaSimilarAnime = dedupe(mhaSimilarAnime || []).slice(0, 20);
 
   // Find a Romance anime with a banner image from this season, or fall back
   const romanceSeasonalAnime = romanceSeasonalAnimeList?.find(anime => anime.bannerImage) || romanceSeasonalAnimeList?.[0] || null;
@@ -313,6 +317,14 @@ export default async function Home() {
           <SectionSlider 
             title="Evergreen Anime on Anime Nation India" 
             data={safeEvergreenAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* Must Watch For My Hero Academia Fans */}
+          <SectionSlider 
+            title="Must Watch For My Hero Academia Fans" 
+            data={safeMhaSimilarAnime as any} 
             type="anime" 
             viewAllLink="" 
           />

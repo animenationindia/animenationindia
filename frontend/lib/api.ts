@@ -1286,6 +1286,38 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
+// Must Watch For My Hero Academia Fans (Fetches recommendations for MHA: 21459)
+export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        recommendations(page: 1, perPage: 40, sort: RATING_DESC) {
+          nodes {
+            mediaRecommendation {
+              id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+            }
+          }
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { id: 21459 } }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    const mediaList = (data.data?.Media?.recommendations?.nodes || [])
+      .map((node: any) => node.mediaRecommendation)
+      .filter((media: any) => media !== null && media !== undefined);
+    return mediaList as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
 
 
 
