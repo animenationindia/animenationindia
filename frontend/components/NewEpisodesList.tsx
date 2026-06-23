@@ -93,7 +93,7 @@ export default function NewEpisodesList({ episodes }: { episodes: EpisodeData[] 
                     {ep.airingEpisode ? `Episode ${ep.airingEpisode}` : 'Latest Episode'}
                     <span className="text-gray-500 mt-0.5">{type}</span>
                   </div>
-                  <div className="text-xs font-semibold text-[#ffd54a]">
+                  <div className="text-xs font-semibold text-[#ff4dd2]">
                     {formatTime(ep.airingAt)}
                   </div>
                 </div>

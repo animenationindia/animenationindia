@@ -415,7 +415,7 @@ export default function MangaNovelsPage() {
                   </div>
                   <div>
                     <span className="text-gray-500 block text-xs">Status</span>
-                    <span className="text-[#ffd54a]">{selectedThread.mangaDetails.status}</span>
+                    <span className="text-[#ff4dd2]">{selectedThread.mangaDetails.status}</span>
                   </div>
                   <div>
                     <span className="text-gray-500 block text-xs mb-1">Genres</span>
@@ -462,7 +462,7 @@ export default function MangaNovelsPage() {
                   
                   <div className="flex gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1"><Hash size={14} className="text-[#ff4dd2]"/> {selectedThread.replies}</div>
-                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ffd54a]"/> {selectedThread.views}</div>
+                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ff4dd2]"/> {selectedThread.views}</div>
                   </div>
                 </div>
 

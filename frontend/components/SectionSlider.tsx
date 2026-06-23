@@ -30,7 +30,7 @@ export default function SectionSlider({ title, data, type, viewAllLink, isManga 
       <div className="flex items-end gap-4 mb-4">
         <h2 className="text-xl md:text-2xl font-semibold text-white tracking-wide drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">{title}</h2>
         {viewAllLink && (
-          <Link href={viewAllLink} className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ffd54a] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
+          <Link href={viewAllLink} className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ff4dd2] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
             View All
           </Link>
         )}
@@ -71,12 +71,12 @@ export default function SectionSlider({ title, data, type, viewAllLink, isManga 
         
         {/* Navigation Overlays */}
         <button className={`swiper-prev-${title.replace(/[^a-zA-Z0-9]/g, '')} absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#050716] via-[#050716]/80 to-transparent z-10 flex items-center justify-start opacity-0 group-hover/section:opacity-100 transition-opacity disabled:opacity-0 cursor-pointer`}>
-          <div className="bg-[#121326]/80 backdrop-blur p-2 rounded-r-md text-[#ff4dd2] hover:text-[#ffd54a] hover:bg-[#050716] transition-colors shadow-[0_0_15px_rgba(255, 77, 210,0.3)]">
+          <div className="bg-[#121326]/80 backdrop-blur p-2 rounded-r-md text-[#ff4dd2] hover:text-[#ff4dd2] hover:bg-[#050716] transition-colors shadow-[0_0_15px_rgba(255, 77, 210,0.3)]">
             <ChevronLeft size={24} />
           </div>
         </button>
         <button className={`swiper-next-${title.replace(/[^a-zA-Z0-9]/g, '')} absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#050716] via-[#050716]/80 to-transparent z-10 flex items-center justify-end opacity-0 group-hover/section:opacity-100 transition-opacity disabled:opacity-0 cursor-pointer`}>
-          <div className="bg-[#121326]/80 backdrop-blur p-2 rounded-l-md text-[#ff4dd2] hover:text-[#ffd54a] hover:bg-[#050716] transition-colors shadow-[0_0_15px_rgba(255, 77, 210,0.3)]">
+          <div className="bg-[#121326]/80 backdrop-blur p-2 rounded-l-md text-[#ff4dd2] hover:text-[#ff4dd2] hover:bg-[#050716] transition-colors shadow-[0_0_15px_rgba(255, 77, 210,0.3)]">
             <ChevronRight size={24} />
           </div>
         </button>

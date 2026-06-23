@@ -43,14 +43,14 @@ export default function HomeRecommendations() {
     <div className="w-full mb-10 group/section relative">
       <div className="flex items-end gap-4 mb-4">
         <h2 className="text-xl md:text-2xl font-semibold text-white tracking-wide drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">Recommended by users</h2>
-        <Link href="/forums/recommendations" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ffd54a] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
+        <Link href="/forums/recommendations" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ff4dd2] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
           Explore More
         </Link>
       </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-48 border border-white/5 rounded-2xl bg-[#121326]/30">
-          <div className="w-8 h-8 border-2 border-[#ffd54a]/20 border-t-[#ffd54a] rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-2 border-[#ff4dd2]/20 border-t-[#ff4dd2] rounded-full animate-spin"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -71,8 +71,8 @@ export default function HomeRecommendations() {
                       />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center z-10">
-                      <div className="w-8 h-8 rounded-full bg-[#050716] border border-[#ffd54a]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
-                        <ArrowRight size={14} className="text-[#ffd54a]" />
+                      <div className="w-8 h-8 rounded-full bg-[#050716] border border-[#ff4dd2]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
+                        <ArrowRight size={14} className="text-[#ff4dd2]" />
                       </div>
                     </div>
                     <div className="w-1/2 h-full overflow-hidden">
@@ -100,7 +100,7 @@ export default function HomeRecommendations() {
                       If you liked <span className="text-[#ff4dd2]">{rec.entry[0].title}</span>...
                     </h3>
                     <p className="text-gray-300 text-xs mt-1 line-clamp-1">
-                      Then you might like <span className="text-[#ffd54a] font-semibold">{rec.entry[1].title}</span>
+                      Then you might like <span className="text-[#ff4dd2] font-semibold">{rec.entry[1].title}</span>
                     </p>
                   </div>
                 )}
@@ -112,7 +112,7 @@ export default function HomeRecommendations() {
                   </div>
                   <Link 
                     href="/forums/recommendations"
-                    className="text-[#ffd54a] text-[11px] font-bold hover:underline"
+                    className="text-[#ff4dd2] text-[11px] font-bold hover:underline"
                   >
                     Read full
                   </Link>

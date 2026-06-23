@@ -27,7 +27,7 @@ export default function Loading() {
               stroke="currentColor"
             />
           </svg>
-          <svg className="animate-spin w-full h-full absolute top-0 left-0 text-[#ffd54a]" viewBox="0 0 50 50" style={{ animationDuration: '1.5s', animationTimingFunction: 'ease-in-out' }}>
+          <svg className="animate-spin w-full h-full absolute top-0 left-0 text-[#ff4dd2]" viewBox="0 0 50 50" style={{ animationDuration: '1.5s', animationTimingFunction: 'ease-in-out' }}>
             <circle
               className="path"
               cx="25"

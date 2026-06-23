@@ -74,7 +74,7 @@ export default function HelpCenterPage() {
       {/* 3D Background Elements */}
       <div className="fixed inset-0 pointer-events-none opacity-30 z-0">
         <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-[#ff4dd2]/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-[#ffd54a]/10 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-[#ff4dd2]/10 rounded-full blur-[150px]" />
       </div>
 
       <div className="container mx-auto px-4 max-w-[1000px] relative z-10">
@@ -89,7 +89,7 @@ export default function HelpCenterPage() {
           </p>
 
           <div className="relative max-w-xl mx-auto group">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ffd54a] transition-colors">
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-[#ff4dd2] transition-colors">
               <Search size={20} />
             </div>
             <input 
@@ -97,7 +97,7 @@ export default function HelpCenterPage() {
               placeholder="Search for answers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#121214]/80 border border-white/10 text-white rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-[#ffd54a] focus:shadow-[0_0_20px_rgba(255, 213, 74,0.2)] transition-all backdrop-blur-md"
+              className="w-full bg-[#121214]/80 border border-white/10 text-white rounded-xl py-4 pl-12 pr-4 focus:outline-none focus:border-[#ff4dd2] focus:shadow-[0_0_20px_rgba(255, 77, 210,0.2)] transition-all backdrop-blur-md"
             />
           </div>
         </div>
@@ -109,8 +109,8 @@ export default function HelpCenterPage() {
             <h3 className="text-white font-bold mb-1">Email Support</h3>
             <p className="text-xs text-gray-400 text-center">Get help via email within 24 hours.</p>
           </a>
-          <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-6 bg-[#121214]/50 border border-white/5 rounded-2xl hover:border-[#ffd54a]/50 hover:bg-white/5 transition-all group">
-            <ExternalLink className="text-[#ffd54a] mb-3 group-hover:scale-110 transition-transform" size={32} />
+          <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-6 bg-[#121214]/50 border border-white/5 rounded-2xl hover:border-[#ff4dd2]/50 hover:bg-white/5 transition-all group">
+            <ExternalLink className="text-[#ff4dd2] mb-3 group-hover:scale-110 transition-transform" size={32} />
             <h3 className="text-white font-bold mb-1">Connect with Developer</h3>
             <p className="text-xs text-gray-400 text-center">Visit my portfolio to learn more.</p>
           </a>

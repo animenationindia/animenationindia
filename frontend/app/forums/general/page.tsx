@@ -203,24 +203,24 @@ export default function GeneralDiscussionPage() {
   return (
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#ffd54a]/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#ff4dd2]/10 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[1200px] relative z-10">
         
         {/* Header Section */}
         <div className="mb-12">
-          <Link href="/forums" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ffd54a] transition-colors mb-6 font-medium text-sm">
+          <Link href="/forums" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ff4dd2] transition-colors mb-6 font-medium text-sm">
             <ArrowLeft size={16} /> Back to ANI Community
           </Link>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="p-4 bg-[#ffd54a]/10 border border-[#ffd54a]/20 rounded-2xl">
-                <MessageSquare className="text-[#ffd54a]" size={32} />
+              <div className="p-4 bg-[#ff4dd2]/10 border border-[#ff4dd2]/20 rounded-2xl">
+                <MessageSquare className="text-[#ff4dd2]" size={32} />
               </div>
               <div>
                 <h1 className="text-3xl md:text-5xl font-black text-white mb-2 uppercase tracking-tighter drop-shadow-lg">
-                  General <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffd54a] to-[#ff4dd2]">Discussion</span>
+                  General <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2]">Discussion</span>
                 </h1>
                 <p className="text-[#a0a0a0] font-medium">Talk about anything related to anime, manga, and Japanese culture.</p>
               </div>
@@ -266,7 +266,7 @@ export default function GeneralDiscussionPage() {
                       </span>
                     ))}
                   </div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-[#ffd54a] transition-colors mb-2 leading-snug">
+                  <h3 className="text-lg font-bold text-white group-hover:text-[#ff4dd2] transition-colors mb-2 leading-snug">
                     {thread.title}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -291,7 +291,7 @@ export default function GeneralDiscussionPage() {
                     {thread.lastReply}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500 justify-start md:justify-end w-full">
-                    <span>by <span className="text-[#ffd54a] font-semibold">{thread.lastReplyBy}</span></span>
+                    <span>by <span className="text-[#ff4dd2] font-semibold">{thread.lastReplyBy}</span></span>
                   </div>
                 </div>
 
@@ -319,7 +319,7 @@ export default function GeneralDiscussionPage() {
                   onClick={() => setCurrentPage(i + 1)}
                   className={`w-8 h-8 rounded border flex items-center justify-center transition-colors ${
                     currentPage === i + 1 
-                      ? 'bg-[#ffd54a] border-[#ffd54a] text-white font-bold' 
+                      ? 'bg-[#ff4dd2] border-[#ff4dd2] text-white font-bold' 
                       : 'border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -351,7 +351,7 @@ export default function GeneralDiscussionPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative bg-[#121326] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-[0_0_50px_rgba(255, 213, 74,0.1)] z-10 flex flex-col md:flex-row"
+              className="relative bg-[#121326] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-[0_0_50px_rgba(255, 77, 210,0.1)] z-10 flex flex-col md:flex-row"
             >
               <button 
                 onClick={() => setSelectedThread(null)}
@@ -380,7 +380,7 @@ export default function GeneralDiscussionPage() {
                   </div>
                   <div>
                     <span className="text-gray-500 block text-xs">Status</span>
-                    <span className="text-[#ffd54a]">{selectedThread.details.status}</span>
+                    <span className="text-[#ff4dd2]">{selectedThread.details.status}</span>
                   </div>
                   <div>
                     <span className="text-gray-500 block text-xs mb-1">Genres</span>
@@ -422,7 +422,7 @@ export default function GeneralDiscussionPage() {
                   
                   <div className="flex gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1"><MessageSquare size={14} className="text-[#ff4dd2]"/> {selectedThread.replies}</div>
-                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ffd54a]"/> {selectedThread.views}</div>
+                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ff4dd2]"/> {selectedThread.views}</div>
                   </div>
                 </div>
 

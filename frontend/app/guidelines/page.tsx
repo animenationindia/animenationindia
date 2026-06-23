@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 const guidelinesData = [
   {
     category: "General Etiquette & Conduct",
-    icon: <Users className="text-[#ffd54a]" size={24} />,
-    color: "from-[#ffd54a]/20 to-transparent",
-    borderColor: "hover:border-[#ffd54a]/50",
+    icon: <Users className="text-[#ff4dd2]" size={24} />,
+    color: "from-[#ff4dd2]/20 to-transparent",
+    borderColor: "hover:border-[#ff4dd2]/50",
     rules: [
       { title: "1. Be Respectful", text: "Treat everyone with kindness. Harassment, bullying, and toxic behavior will not be tolerated." },
       { title: "2. Zero Tolerance for Hate Speech", text: "Racism, sexism, homophobia, and xenophobia will result in an instant and permanent ban." },
@@ -90,7 +90,7 @@ export default function GuidelinesPage() {
       <div className="container mx-auto px-4 max-w-[1000px] relative z-10">
         
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffd54a] to-[#ff4dd2] mb-4 uppercase tracking-tighter">
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] mb-4 uppercase tracking-tighter">
             Community Guidelines
           </h1>
           <p className="text-[#a0a0a0] max-w-2xl mx-auto text-lg leading-relaxed">
@@ -131,8 +131,8 @@ export default function GuidelinesPage() {
           ))}
         </div>
 
-        <div className="mt-16 text-center bg-[#ffd54a]/10 border border-[#ffd54a]/30 rounded-2xl p-8 backdrop-blur-md">
-          <Shield className="text-[#ffd54a] size-12 mx-auto mb-4" />
+        <div className="mt-16 text-center bg-[#ff4dd2]/10 border border-[#ff4dd2]/30 rounded-2xl p-8 backdrop-blur-md">
+          <Shield className="text-[#ff4dd2] size-12 mx-auto mb-4" />
           <h3 className="text-2xl font-bold text-white mb-2">Help Us Keep The Community Safe</h3>
           <p className="text-[#a0a0a0] max-w-xl mx-auto">
             By using Anime Nation India, you agree to abide by these guidelines. Repeated violations will result in account suspension or a permanent ban. Thank you for being a great community member!

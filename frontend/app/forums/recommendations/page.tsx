@@ -49,13 +49,13 @@ export default function RecommendationsPage() {
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#ff4dd2]/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ffd54a]/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[1200px] relative z-10">
         
         {/* Header Section */}
         <div className="mb-12">
-          <Link href="/forums" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ffd54a] transition-colors mb-6 font-medium text-sm">
+          <Link href="/forums" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ff4dd2] transition-colors mb-6 font-medium text-sm">
             <ArrowLeft size={16} /> Back to ANI Community
           </Link>
           <div className="flex items-center gap-4">
@@ -63,7 +63,7 @@ export default function RecommendationsPage() {
               <TrendingUp className="text-[#ff4dd2]" size={32} />
             </div>
             <div>
-              <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ffd54a] mb-2 uppercase tracking-tighter drop-shadow-lg">
+              <h1 className="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] mb-2 uppercase tracking-tighter drop-shadow-lg">
                 Anime Recommendations
               </h1>
               <p className="text-[#a0a0a0] font-medium">Discover what other users are recommending to watch next.</p>
@@ -74,7 +74,7 @@ export default function RecommendationsPage() {
         {/* Content */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-4 border-[#ffd54a]/20 border-t-[#ffd54a] rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-[#ff4dd2]/20 border-t-[#ff4dd2] rounded-full animate-spin"></div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -97,8 +97,8 @@ export default function RecommendationsPage() {
                         />
                       </div>
                       <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <div className="w-10 h-10 rounded-full bg-[#050716] border border-[#ffd54a]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
-                          <ArrowRight size={18} className="text-[#ffd54a]" />
+                        <div className="w-10 h-10 rounded-full bg-[#050716] border border-[#ff4dd2]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
+                          <ArrowRight size={18} className="text-[#ff4dd2]" />
                         </div>
                       </div>
                       <div className="w-1/2 h-full overflow-hidden">
@@ -126,7 +126,7 @@ export default function RecommendationsPage() {
                         If you liked <span className="text-[#ff4dd2]">{rec.entry[0].title}</span>...
                       </h3>
                       <p className="text-gray-300 text-sm mt-1 line-clamp-2">
-                        Then you might like <span className="text-[#ffd54a] font-semibold">{rec.entry[1].title}</span>
+                        Then you might like <span className="text-[#ff4dd2] font-semibold">{rec.entry[1].title}</span>
                       </p>
                     </div>
                   )}
@@ -138,7 +138,7 @@ export default function RecommendationsPage() {
                     </div>
                     <button 
                       onClick={() => setSelectedRec(rec)}
-                      className="text-[#ffd54a] text-xs font-bold hover:underline cursor-pointer bg-transparent border-none p-0"
+                      className="text-[#ff4dd2] text-xs font-bold hover:underline cursor-pointer bg-transparent border-none p-0"
                     >
                       Read full
                     </button>
@@ -167,7 +167,7 @@ export default function RecommendationsPage() {
             </button>
             
             <h2 className="text-2xl md:text-3xl font-black text-white mb-6 pr-8">
-              If you liked <span className="text-[#ff4dd2]">{selectedRec.entry[0]?.title}</span>, you might like <span className="text-[#ffd54a]">{selectedRec.entry[1]?.title}</span>
+              If you liked <span className="text-[#ff4dd2]">{selectedRec.entry[0]?.title}</span>, you might like <span className="text-[#ff4dd2]">{selectedRec.entry[1]?.title}</span>
             </h2>
             
             <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 pb-6 border-b border-white/10">

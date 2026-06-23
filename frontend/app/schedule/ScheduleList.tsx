@@ -54,7 +54,7 @@ function ScheduleAnimeCard({ item }: { item: AiringSchedule }) {
       className="group relative w-full mb-4 flex flex-col cursor-pointer bg-transparent"
     >
       <Link href={`/series/${linkId}`} className="block w-full h-full relative">
-        <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-xl border border-[#ff4dd2]/20 group-hover:border-[#ffd54a]/50 group-hover:shadow-[0_0_25px_rgba(255, 213, 74,0.4)] transition-all duration-300">
+        <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-xl border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_25px_rgba(255, 77, 210,0.4)] transition-all duration-300">
           {coverImage && (
             <Image 
               src={coverImage} 
@@ -70,7 +70,7 @@ function ScheduleAnimeCard({ item }: { item: AiringSchedule }) {
              <div className="bg-[#ff4dd2]/90 backdrop-blur-md text-white text-[10px] md:text-xs font-black px-2.5 py-1 rounded-md shadow-lg border border-white/10">
                 EP {item.episode}
              </div>
-             <div className={`backdrop-blur-md text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-md shadow-lg flex items-center gap-1.5 border border-white/10 transition-colors ${isAired ? 'bg-[#050716]/80 text-gray-400' : 'bg-gradient-to-r from-[#ffd54a]/90 to-[#ff4dd2]/90 text-white'}`}>
+             <div className={`backdrop-blur-md text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-md shadow-lg flex items-center gap-1.5 border border-white/10 transition-colors ${isAired ? 'bg-[#050716]/80 text-gray-400' : 'bg-gradient-to-r from-[#ff4dd2]/90 to-[#ff4dd2]/90 text-white'}`}>
                 {isAired ? <Clock size={12} /> : <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                 {timeLeft}
              </div>
@@ -78,13 +78,13 @@ function ScheduleAnimeCard({ item }: { item: AiringSchedule }) {
 
           {/* Time floating badge bottom */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 pt-12">
-            <p className="text-[#ffd54a] text-xs font-black flex items-center gap-1.5">
+            <p className="text-[#ff4dd2] text-xs font-black flex items-center gap-1.5">
               <Clock size={12} /> {timeStr}
             </p>
           </div>
 
           <div className="absolute inset-0 bg-[#121326]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center backdrop-blur-sm z-10">
-            <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ffd54a] bg-[#050716]/60 text-[#ffd54a] hover:bg-[#ffd54a] hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(255, 213, 74,0.6)] group-hover:scale-110">
+            <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ff4dd2] bg-[#050716]/60 text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(255, 77, 210,0.6)] group-hover:scale-110">
               <Play size={24} fill="currentColor" className="ml-1" />
             </div>
           </div>
@@ -175,7 +175,7 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
                 isSelected && isToday
                   ? 'bg-[#ff4dd2] text-white border-[#ff4dd2] shadow-[0_0_20px_rgba(255, 77, 210,0.6)]'
                   : isSelected && !isToday
-                  ? 'bg-[#121326]/80 text-[#ffd54a] border-[#ffd54a]/50 shadow-[0_0_15px_rgba(255, 213, 74,0.3)]'
+                  ? 'bg-[#121326]/80 text-[#ff4dd2] border-[#ff4dd2]/50 shadow-[0_0_15px_rgba(255, 77, 210,0.3)]'
                   : isToday
                   ? 'bg-[#ff4dd2]/10 text-[#ff4dd2] border-[#ff4dd2]/30 hover:bg-[#ff4dd2]/20'
                   : 'bg-[#121326]/50 text-[#a0a0a0] border-white/5 hover:bg-white/10 hover:text-white hover:border-white/10'

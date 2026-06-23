@@ -200,7 +200,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
               <span className="h-4 w-px bg-gray-700" />
               <span>{anime.year || anime.season || 'Unknown'}</span>
               <span className="h-4 w-px bg-gray-700" />
-              <span className="flex items-center gap-1 text-yellow-500"><Star size={14} /> {anime.score || 'N/A'}</span>
+              <span className="flex items-center gap-1 text-[#ff4dd2]"><Star size={14} /> {anime.score || 'N/A'}</span>
             </div>
 
             {/* Actions Row */}

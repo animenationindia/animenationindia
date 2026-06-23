@@ -7,7 +7,7 @@ export default function HomeAnnouncementBanner({ announcement }: { announcement:
 
   return (
     <div className="w-full mb-10 group/section relative mt-14">
-      <Link href={`/news/${announcement.id}`} className="block relative w-full h-[250px] md:h-[350px] rounded-2xl overflow-hidden group shadow-2xl border border-white/10 hover:border-[#ffd54a]/50 transition-colors">
+      <Link href={`/news/${announcement.id}`} className="block relative w-full h-[250px] md:h-[350px] rounded-2xl overflow-hidden group shadow-2xl border border-white/10 hover:border-[#ff4dd2]/50 transition-colors">
         <div className="absolute inset-0 bg-[#121326]">
           <img 
             src={announcement.image} 
@@ -26,7 +26,7 @@ export default function HomeAnnouncementBanner({ announcement }: { announcement:
             <span className="text-gray-400 text-xs font-medium">{announcement.dateFormatted}</span>
           </div>
           
-          <h2 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3 md:w-3/4 lg:w-2/3 group-hover:text-[#ffd54a] transition-colors line-clamp-2 drop-shadow-md">
+          <h2 className="text-2xl md:text-4xl font-black text-white leading-tight mb-3 md:w-3/4 lg:w-2/3 group-hover:text-[#ff4dd2] transition-colors line-clamp-2 drop-shadow-md">
             {announcement.title}
           </h2>
           
@@ -34,7 +34,7 @@ export default function HomeAnnouncementBanner({ announcement }: { announcement:
             {announcement.snippet}
           </p>
 
-          <div className="flex items-center gap-2 text-[#ffd54a] font-bold text-sm tracking-wide">
+          <div className="flex items-center gap-2 text-[#ff4dd2] font-bold text-sm tracking-wide">
             Read Full Announcement <ArrowRight size={16} className="group-hover:translate-x-1.5 transition-transform" />
           </div>
         </div>

@@ -30,7 +30,7 @@ export default function CookiesPage() {
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[500px] bg-[#f47521]/5 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[600px] h-[500px] bg-[#ffd54a]/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[600px] h-[500px] bg-[#ff4dd2]/5 blur-[150px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[900px] relative z-10">
         
@@ -52,7 +52,7 @@ export default function CookiesPage() {
           {/* Left Column: Preferences */}
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-              <ShieldCheck className="text-[#ffd54a]" /> Your Preferences
+              <ShieldCheck className="text-[#ff4dd2]" /> Your Preferences
             </h2>
 
             {/* Essential Cookies */}
@@ -102,11 +102,11 @@ export default function CookiesPage() {
             </div>
 
             {/* Marketing Cookies */}
-            <div className={`bg-[#12131A]/80 backdrop-blur-xl border ${marketing ? 'border-[#ffd54a]/50' : 'border-[#2A2B30]'} rounded-2xl p-6 shadow-lg transition-colors duration-300`}>
+            <div className={`bg-[#12131A]/80 backdrop-blur-xl border ${marketing ? 'border-[#ff4dd2]/50' : 'border-[#2A2B30]'} rounded-2xl p-6 shadow-lg transition-colors duration-300`}>
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-white font-bold text-lg mb-1 flex items-center gap-2">
-                    <Target className="text-[#ffd54a] size-5" /> Marketing Cookies
+                    <Target className="text-[#ff4dd2] size-5" /> Marketing Cookies
                   </h3>
                   <p className="text-[#8A8A93] text-sm leading-relaxed pr-6">
                     Used to track visitors across websites to display relevant advertisements and track campaign performance.
@@ -114,7 +114,7 @@ export default function CookiesPage() {
                 </div>
                 <button 
                   onClick={() => setMarketing(!marketing)}
-                  className={`w-12 h-6 rounded-full flex items-center px-1 shrink-0 mt-1 transition-colors duration-300 ${marketing ? 'bg-[#ffd54a]' : 'bg-[#25252D] border border-[#2A2B30]'}`}
+                  className={`w-12 h-6 rounded-full flex items-center px-1 shrink-0 mt-1 transition-colors duration-300 ${marketing ? 'bg-[#ff4dd2]' : 'bg-[#25252D] border border-[#2A2B30]'}`}
                 >
                   <motion.div 
                     layout 
@@ -130,7 +130,7 @@ export default function CookiesPage() {
             <div className="pt-4">
               <button 
                 onClick={handleSave}
-                className="w-full relative overflow-hidden group bg-gradient-to-r from-[#ff4dd2] to-[#ffd54a] hover:from-[#ff4dd2] hover:to-[#0891B2] text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255, 77, 210,0.3)] hover:shadow-[0_0_30px_rgba(255, 77, 210,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full relative overflow-hidden group bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] hover:from-[#ff4dd2] hover:to-[#0891B2] text-white font-bold py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255, 77, 210,0.3)] hover:shadow-[0_0_30px_rgba(255, 77, 210,0.5)] active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Save size={20} />
                 <span>Save Preferences</span>

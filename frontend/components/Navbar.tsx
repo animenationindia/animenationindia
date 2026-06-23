@@ -132,7 +132,7 @@ export default function Navbar() {
       }`}>
         <div className="w-full px-4 md:px-8 xl:px-12 h-[72px] flex items-center justify-between relative">
           {/* Subtle glowing bottom border when scrolled */}
-          <div className={`absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ffd54a]/80 to-transparent transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`} />
+          <div className={`absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ff4dd2]/80 to-transparent transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`} />
         
         {/* Left: Logo + Nav */}
         <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 h-full">
@@ -164,7 +164,7 @@ export default function Navbar() {
                 </span>
                 {/* 3D Bottom Glow on Hover */}
                 {!isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-[#ffd54a] group-hover:w-1/2 transition-all duration-300 shadow-[0_0_10px_rgba(255, 213, 74,0.8)] opacity-0 group-hover:opacity-100" />
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-[#ff4dd2] group-hover:w-1/2 transition-all duration-300 shadow-[0_0_10px_rgba(255, 77, 210,0.8)] opacity-0 group-hover:opacity-100" />
                 )}
               </Link>
             )})}
@@ -173,7 +173,7 @@ export default function Navbar() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 md:gap-4 h-full">
-          <button onClick={() => router.push('/search')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 text-gray-300 hover:text-[#ffd54a] hover:shadow-[0_5px_15px_rgba(255, 213, 74,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all cursor-pointer">
+          <button onClick={() => router.push('/search')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 text-gray-300 hover:text-[#ff4dd2] hover:shadow-[0_5px_15px_rgba(255, 77, 210,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all cursor-pointer">
             <Search size={20} />
           </button>
           
@@ -203,11 +203,11 @@ export default function Navbar() {
               <div className={`absolute right-0 top-full mt-4 w-48 bg-[#121326] border border-[#ff4dd2]/40 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,1)] transition-all duration-300 z-[100] rounded-xl transform origin-top ${isProfileOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}>
                 
                 <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-gradient-to-b from-white/5 to-transparent">
-                  <div className="w-10 h-10 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ffd54a]/50 shadow-[0_0_10px_rgba(255, 213, 74,0.3)]">
+                  <div className="w-10 h-10 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ff4dd2]/50 shadow-[0_0_10px_rgba(255, 77, 210,0.3)]">
                     {user.user_metadata?.avatar_url ? (
                       <Image src={user.user_metadata.avatar_url} alt="Avatar" width={40} height={40} />
                     ) : (
-                      <User size={20} className="text-[#ffd54a]" />
+                      <User size={20} className="text-[#ff4dd2]" />
                     )}
                   </div>
                   <div className="overflow-hidden">
@@ -289,7 +289,7 @@ export default function Navbar() {
                 </button>
                 
                 <h3 className="text-[#ff4dd2] text-xs font-black tracking-widest uppercase mb-4 drop-shadow-[0_0_10px_rgba(255, 77, 210,0.5)] flex items-center gap-3">
-                  <span className="w-6 h-[2px] bg-[#ffd54a] inline-block shadow-[0_0_8px_rgba(255, 213, 74,0.8)]"></span> NAVIGATION
+                  <span className="w-6 h-[2px] bg-[#ff4dd2] inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.8)]"></span> NAVIGATION
                 </h3>
                 
                 <div className="flex flex-col gap-3">
@@ -317,11 +317,11 @@ export default function Navbar() {
                 {/* Extra Links in Drawer */}
                 <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-3 pb-6">
                   <Link href="/watchlist" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] group">
-                    <Bookmark size={22} className="text-[#ff4dd2] group-hover:text-[#ffd54a] transition-colors" /> My Watchlist
+                    <Bookmark size={22} className="text-[#ff4dd2] group-hover:text-[#ff4dd2] transition-colors" /> My Watchlist
                   </Link>
                   {!user && (
                     <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] group">
-                      <User size={22} className="text-[#ffd54a] group-hover:text-[#ff4dd2] transition-colors" /> Login / Register
+                      <User size={22} className="text-[#ff4dd2] group-hover:text-[#ff4dd2] transition-colors" /> Login / Register
                     </Link>
                   )}
                 </div>

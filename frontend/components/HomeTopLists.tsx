@@ -20,7 +20,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
   const renderRankBadge = (rank: number) => {
     if (rank === 1) {
       return (
-        <span className="absolute -top-1.5 -left-1.5 z-10 bg-[#ffd54a] text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-black/10 shadow-md">
+        <span className="absolute -top-1.5 -left-1.5 z-10 bg-[#ff4dd2] text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border border-black/10 shadow-md">
           #1
         </span>
       );
@@ -65,10 +65,10 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                     />
                   </Link>
                   <div className="flex flex-col gap-1 min-w-0">
-                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ffd54a] transition-colors line-clamp-1">
+                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
                       {title}
                     </Link>
-                    <span className="text-xs text-[#ffd54a] font-bold flex items-center gap-1">
+                    <span className="text-xs text-[#ff4dd2] font-bold flex items-center gap-1">
                       ★ {getRating(anime.averageScore)}
                     </span>
                   </div>
@@ -107,10 +107,10 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                     />
                   </Link>
                   <div className="flex flex-col gap-1 min-w-0">
-                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ffd54a] transition-colors line-clamp-1">
+                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
                       {title}
                     </Link>
-                    <span className="text-xs text-[#ffd54a] font-bold flex items-center gap-1">
+                    <span className="text-xs text-[#ff4dd2] font-bold flex items-center gap-1">
                       ★ {getRating(anime.averageScore)}
                     </span>
                   </div>
@@ -146,11 +146,11 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                     </Link>
                   </div>
                   <div className="flex flex-col gap-1 min-w-0">
-                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ffd54a] transition-colors line-clamp-1">
+                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
                       {title}
                     </Link>
-                    <span className="text-xs text-[#ffd54a] font-bold flex items-center gap-1">
-                      Contender <Flame size={12} fill="currentColor" className="text-[#ffd54a]" />
+                    <span className="text-xs text-[#ff4dd2] font-bold flex items-center gap-1">
+                      Contender <Flame size={12} fill="currentColor" className="text-[#ff4dd2]" />
                     </span>
                   </div>
                 </div>

@@ -157,13 +157,13 @@ export default function SimulcastClient() {
                   setIsSeasonDropdownOpen(!isSeasonDropdownOpen);
                   setIsYearDropdownOpen(false);
                 }}
-                className="flex items-center gap-2 bg-[#1A1A24] border border-white/10 hover:border-[#ffd54a]/50 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg min-w-[130px] justify-between capitalize"
+                className="flex items-center gap-2 bg-[#1A1A24] border border-white/10 hover:border-[#ff4dd2]/50 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg min-w-[130px] justify-between capitalize"
               >
                 <div className="flex items-center gap-2">
-                  <Filter size={16} className="text-[#ffd54a]" />
+                  <Filter size={16} className="text-[#ff4dd2]" />
                   {season}
                 </div>
-                <ChevronDown size={16} className={`transition-transform duration-300 ${isSeasonDropdownOpen ? 'rotate-180 text-[#ffd54a]' : 'text-gray-400'}`} />
+                <ChevronDown size={16} className={`transition-transform duration-300 ${isSeasonDropdownOpen ? 'rotate-180 text-[#ff4dd2]' : 'text-gray-400'}`} />
               </button>
               
               <AnimatePresence>
@@ -176,7 +176,7 @@ export default function SimulcastClient() {
                       <button 
                         key={s}
                         onClick={() => { setSeason(s); setPage(1); setIsSeasonDropdownOpen(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm capitalize transition-colors ${season === s ? 'bg-[#ffd54a]/20 text-[#ffd54a] font-bold' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
+                        className={`w-full text-left px-4 py-2.5 text-sm capitalize transition-colors ${season === s ? 'bg-[#ff4dd2]/20 text-[#ff4dd2] font-bold' : 'text-gray-300 hover:bg-white/5 hover:text-white'}`}
                       >
                         {s}
                       </button>

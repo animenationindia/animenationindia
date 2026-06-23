@@ -31,7 +31,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
     return (
       <div className="container mx-auto px-4 py-32 text-center text-[#a0a0a0] bg-[#000000] min-h-screen">
         <h1 className="text-3xl font-semibold text-white mb-4">Character Not Found</h1>
-        <Link href="/" className="text-[#ffd54a] hover:underline transition-all">Go back home</Link>
+        <Link href="/" className="text-[#ff4dd2] hover:underline transition-all">Go back home</Link>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
             {animeography.length > 0 && (
               <div className="mb-14">
                 <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                  <Tv className="text-[#ffd54a]" size={24} /> 
+                  <Tv className="text-[#ff4dd2]" size={24} /> 
                   Anime Appearances
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
@@ -98,7 +98,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
                     const animeTitle = item.anime.title;
                     const animeImage = item.anime.images?.jpg?.large_image_url || item.anime.images?.jpg?.image_url;
                     return (
-                      <Link href={`/series/${item.anime.mal_id}`} key={idx} className="group relative rounded-xl overflow-hidden bg-[#121214] border border-white/5 shadow-lg hover:border-[#ffd54a]/50 transition-colors">
+                      <Link href={`/series/${item.anime.mal_id}`} key={idx} className="group relative rounded-xl overflow-hidden bg-[#121214] border border-white/5 shadow-lg hover:border-[#ff4dd2]/50 transition-colors">
                         <div className="relative aspect-[3/4] w-full">
                           {animeImage ? (
                             <Image src={animeImage} alt={animeTitle} fill sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -110,7 +110,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
                             <span className={`text-[10px] uppercase font-black tracking-wider mb-1 w-fit px-1.5 py-0.5 rounded ${item.role === 'Main' ? 'bg-[#ff4dd2] text-white' : 'bg-white/20 text-gray-300'}`}>
                               {item.role}
                             </span>
-                            <h4 className="text-white font-bold text-sm line-clamp-2 leading-tight group-hover:text-[#ffd54a] transition-colors">{animeTitle}</h4>
+                            <h4 className="text-white font-bold text-sm line-clamp-2 leading-tight group-hover:text-[#ff4dd2] transition-colors">{animeTitle}</h4>
                           </div>
                         </div>
                       </Link>

@@ -31,7 +31,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
     return (
       <div className="container mx-auto px-4 py-32 text-center text-[#a0a0a0] bg-[#000000] min-h-screen">
         <h1 className="text-3xl font-semibold text-white mb-4">Person Not Found</h1>
-        <Link href="/" className="text-[#ffd54a] hover:underline transition-all">Go back home</Link>
+        <Link href="/" className="text-[#ff4dd2] hover:underline transition-all">Go back home</Link>
       </div>
     );
   }
@@ -59,7 +59,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
             </div>
             
             <div className="mt-6 flex items-center justify-center gap-2 bg-gradient-to-r from-[#121214] to-[#1a1a1f] py-4 rounded-xl border border-white/5 shadow-lg mb-6">
-              <Heart size={20} className="fill-[#ffd54a] text-[#ffd54a]" />
+              <Heart size={20} className="fill-[#ff4dd2] text-[#ff4dd2]" />
               <span className="font-bold text-xl tracking-wide">{likes} <span className="text-sm font-medium text-gray-400">Favorites</span></span>
             </div>
 
@@ -88,7 +88,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
               {person.website_url && (
                 <div>
                   <p className="text-xs text-gray-500 font-bold uppercase mb-1">Website</p>
-                  <a href={person.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-[#ffd54a] hover:text-white transition-colors">
+                  <a href={person.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-[#ff4dd2] hover:text-white transition-colors">
                     <Globe size={14} /> Visit Link
                   </a>
                 </div>
@@ -127,7 +127,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
                             {animeImage && <Image src={animeImage} alt={animeTitle} fill sizes="(max-width: 768px) 20vw, 10vw" className="object-cover group-hover:scale-105 transition-transform" />}
                           </Link>
                           <div className="flex flex-col justify-center h-full overflow-hidden">
-                            <Link href={`/series/${item.anime.mal_id}`} className="text-sm font-bold line-clamp-2 hover:text-[#ffd54a] transition-colors">{animeTitle}</Link>
+                            <Link href={`/series/${item.anime.mal_id}`} className="text-sm font-bold line-clamp-2 hover:text-[#ff4dd2] transition-colors">{animeTitle}</Link>
                             <span className="text-[10px] text-gray-500 uppercase font-bold mt-1">Anime</span>
                           </div>
                         </div>
@@ -155,7 +155,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
             {animeStaff.length > 0 && (
               <div>
                 <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                  <Briefcase className="text-[#ffd54a]" size={24} /> 
+                  <Briefcase className="text-[#ff4dd2]" size={24} /> 
                   Anime Staff Positions
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
@@ -163,7 +163,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
                     const animeTitle = item.anime.title;
                     const animeImage = item.anime.images?.jpg?.large_image_url || item.anime.images?.jpg?.image_url;
                     return (
-                      <Link href={`/series/${item.anime.mal_id}`} key={idx} className="group relative rounded-xl overflow-hidden bg-[#121214] border border-white/5 shadow-lg hover:border-[#ffd54a]/50 transition-colors">
+                      <Link href={`/series/${item.anime.mal_id}`} key={idx} className="group relative rounded-xl overflow-hidden bg-[#121214] border border-white/5 shadow-lg hover:border-[#ff4dd2]/50 transition-colors">
                         <div className="relative aspect-[3/4] w-full">
                           {animeImage ? (
                             <Image src={animeImage} alt={animeTitle} fill sizes="(max-width: 768px) 50vw, 20vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -172,7 +172,7 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
                           <div className="absolute bottom-0 left-0 w-full p-3 flex flex-col justify-end h-full text-center">
-                            <span className="text-xs font-bold text-[#ffd54a] mb-1 line-clamp-3 bg-black/60 px-2 py-1 rounded-md backdrop-blur-md border border-white/10">{item.position}</span>
+                            <span className="text-xs font-bold text-[#ff4dd2] mb-1 line-clamp-3 bg-black/60 px-2 py-1 rounded-md backdrop-blur-md border border-white/10">{item.position}</span>
                             <h4 className="text-white font-bold text-sm line-clamp-2 mt-auto">{animeTitle}</h4>
                           </div>
                         </div>

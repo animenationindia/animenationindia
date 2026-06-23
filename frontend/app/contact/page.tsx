@@ -93,14 +93,14 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="bg-[#121326]/50 backdrop-blur-xl border border-[#2A2B30]/40 rounded-2xl p-6 md:p-8 flex items-start gap-4 hover:border-[#ffd54a]/50 transition-colors group block">
-              <div className="bg-[#ffd54a]/10 p-3 rounded-xl group-hover:bg-[#ffd54a]/20 transition-colors">
-                <ExternalLink className="text-[#ffd54a]" size={24} />
+            <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="bg-[#121326]/50 backdrop-blur-xl border border-[#2A2B30]/40 rounded-2xl p-6 md:p-8 flex items-start gap-4 hover:border-[#ff4dd2]/50 transition-colors group block">
+              <div className="bg-[#ff4dd2]/10 p-3 rounded-xl group-hover:bg-[#ff4dd2]/20 transition-colors">
+                <ExternalLink className="text-[#ff4dd2]" size={24} />
               </div>
               <div>
                 <h3 className="text-white font-bold text-lg mb-1">Connect with Developer</h3>
                 <p className="text-[#a0a0a0] text-sm">Visit my portfolio</p>
-                <p className="text-[#ffd54a] text-xs mt-1">shouvikdas-portfolio.vercel.app</p>
+                <p className="text-[#ff4dd2] text-xs mt-1">shouvikdas-portfolio.vercel.app</p>
               </div>
             </a>
 
@@ -206,7 +206,7 @@ export default function ContactPage() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="bg-gradient-to-r from-[#ff4dd2] to-[#ffd54a] text-white font-bold py-4 px-8 rounded-xl w-full sm:w-auto flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] text-white font-bold py-4 px-8 rounded-xl w-full sm:w-auto flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>

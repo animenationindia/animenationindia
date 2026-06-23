@@ -126,7 +126,7 @@ export default function ProfilePage() {
           <div className="text-center md:text-left flex-1">
             <h1 className="text-3xl md:text-5xl font-bebas tracking-widest text-white mb-2">{username}</h1>
             <p className="text-[#a0a0a0] font-medium flex items-center justify-center md:justify-start gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#ffd54a]"></span> Member since {memberSince}
+              <span className="w-2 h-2 rounded-full bg-[#ff4dd2]"></span> Member since {memberSince}
             </p>
           </div>
 
@@ -146,7 +146,7 @@ export default function ProfilePage() {
             {/* Quick Stats */}
             <div className="bg-[#121326]/80 backdrop-blur-xl border border-[#2A2B30]/50 rounded-2xl p-6">
               <h3 className="text-white font-bold text-lg mb-4 uppercase tracking-wider flex items-center gap-2">
-                <span className="w-1.5 h-5 bg-[#ffd54a] rounded-full inline-block shadow-[0_0_8px_rgba(255, 213, 74,0.6)]"></span>
+                <span className="w-1.5 h-5 bg-[#ff4dd2] rounded-full inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.6)]"></span>
                 Library Stats
               </h3>
               
@@ -157,7 +157,7 @@ export default function ProfilePage() {
                   <p className="text-[10px] uppercase tracking-widest text-[#a0a0a0] mt-1">Completed</p>
                 </div>
                 <div className="bg-[#141519] rounded-xl p-4 border border-[#2A2B30]/30 text-center">
-                  <Clock size={24} className="text-[#ffd54a] mx-auto mb-2 opacity-80" />
+                  <Clock size={24} className="text-[#ff4dd2] mx-auto mb-2 opacity-80" />
                   <p className="text-2xl font-bold text-white">{watchingCount}</p>
                   <p className="text-[10px] uppercase tracking-widest text-[#a0a0a0] mt-1">Watching</p>
                 </div>
@@ -173,7 +173,7 @@ export default function ProfilePage() {
             <div className="bg-[#121326]/80 backdrop-blur-xl border border-[#2A2B30]/50 rounded-2xl p-4 flex flex-col gap-1">
               <Link href="/watchlist" className="flex items-center justify-between p-4 rounded-xl hover:bg-[#1A1C23] text-gray-300 hover:text-white transition-colors group">
                 <div className="flex items-center gap-3 font-semibold">
-                  <Bookmark size={20} className="text-[#ffd54a] group-hover:scale-110 transition-transform" />
+                  <Bookmark size={20} className="text-[#ff4dd2] group-hover:scale-110 transition-transform" />
                   My Watchlist
                 </div>
                 <ChevronRight size={18} className="opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
@@ -194,7 +194,7 @@ export default function ProfilePage() {
               </Link>
               <Link href="/guidelines" className="flex items-center justify-between p-4 rounded-xl hover:bg-[#1A1C23] text-gray-300 hover:text-white transition-colors group">
                 <div className="flex items-center gap-3 font-semibold">
-                  <Shield size={20} className="text-yellow-500 group-hover:scale-110 transition-transform" />
+                  <Shield size={20} className="text-[#ff4dd2] group-hover:scale-110 transition-transform" />
                   Community Guidelines
                 </div>
                 <ChevronRight size={18} className="opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
@@ -220,7 +220,7 @@ export default function ProfilePage() {
                   <span className="w-1.5 h-5 bg-[#ff4dd2] rounded-full inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.6)]"></span>
                   Recent Activity
                 </h3>
-                <Link href="/watchlist" className="text-sm font-semibold text-[#ffd54a] hover:text-white transition-colors">
+                <Link href="/watchlist" className="text-sm font-semibold text-[#ff4dd2] hover:text-white transition-colors">
                   View All
                 </Link>
               </div>
@@ -237,7 +237,7 @@ export default function ProfilePage() {
                     <Link key={item.anime_id} href={`/series/${item.anime_id}`} className="flex items-center gap-4 bg-[#141519] p-4 rounded-xl border border-[#2A2B30]/30 hover:border-[#ff4dd2]/50 transition-colors group cursor-pointer">
                       <div className="w-16 h-20 rounded-lg overflow-hidden shrink-0 relative">
                         <img src={item.anime_image} alt={item.anime_title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        <div className="absolute top-0 right-0 bg-black/80 px-1 py-0.5 text-[8px] font-bold text-[#ffd54a] rounded-bl-md uppercase">
+                        <div className="absolute top-0 right-0 bg-black/80 px-1 py-0.5 text-[8px] font-bold text-[#ff4dd2] rounded-bl-md uppercase">
                           {item.status.replace(/_/g, ' ')}
                         </div>
                       </div>

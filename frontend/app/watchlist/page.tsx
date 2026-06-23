@@ -203,8 +203,8 @@ export default function WatchlistPage() {
                     }}
                     className={`snap-start px-5 py-2.5 rounded-full font-bold text-xs md:text-sm whitespace-nowrap transition-all uppercase tracking-wider cursor-pointer border ${
                       isActive 
-                        ? 'bg-[#ffd54a] text-[#050716] shadow-[0_0_15px_rgba(255,213,74,0.4)] border-[#ffd54a]' 
-                        : 'bg-[#121326]/50 text-gray-400 hover:text-white border-white/5 hover:border-[#ffd54a]/30'
+                        ? 'bg-[#ff4dd2] text-[#050716] shadow-[0_0_15px_rgba(255, 77, 210,0.4)] border-[#ff4dd2]' 
+                        : 'bg-[#121326]/50 text-gray-400 hover:text-white border-white/5 hover:border-[#ff4dd2]/30'
                     }`}
                   >
                     {tab.label} <span className="opacity-60 ml-1">({count})</span>
@@ -226,7 +226,7 @@ export default function WatchlistPage() {
                     className={`snap-start px-5 py-2.5 rounded-full font-bold text-xs md:text-sm whitespace-nowrap transition-all uppercase tracking-wider cursor-pointer border ${
                       isActive 
                         ? 'bg-[#ff4dd2] text-white shadow-[0_0_15px_rgba(255, 77, 210, 0.5)] border-[#ff4dd2]' 
-                        : 'bg-[#121326]/50 text-gray-400 hover:text-white border-[#ff4dd2]/20 hover:border-[#ffd54a]/50 hover:shadow-[0_0_10px_rgba(255, 213, 74, 0.3)]'
+                        : 'bg-[#121326]/50 text-gray-400 hover:text-white border-[#ff4dd2]/20 hover:border-[#ff4dd2]/50 hover:shadow-[0_0_10px_rgba(255, 77, 210, 0.3)]'
                     }`}
                   >
                     {tab.getLabel(isBook)} <span className="opacity-60 ml-1">({count})</span>
@@ -238,7 +238,7 @@ export default function WatchlistPage() {
             {/* 📭 Empty State */}
             {filteredWatchlist.length === 0 ? (
               <div className="text-center mt-20 p-10 bg-[#121326]/30 backdrop-blur-md rounded-3xl border border-[#ff4dd2]/20 shadow-[0_0_30px_rgba(255, 77, 210, 0.05)] max-w-4xl mx-auto">
-                <BookmarkX size={64} className="mx-auto text-[#ffd54a]/50 mb-6" />
+                <BookmarkX size={64} className="mx-auto text-[#ff4dd2]/50 mb-6" />
                 <h2 className="text-2xl font-bold text-white mb-2 uppercase">Your list is looking empty</h2>
                 <p className="text-gray-400">
                   {activeType === 'ALL' && activeTab === 'ALL' 
@@ -262,10 +262,10 @@ export default function WatchlistPage() {
                         exit={{ opacity: 0, scale: 0.9 }}
                         whileHover={{ y: -8, scale: 1.02 }}
                         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        className="group relative bg-[#121326] rounded-xl overflow-hidden border border-[#ff4dd2]/20 shadow-lg flex flex-col transition-all duration-300 hover:border-[#ffd54a]/50 hover:shadow-[0_0_20px_rgba(255, 213, 74, 0.4)]"
+                        className="group relative bg-[#121326] rounded-xl overflow-hidden border border-[#ff4dd2]/20 shadow-lg flex flex-col transition-all duration-300 hover:border-[#ff4dd2]/50 hover:shadow-[0_0_20px_rgba(255, 77, 210, 0.4)]"
                       >
                         {/* 🏷️ Status Badge */}
-                        <div className="absolute top-2 left-2 bg-[#050716]/85 backdrop-blur-md px-2.5 py-1 rounded-md text-[9px] font-black text-[#ffd54a] uppercase tracking-widest z-20 border border-[#ffd54a]/30 shadow-[0_0_10px_rgba(255, 213, 74, 0.3)]">
+                        <div className="absolute top-2 left-2 bg-[#050716]/85 backdrop-blur-md px-2.5 py-1 rounded-md text-[9px] font-black text-[#ff4dd2] uppercase tracking-widest z-20 border border-[#ff4dd2]/30 shadow-[0_0_10px_rgba(255, 77, 210, 0.3)]">
                           {item.status ? (isBook && item.status === 'WATCHING' ? 'READING' : isBook && item.status === 'PLAN_TO_WATCH' ? 'PLAN TO READ' : item.status.replace(/_/g, ' ')) : 'SAVED'}
                         </div>
 

@@ -130,11 +130,11 @@ function BrowseAllAnimeContent() {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-[#12131A] p-4 rounded-xl border border-[#2A2B30]">
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Filter className="text-[#ffd54a] size-5" />
+          <Filter className="text-[#ff4dd2] size-5" />
           <select 
             value={format} 
             onChange={(e) => setFormat(e.target.value)}
-            className="bg-[#121326] border border-[#2A2B30] text-white text-sm rounded-lg focus:ring-[#ffd54a] focus:border-[#ffd54a] block w-full p-2.5 outline-none cursor-pointer"
+            className="bg-[#121326] border border-[#2A2B30] text-white text-sm rounded-lg focus:ring-[#ff4dd2] focus:border-[#ff4dd2] block w-full p-2.5 outline-none cursor-pointer"
           >
             <option value="ALL">All Formats</option>
             <option value="TV">TV Series</option>
@@ -163,7 +163,7 @@ function BrowseAllAnimeContent() {
       {/* Grid */}
       {loading && page === 1 ? (
         <div className="flex justify-center items-center py-20">
-          <Loader2 className="w-10 h-10 text-[#ffd54a] animate-spin" />
+          <Loader2 className="w-10 h-10 text-[#ff4dd2] animate-spin" />
         </div>
       ) : (
         <>
@@ -201,7 +201,7 @@ function BrowseAllAnimeContent() {
 
 export default function BrowseAllAnimePage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center py-20"><Loader2 className="w-10 h-10 text-[#ffd54a] animate-spin" /></div>}>
+    <Suspense fallback={<div className="flex justify-center items-center py-20"><Loader2 className="w-10 h-10 text-[#ff4dd2] animate-spin" /></div>}>
       <BrowseAllAnimeContent />
     </Suspense>
   );

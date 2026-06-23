@@ -39,8 +39,8 @@ export default function HomeTrendingBanner({ anime }: TrendingBannerProps) {
       />
 
       {/* Ornate Gold Border Corners (matching the screenshot theme) */}
-      <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-[#ffd54a]/30 pointer-events-none z-20 rounded-tl-md"></div>
-      <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-[#ffd54a]/30 pointer-events-none z-20 rounded-br-md"></div>
+      <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-[#ff4dd2]/30 pointer-events-none z-20 rounded-tl-md"></div>
+      <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-[#ff4dd2]/30 pointer-events-none z-20 rounded-br-md"></div>
 
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full z-0">
@@ -61,7 +61,7 @@ export default function HomeTrendingBanner({ anime }: TrendingBannerProps) {
       <div className="relative z-20 px-8 py-10 md:py-16 md:px-16 flex flex-col md:flex-row items-center justify-between gap-8 w-full pointer-events-none">
         {/* Left Side: Info */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left max-w-2xl">
-          <span className="text-[#ffd54a] text-xs font-black tracking-[0.25em] uppercase mb-3 drop-shadow-md">
+          <span className="text-[#ff4dd2] text-xs font-black tracking-[0.25em] uppercase mb-3 drop-shadow-md">
             ★ Trending This Season
           </span>
           <h2 className="text-3xl md:text-5xl font-bebas text-white tracking-wide leading-none uppercase mb-4 drop-shadow-lg">

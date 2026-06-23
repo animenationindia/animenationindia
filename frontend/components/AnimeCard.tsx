@@ -169,7 +169,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
       <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} className="block w-full h-full relative">
         
         {/* 🖼️ Image Container */}
-        <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ffd54a]/50 group-hover:shadow-[0_0_20px_rgba(255, 213, 74,0.4)] transition-all duration-300">
+        <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255, 77, 210,0.4)] transition-all duration-300">
           {coverImage && (
             <Image 
               src={coverImage} 
@@ -196,14 +196,14 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
 
             {/* Center: Play / Read Button */}
             <div className="flex flex-col items-center justify-center flex-1 gap-2">
-              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ffd54a] bg-[#050716]/60 text-[#ffd54a] hover:bg-[#ffd54a] hover:text-white transition-all duration-300 shadow-[0_0_15px_rgba(255, 213, 74,0.5)] group-hover:scale-110">
+              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ff4dd2] bg-[#050716]/60 text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-white transition-all duration-300 shadow-[0_0_15px_rgba(255, 77, 210,0.5)] group-hover:scale-110">
                 {isActuallyManga ? (
                   <BookOpen size={24} className="stroke-[2.5px]" />
                 ) : (
                   <Play size={24} fill="currentColor" className="ml-1" />
                 )}
               </div>
-              <span className="text-[11px] md:text-xs font-bold text-[#ffd54a] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255, 213, 74,0.5)]">
+              <span className="text-[11px] md:text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255, 77, 210,0.5)]">
                 {isActuallyManga ? "READ NOW" : "WATCH NOW"}
               </span>
             </div>
@@ -215,7 +215,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
                   {description}
                 </p>
               ) : (
-                <p className="text-xs font-bold text-[#ffd54a] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255, 213, 74,0.5)]">{isManga ? "Read Now" : "Watch Now"}</p>
+                <p className="text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255, 77, 210,0.5)]">{isManga ? "Read Now" : "Watch Now"}</p>
               )}
             </div>
             
@@ -244,7 +244,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
           <h3 className="text-white text-[14px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ff4dd2] transition-colors drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
             {title}
           </h3>
-          <div className="text-[12px] text-[#ffd54a] mt-1 flex items-center gap-1 font-medium capitalize opacity-80">
+          <div className="text-[12px] text-[#ff4dd2] mt-1 flex items-center gap-1 font-medium capitalize opacity-80">
             {format.toLowerCase()} {year && <span className="text-[#a0a0a0]">• {year}</span>}
           </div>
         </div>

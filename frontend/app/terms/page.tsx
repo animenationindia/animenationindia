@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 const termsData = [
   {
     title: "1. Acceptance of Terms",
-    icon: <CheckCircle className="text-[#ffd54a]" size={24} />,
+    icon: <CheckCircle className="text-[#ff4dd2]" size={24} />,
     content: "By accessing, browsing, or using Anime Nation India (the \"Service\"), you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you do not agree with any part of these terms, you must immediately discontinue your use of our platform. We reserve the right to update or modify these Terms at any time without prior notice. Your continued use of the Service after any changes indicates your acceptance of the new Terms."
   },
   {
@@ -24,7 +24,7 @@ const termsData = [
   },
   {
     title: "4. Third-Party Services & APIs",
-    icon: <Database className="text-[#ffd54a]" size={24} />,
+    icon: <Database className="text-[#ff4dd2]" size={24} />,
     content: "Our platform heavily relies on third-party APIs (such as AniList and Jikan) to provide anime data, character details, and statistics. We do not guarantee the 100% accuracy, completeness, or availability of this data. Additionally, any links or embedded video players (e.g., YouTube trailers) direct you to third-party services. We are not responsible for the content, privacy policies, or practices of any third-party websites or services."
   },
   {
@@ -55,7 +55,7 @@ export default function TermsPage() {
   return (
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-0 right-1/4 w-[600px] h-[500px] bg-[#ffd54a]/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute top-0 right-1/4 w-[600px] h-[500px] bg-[#ff4dd2]/5 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[500px] bg-[#ff4dd2]/5 blur-[150px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[900px] relative z-10">
@@ -63,9 +63,9 @@ export default function TermsPage() {
         {/* Header Section */}
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center p-4 bg-[#12131A] rounded-2xl border border-[#2A2B30] mb-6 shadow-2xl">
-            <ScrollText className="text-[#ffd54a] size-12" />
+            <ScrollText className="text-[#ff4dd2] size-12" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ffd54a] to-[#ff4dd2] mb-4 uppercase tracking-tighter">
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] mb-4 uppercase tracking-tighter">
             Terms of Service
           </h1>
           <p className="text-[#a0a0a0] text-lg">

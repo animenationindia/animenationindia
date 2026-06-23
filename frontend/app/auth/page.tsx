@@ -119,7 +119,7 @@ export default function AuthPage() {
             </Link>
             <p className="text-white text-3xl font-bold mt-4 leading-tight">
               Unlock the Ultimate <br/>
-              <span className="text-[#ffd54a]">Anime Experience.</span>
+              <span className="text-[#ff4dd2]">Anime Experience.</span>
             </p>
             <p className="text-[#a0a0a0] mt-4 text-sm font-medium">
               Join thousands of otakus in the deep space network. Stream, track, and discover the best of anime seamlessly.
@@ -132,7 +132,7 @@ export default function AuthPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center relative px-6 sm:px-12 py-12">
         {/* Ambient Glows */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#ff4dd2] opacity-10 blur-[150px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#ffd54a] opacity-5 blur-[150px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#ff4dd2] opacity-5 blur-[150px] rounded-full pointer-events-none" />
 
         <div className="w-full max-w-md relative z-10">
           
@@ -217,7 +217,7 @@ export default function AuthPage() {
                       type="button"
                       onClick={handlePasswordReset}
                       disabled={loading}
-                      className="text-[#a0a0a0] hover:text-[#ffd54a] text-xs font-bold transition-colors hover:underline cursor-pointer"
+                      className="text-[#a0a0a0] hover:text-[#ff4dd2] text-xs font-bold transition-colors hover:underline cursor-pointer"
                     >
                       Forgot password?
                     </button>

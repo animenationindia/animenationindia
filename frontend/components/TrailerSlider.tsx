@@ -18,7 +18,7 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
     <section className="mb-14 relative group/trailer-section">
       <div className="flex items-end gap-4 mb-6">
         <h2 className="text-xl md:text-2xl font-semibold text-white tracking-wide">Official Anime Trailers</h2>
-        <Link href="/trailers" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ffd54a] transition-colors mb-1 uppercase tracking-wider">
+        <Link href="/trailers" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ff4dd2] transition-colors mb-1 uppercase tracking-wider">
           View All
         </Link>
       </div>

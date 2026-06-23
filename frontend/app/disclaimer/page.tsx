@@ -13,7 +13,7 @@ export default function DisclaimerPage() {
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[500px] bg-red-500/5 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[600px] h-[500px] bg-[#ffd54a]/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 w-[600px] h-[500px] bg-[#ff4dd2]/5 blur-[150px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[900px] relative z-10">
         
@@ -36,8 +36,8 @@ export default function DisclaimerPage() {
           {/* General Information */}
           <div className="bg-[#12131A]/80 backdrop-blur-xl border border-[#2A2B30] rounded-2xl p-6 md:p-8 shadow-xl">
             <div className="flex items-center gap-4 mb-4">
-              <div className="bg-[#ffd54a]/10 p-3 rounded-xl border border-[#ffd54a]/20">
-                <Info className="text-[#ffd54a]" size={24} />
+              <div className="bg-[#ff4dd2]/10 p-3 rounded-xl border border-[#ff4dd2]/20">
+                <Info className="text-[#ff4dd2]" size={24} />
               </div>
               <h2 className="text-2xl font-bold text-white tracking-tight">
                 General Information Purposes
@@ -96,10 +96,10 @@ export default function DisclaimerPage() {
           </div>
 
           {/* DMCA Takedown */}
-          <div className="bg-[#121326]/60 backdrop-blur-xl border border-[#2A2B30]/40 rounded-2xl p-6 md:p-8 hover:border-[#ffd54a]/50 transition-colors">
+          <div className="bg-[#121326]/60 backdrop-blur-xl border border-[#2A2B30]/40 rounded-2xl p-6 md:p-8 hover:border-[#ff4dd2]/50 transition-colors">
             <div className="flex items-center gap-4 mb-4">
-              <div className="bg-[#ffd54a]/10 p-3 rounded-xl border border-[#ffd54a]/20">
-                <AlertCircle className="text-[#ffd54a]" size={24} />
+              <div className="bg-[#ff4dd2]/10 p-3 rounded-xl border border-[#ff4dd2]/20">
+                <AlertCircle className="text-[#ff4dd2]" size={24} />
               </div>
               <h2 className="text-2xl font-bold text-white tracking-tight">
                 DMCA & Content Removal

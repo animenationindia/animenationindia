@@ -9,7 +9,7 @@ const forumCategories = [
   {
     title: 'General Discussion',
     description: 'Talk about anything related to anime, manga, and Japanese culture.',
-    icon: <MessageSquare className="text-[#ffd54a]" size={24} />,
+    icon: <MessageSquare className="text-[#ff4dd2]" size={24} />,
     topics: 1245,
     posts: 8432,
     latestPost: { user: 'NarutoFan99', time: '10 mins ago', topic: 'Best anime of Spring 2026?' },
@@ -110,14 +110,14 @@ export default function ForumsPage() {
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#ff4dd2]/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ffd54a]/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[1200px] relative z-10">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ffd54a] mb-2 uppercase tracking-tighter drop-shadow-lg">
+            <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] mb-2 uppercase tracking-tighter drop-shadow-lg">
               ANI Community
             </h1>
             <p className="text-[#a0a0a0] font-medium">Join the discussion with thousands of other anime fans.</p>
@@ -148,7 +148,7 @@ export default function ForumsPage() {
                         {category.icon}
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-white group-hover:text-[#ffd54a] transition-colors mb-1">{category.title}</h3>
+                        <h3 className="text-lg font-bold text-white group-hover:text-[#ff4dd2] transition-colors mb-1">{category.title}</h3>
                         <p className="text-sm text-gray-400 leading-relaxed">{category.description}</p>
                       </div>
                     </div>
@@ -193,7 +193,7 @@ export default function ForumsPage() {
               <div className="space-y-4 relative z-10">
                 {trendingTopics.map((topic, idx) => (
                   <div key={idx} onClick={() => setSelectedTopic(topic)} className="group cursor-pointer">
-                    <h4 className="text-sm font-bold text-gray-300 group-hover:text-[#ffd54a] transition-colors leading-snug mb-1">
+                    <h4 className="text-sm font-bold text-gray-300 group-hover:text-[#ff4dd2] transition-colors leading-snug mb-1">
                       {topic.title}
                     </h4>
                     <div className="flex items-center justify-between text-xs">
@@ -215,7 +215,7 @@ export default function ForumsPage() {
             {/* Forum Statistics Widget */}
             <div className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
               <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                <Users className="text-[#ffd54a]" size={20} />
+                <Users className="text-[#ff4dd2]" size={20} />
                 Forum Statistics
               </h3>
               
@@ -334,7 +334,7 @@ export default function ForumsPage() {
                   
                   <div className="flex gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1"><MessageSquare size={14} className="text-[#ff4dd2]"/> {selectedTopic.replies}</div>
-                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ffd54a]"/> {selectedTopic.views}</div>
+                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ff4dd2]"/> {selectedTopic.views}</div>
                   </div>
                 </div>
 

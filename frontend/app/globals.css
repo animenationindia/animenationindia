@@ -6,7 +6,7 @@
   --font-sans: 'Inter', 'Montserrat', sans-serif;
   
   --color-neon-purple: #ff4dd2; /* ANI Pink */
-  --color-neon-cyan: #ffd54a; /* ANI Gold */
+  --color-neon-cyan: #ff4dd2; /* ANI Gold */
   --color-space-dark: #050716; /* ANI Background */
   --color-space-light: #121326; /* ANI Elevated */
   
@@ -63,7 +63,7 @@ body {
     border-radius: 10px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 213, 74, 0.8);
+    background: rgba(255, 77, 210, 0.8);
   }
   .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
     background: #4b5563;
@@ -84,7 +84,7 @@ body {
     box-shadow: 0 0 20px rgba(255, 77, 210, 0.5);
   }
   .glow-cyan {
-    box-shadow: 0 0 20px rgba(255, 213, 74, 0.5);
+    box-shadow: 0 0 20px rgba(255, 77, 210, 0.5);
   }
   .glow-purple-text {
     text-shadow: 0 0 10px rgba(255, 77, 210, 0.8);
@@ -100,19 +100,19 @@ body {
   /* Glitch Text Animations */
   @keyframes glitch {
     0% {
-      text-shadow: 2px -2px 0px #ff4dd2, -2px 2px 0px #ffd54a;
+      text-shadow: 2px -2px 0px #ff4dd2, -2px 2px 0px #ff4dd2;
     }
     25% {
-      text-shadow: -2px 2px 0px #ff4dd2, 2px -2px 0px #ffd54a;
+      text-shadow: -2px 2px 0px #ff4dd2, 2px -2px 0px #ff4dd2;
     }
     50% {
-      text-shadow: 2px 2px 0px #ff4dd2, -2px -2px 0px #ffd54a;
+      text-shadow: 2px 2px 0px #ff4dd2, -2px -2px 0px #ff4dd2;
     }
     75% {
-      text-shadow: -2px -2px 0px #ff4dd2, 2px 2px 0px #ffd54a;
+      text-shadow: -2px -2px 0px #ff4dd2, 2px 2px 0px #ff4dd2;
     }
     100% {
-      text-shadow: 2px -2px 0px #ff4dd2, -2px 2px 0px #ffd54a;
+      text-shadow: 2px -2px 0px #ff4dd2, -2px 2px 0px #ff4dd2;
     }
   }
 

@@ -71,7 +71,7 @@ export function SpotlightCard({ id, title, date, snippet, image, source, categor
         {/* Content */}
         <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 z-10">
           <CategoryBadges categories={categories} variant="light" />
-          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight line-clamp-3 mt-3 mb-2 group-hover:text-[#ffd54a] transition-colors duration-300 drop-shadow-lg">
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-white leading-tight line-clamp-3 mt-3 mb-2 group-hover:text-[#ff4dd2] transition-colors duration-300 drop-shadow-lg">
             {title}
           </h2>
           <p className="text-sm text-[#b0b0b0] line-clamp-2 leading-relaxed mb-3 hidden md:block">{snippet}</p>
@@ -100,7 +100,7 @@ export function SidebarCard({ id, title, date, image, source, categories }: News
       {/* Text */}
       <div className="flex flex-col justify-center min-w-0 flex-1">
         <CategoryBadges categories={categories} />
-        <h3 className="text-[13px] md:text-sm font-semibold text-white line-clamp-2 leading-snug mt-1.5 group-hover:text-[#ffd54a] transition-colors">
+        <h3 className="text-[13px] md:text-sm font-semibold text-white line-clamp-2 leading-snug mt-1.5 group-hover:text-[#ff4dd2] transition-colors">
           {title}
         </h3>
         <div className="flex items-center gap-2 mt-1.5 text-[10px] text-[#666]">
@@ -130,7 +130,7 @@ export function SectionHeroCard({ id, title, date, snippet, image, categories, a
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
           <CategoryBadges categories={categories} variant="light" />
-          <h3 className="text-base md:text-lg font-bold text-white line-clamp-2 leading-snug mt-2 mb-1 group-hover:text-[#ffd54a] transition-colors">
+          <h3 className="text-base md:text-lg font-bold text-white line-clamp-2 leading-snug mt-2 mb-1 group-hover:text-[#ff4dd2] transition-colors">
             {title}
           </h3>
           <p className="text-xs text-[#999] line-clamp-2 hidden md:block mb-2">{snippet}</p>
@@ -151,7 +151,7 @@ export function SectionSmallCard({ id, title, date, image, categories, author }:
         <Image src={image} alt={title} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover transition-transform duration-500 group-hover:scale-105" unoptimized />
       </div>
       <CategoryBadges categories={categories} variant="light" />
-      <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug mt-1.5 group-hover:text-[#ffd54a] transition-colors">
+      <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug mt-1.5 group-hover:text-[#ff4dd2] transition-colors">
         {title}
       </h3>
       <div className="flex items-center gap-2 mt-1 text-[10px] text-[#777]">
@@ -184,7 +184,7 @@ export function GridCard({ id, title, date, snippet, image, source, categories, 
           </div>
         </div>
         <div className="p-4 md:p-5">
-          <h3 className="text-sm md:text-[15px] font-bold text-white line-clamp-2 leading-snug mb-2 group-hover:text-[#ffd54a] transition-colors">{title}</h3>
+          <h3 className="text-sm md:text-[15px] font-bold text-white line-clamp-2 leading-snug mb-2 group-hover:text-[#ff4dd2] transition-colors">{title}</h3>
           <p className="text-xs text-[#888] line-clamp-2 leading-relaxed mb-3">{snippet}</p>
           <div className="flex items-center gap-2 text-[10px] text-[#666]">
             <span className="font-bold text-[#ff4dd2]">{source}</span>

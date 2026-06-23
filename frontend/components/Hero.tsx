@@ -121,7 +121,7 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
                         <Play size={18} fill="currentColor" className="md:w-5 md:h-5" />
                         WATCH NOW
                       </Link>
-                      <Link href={`/series/${linkId}`} className="inline-flex flex-1 items-center justify-center gap-2 bg-transparent hover:bg-white/10 text-white border border-[#ffd54a]/50 font-bold py-2.5 md:py-3 px-6 md:px-8 text-sm md:text-base transition-colors uppercase tracking-wider rounded-sm backdrop-blur-md">
+                      <Link href={`/series/${linkId}`} className="inline-flex flex-1 items-center justify-center gap-2 bg-transparent hover:bg-white/10 text-white border border-[#ff4dd2]/50 font-bold py-2.5 md:py-3 px-6 md:px-8 text-sm md:text-base transition-colors uppercase tracking-wider rounded-sm backdrop-blur-md">
                         VIEW DETAILS
                       </Link>
                       <WatchlistDropdown 

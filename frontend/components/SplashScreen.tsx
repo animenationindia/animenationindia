@@ -100,13 +100,13 @@ export default function SplashScreen() {
             >
               {/* Sweeping Highlight */}
               <motion.div
-                className="absolute top-0 bottom-0 w-1/3 bg-gradient-to-r from-transparent via-[#ffd54a] to-transparent"
+                className="absolute top-0 bottom-0 w-1/3 bg-gradient-to-r from-transparent via-[#ff4dd2] to-transparent"
                 animate={{ left: ["-100%", "200%"] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               />
               {/* Main Progress Fill */}
               <motion.div
-                className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[#ff4dd2] to-[#ffd54a]"
+                className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2]"
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
                 transition={{ duration: 3, ease: "easeInOut" }}

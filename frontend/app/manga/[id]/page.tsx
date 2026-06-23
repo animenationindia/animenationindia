@@ -156,12 +156,12 @@ export default async function MangaDetails({ params }: { params: Promise<Params>
               <span className="h-4 w-px bg-gray-700" />
               <span>{manga.published?.prop?.from?.year || 'Unknown'}</span>
               <span className="h-4 w-px bg-gray-700" />
-              <span className="flex items-center gap-1 text-yellow-500"><Star size={14} /> {manga.score || 'N/A'}</span>
+              <span className="flex items-center gap-1 text-[#ff4dd2]"><Star size={14} /> {manga.score || 'N/A'}</span>
             </div>
 
             {/* Actions Row */}
             <div className="flex flex-wrap items-center gap-4 mb-8">
-              <a href={manga.url} target="_blank" rel="noopener noreferrer" className="bg-[#ffd54a] hover:bg-[#ffd54a]/85 text-[#050716] font-bold py-3.5 px-8 rounded-xl uppercase tracking-wider flex items-center gap-2 shadow-[0_4px_15px_rgba(255,213,74,0.3)] hover:shadow-[0_4px_25px_rgba(255,213,74,0.5)] transition-all">
+              <a href={manga.url} target="_blank" rel="noopener noreferrer" className="bg-[#ff4dd2] hover:bg-[#ff4dd2]/85 text-[#050716] font-bold py-3.5 px-8 rounded-xl uppercase tracking-wider flex items-center gap-2 shadow-[0_4px_15px_rgba(255, 77, 210,0.3)] hover:shadow-[0_4px_25px_rgba(255, 77, 210,0.5)] transition-all">
                 <BookOpen size={20} className="fill-[#050716]/0" />
                 Read More on MAL
               </a>
@@ -269,7 +269,7 @@ export default async function MangaDetails({ params }: { params: Promise<Params>
                   <div className="space-y-2.5 text-sm">
                     <div className="flex justify-between py-1 border-b border-white/5">
                       <span className="text-gray-400 font-medium">Score:</span>
-                      <span className="text-yellow-500 font-bold flex items-center gap-1">
+                      <span className="text-[#ff4dd2] font-bold flex items-center gap-1">
                         ★ {manga.score || 'N/A'} <span className="text-gray-500 text-xs font-normal">({manga.scored_by?.toLocaleString()} users)</span>
                       </span>
                     </div>

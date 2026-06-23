@@ -113,7 +113,7 @@ export default function LanguageSelector({ direction = 'top' }: { direction?: 't
         whileTap={{ scale: 0.95 }}
         className="flex items-center gap-2 bg-[#1B1B22] border border-[#2A2B30] hover:bg-[#25252D] text-gray-200 px-4 py-2.5 rounded-lg text-sm font-bold transition-all cursor-pointer shadow-lg"
       >
-        <Globe size={18} className="text-[#ffd54a]" /> 
+        <Globe size={18} className="text-[#ff4dd2]" /> 
         {selectedLang.name} 
         <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </motion.button>

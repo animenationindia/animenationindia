@@ -109,7 +109,7 @@ export default function Footer() {
         <motion.div 
           animate={{ rotate: -360, scale: [1, 1.5, 1] }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-[200px] -right-[200px] w-[600px] h-[600px] bg-[#ffd54a]/10 rounded-full blur-[150px]"
+          className="absolute -bottom-[200px] -right-[200px] w-[600px] h-[600px] bg-[#ff4dd2]/10 rounded-full blur-[150px]"
         />
       </div>
 
@@ -129,7 +129,7 @@ export default function Footer() {
             <Link href="/" className="flex items-center gap-4 group relative perspective-1000">
               <motion.div 
                 whileHover={{ rotateY: 15, rotateX: -10, scale: 1.05 }}
-                className="relative w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-gray-800 to-black border border-white/10 shadow-[0_0_20px_rgba(255, 77, 210,0.3)] group-hover:shadow-[0_0_30px_rgba(255, 213, 74,0.5)] flex items-center justify-center transform-style-3d transition-all duration-500 shrink-0"
+                className="relative w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-gray-800 to-black border border-white/10 shadow-[0_0_20px_rgba(255, 77, 210,0.3)] group-hover:shadow-[0_0_30px_rgba(255, 77, 210,0.5)] flex items-center justify-center transform-style-3d transition-all duration-500 shrink-0"
               >
                 <img src="/ani-logo.png" alt="Anime Nation India Logo" className="absolute inset-0 w-full h-full object-cover p-1 drop-shadow-2xl translate-z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
               </motion.div>
@@ -137,7 +137,7 @@ export default function Footer() {
                 <span className="text-2xl md:text-3xl text-white font-bold tracking-wide transition-all duration-500 leading-tight">
                   Anime Nation India
                 </span>
-                <span className="text-[#ffd54a] text-[10px] md:text-xs font-black tracking-widest uppercase mt-1">
+                <span className="text-[#ff4dd2] text-[10px] md:text-xs font-black tracking-widest uppercase mt-1">
                   LIVE CALENDAR • NEWS
                 </span>
               </div>
@@ -213,7 +213,7 @@ export default function Footer() {
                 <a href="https://x.com/shouvikdas155" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 hover:bg-white/20 text-gray-400 hover:text-white rounded-xl transition-all duration-300 border border-transparent hover:border-white/30 hover:scale-110 hover:-translate-y-1">
                   <TwitterIcon size={20} />
                 </a>
-                <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="px-4 py-3 bg-white/5 hover:bg-[#ffd54a]/20 text-gray-400 hover:text-[#ffd54a] rounded-xl transition-all duration-300 border border-transparent hover:border-[#ffd54a]/30 hover:scale-105 hover:-translate-y-1 flex items-center gap-2 shadow-lg">
+                <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="px-4 py-3 bg-white/5 hover:bg-[#ff4dd2]/20 text-gray-400 hover:text-[#ff4dd2] rounded-xl transition-all duration-300 border border-transparent hover:border-[#ff4dd2]/30 hover:scale-105 hover:-translate-y-1 flex items-center gap-2 shadow-lg">
                   <Globe size={20} />
                   <span className="text-sm font-bold uppercase tracking-wider">Portfolio</span>
                 </a>
@@ -226,20 +226,20 @@ export default function Footer() {
             {/* Newsletter */}
             <div className="w-full bg-gradient-to-br from-[#12121a]/80 to-[#0a0a0f]/80 backdrop-blur-xl p-6 rounded-2xl border border-white/5 shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-500">
               <h3 className="text-white font-bold text-lg mb-2 flex items-center gap-2">
-                <Send size={18} className="text-[#ffd54a]" /> Stay Updated
+                <Send size={18} className="text-[#ff4dd2]" /> Stay Updated
               </h3>
               <p className="text-gray-400 text-sm mb-5">Subscribe to our newsletter for the latest anime releases, news, and exclusive offers.</p>
               <form className="relative flex items-center group" onSubmit={(e) => e.preventDefault()}>
                 <input 
                   type="email" 
                   placeholder="Enter your email..." 
-                  className="w-full bg-[#050716]/50 border border-white/10 text-white rounded-xl py-3.5 pl-4 pr-32 focus:outline-none focus:border-[#ffd54a] transition-colors placeholder:text-gray-600 shadow-inner group-hover:border-white/20"
+                  className="w-full bg-[#050716]/50 border border-white/10 text-white rounded-xl py-3.5 pl-4 pr-32 focus:outline-none focus:border-[#ff4dd2] transition-colors placeholder:text-gray-600 shadow-inner group-hover:border-white/20"
                 />
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   type="submit"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-gradient-to-r from-[#ffd54a] to-[#ff4dd2] text-white font-bold text-sm px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(255, 213, 74,0.4)] hover:shadow-[0_0_25px_rgba(255, 77, 210,0.6)] transition-all cursor-pointer"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] text-white font-bold text-sm px-6 py-2 rounded-lg shadow-[0_0_15px_rgba(255, 77, 210,0.4)] hover:shadow-[0_0_25px_rgba(255, 77, 210,0.6)] transition-all cursor-pointer"
                 >
                   Subscribe
                 </motion.button>
@@ -267,7 +267,7 @@ export default function Footer() {
             >
               <h4 className="text-white font-bold text-lg tracking-wide relative w-fit group cursor-default">
                 {section.title}
-                <span className="absolute -bottom-2 left-0 w-1/2 h-[3px] bg-gradient-to-r from-[#ff4dd2] to-[#ffd54a] rounded-full group-hover:w-full transition-all duration-300" />
+                <span className="absolute -bottom-2 left-0 w-1/2 h-[3px] bg-gradient-to-r from-[#ff4dd2] to-[#ff4dd2] rounded-full group-hover:w-full transition-all duration-300" />
               </h4>
               <ul className="flex flex-col gap-3.5">
                 {section.links.map((link, linkIdx) => (
@@ -276,7 +276,7 @@ export default function Footer() {
                       href={link.path} 
                       className="group flex items-center text-gray-400 hover:text-white text-sm font-medium transition-all duration-300"
                     >
-                      <ChevronRight size={14} className="opacity-0 -translate-x-4 w-0 group-hover:w-auto group-hover:opacity-100 group-hover:translate-x-0 group-hover:mr-1.5 text-[#ffd54a] transition-all duration-300 overflow-hidden" />
+                      <ChevronRight size={14} className="opacity-0 -translate-x-4 w-0 group-hover:w-auto group-hover:opacity-100 group-hover:translate-x-0 group-hover:mr-1.5 text-[#ff4dd2] transition-all duration-300 overflow-hidden" />
                       <span className="group-hover:translate-x-1 group-hover:text-[#E0E0E0] transition-transform duration-300 drop-shadow-sm">{link.name}</span>
                     </Link>
                   </li>
@@ -292,14 +292,14 @@ export default function Footer() {
       <div className="bg-[#000000] py-6 border-t border-white/5 relative z-20">
         <div className="container mx-auto px-4 md:px-8 lg:px-12 max-w-[1400px] flex flex-col lg:flex-row justify-between items-center gap-6">
           <p className="text-gray-500 text-xs font-bold uppercase tracking-widest flex items-center gap-2 shrink-0">
-            © {new Date().getFullYear()} <a href="/" className="text-[#ff4dd2] hover:text-[#ffd54a] transition-colors cursor-pointer drop-shadow-[0_0_8px_rgba(255, 77, 210,0.5)]">Anime Nation India</a> <span className="text-gray-700">|</span> ALL RIGHTS RESERVED
+            © {new Date().getFullYear()} <a href="/" className="text-[#ff4dd2] hover:text-[#ff4dd2] transition-colors cursor-pointer drop-shadow-[0_0_8px_rgba(255, 77, 210,0.5)]">Anime Nation India</a> <span className="text-gray-700">|</span> ALL RIGHTS RESERVED
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6">
             <a href="https://www.facebook.com/iamshouvikdas" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#1877F2] text-sm font-bold transition-all duration-300 hover:scale-105">Facebook</a>
             <a href="https://www.instagram.com/shouvik_das_official" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#E1306C] text-sm font-bold transition-all duration-300 hover:scale-105">Instagram</a>
             <a href="https://x.com/shouvikdas155" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white text-sm font-bold transition-all duration-300 hover:scale-105">X (Twitter)</a>
-            <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#ffd54a] text-sm font-bold transition-all duration-300 hover:scale-105">Portfolio</a>
+            <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#ff4dd2] text-sm font-bold transition-all duration-300 hover:scale-105">Portfolio</a>
             <a href="mailto:shouvikdaswork@gmail.com" className="text-gray-500 hover:text-green-500 text-sm font-bold transition-all duration-300 hover:scale-105">Email</a>
           </div>
 

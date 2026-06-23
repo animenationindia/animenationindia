@@ -26,7 +26,7 @@ export default async function PopularAnimePage({ searchParams }: PageProps) {
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px]">
         <div className="mb-12">
           <h1 className="text-4xl md:text-5xl font-bebas text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] mb-2">
-            Popular & <span className="text-[#ffd54a] drop-shadow-[0_0_10px_rgba(255, 213, 74,0.6)]">Trending</span>
+            Popular & <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Trending</span>
           </h1>
           <p className="text-[#a0a0a0] max-w-2xl text-sm md:text-base">
             Explore the most celebrated anime of the season. Dive into current trending sensations and legendary all-time masterpieces.

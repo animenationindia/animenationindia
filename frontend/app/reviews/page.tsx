@@ -43,23 +43,23 @@ export default function ReviewsPage() {
   return (
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#ffd54a]/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#ff4dd2]/10 blur-[150px] rounded-full pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[1200px] relative z-10">
         
         {/* Header Section */}
         <div className="mb-12">
-          <Link href="/home" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ffd54a] transition-colors mb-6 font-medium text-sm">
+          <Link href="/home" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#ff4dd2] transition-colors mb-6 font-medium text-sm">
             <ArrowLeft size={16} /> Back to Home
           </Link>
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-[#ffd54a]/10 border border-[#ffd54a]/20 rounded-2xl">
-              <MessageCircle className="text-[#ffd54a]" size={32} />
+            <div className="p-4 bg-[#ff4dd2]/10 border border-[#ff4dd2]/20 rounded-2xl">
+              <MessageCircle className="text-[#ff4dd2]" size={32} />
             </div>
             <div>
               <h1 className="text-4xl md:text-5xl font-bebas text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] mb-2">
-                Community <span className="text-[#ffd54a] drop-shadow-[0_0_10px_rgba(255, 213, 74,0.6)]">Reviews</span>
+                Community <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Reviews</span>
               </h1>
               <p className="text-[#a0a0a0] max-w-2xl text-sm md:text-base">
                 Hear from the Otaku community. Raw, unbiased reviews and ratings for currently airing and classic anime.
@@ -71,7 +71,7 @@ export default function ReviewsPage() {
         {/* Content */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-4 border-[#ffd54a]/20 border-t-[#ffd54a] rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-[#ff4dd2]/20 border-t-[#ff4dd2] rounded-full animate-spin"></div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -80,7 +80,7 @@ export default function ReviewsPage() {
                 key={`${review.mal_id}-${index}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col group hover:border-[#ffd54a]/30 transition-all duration-300"
+                className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col group hover:border-[#ff4dd2]/30 transition-all duration-300"
               >
                 {/* Header: User and Score */}
                 <div className="flex justify-between items-start mb-4 border-b border-white/5 pb-4">
@@ -102,7 +102,7 @@ export default function ReviewsPage() {
                 </div>
 
                 {/* Anime Info */}
-                <div className="flex items-center gap-4 mb-5 bg-white/5 p-3 rounded-xl border border-white/5 group-hover:border-[#ffd54a]/20 transition-colors">
+                <div className="flex items-center gap-4 mb-5 bg-white/5 p-3 rounded-xl border border-white/5 group-hover:border-[#ff4dd2]/20 transition-colors">
                   <img 
                     src={review.entry.images.jpg.image_url} 
                     alt={review.entry.title} 

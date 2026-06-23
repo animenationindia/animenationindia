@@ -47,7 +47,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 selection:bg-[#ff6400] selection:text-white relative overflow-hidden">
       {/* Background Pink/Blue Decorative Gradients */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#ff6400]/5 blur-[150px] rounded-full pointer-events-none z-0"></div>
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[65%] h-[45%] bg-[#ffd54a]/5 blur-[140px] rounded-full pointer-events-none z-0"></div>
+      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[65%] h-[45%] bg-[#ff4dd2]/5 blur-[140px] rounded-full pointer-events-none z-0"></div>
       
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] relative z-10">
         

@@ -83,7 +83,7 @@ export default function FAQPage() {
             <HelpCircle size={32} className="text-[#ff4dd2]" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bebas tracking-widest text-white mb-4 uppercase drop-shadow-lg">
-            Frequently Asked <span className="text-[#ffd54a]">Questions</span>
+            Frequently Asked <span className="text-[#ff4dd2]">Questions</span>
           </h1>
           <p className="text-[#a0a0a0] text-base md:text-lg max-w-2xl mx-auto">
             Find answers to the most common questions about Anime Nation India. If you can't find what you're looking for, feel free to contact our support team.
@@ -104,7 +104,7 @@ export default function FAQPage() {
                   <details key={qIdx} className="group bg-[#141519] border border-[#2A2B30]/50 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
                     <summary className="flex items-center justify-between cursor-pointer p-5 font-semibold text-gray-200 hover:text-white hover:bg-[#1A1C23] transition-colors select-none">
                       <span className="pr-6">{item.q}</span>
-                      <ChevronDown size={20} className="text-[#ffd54a] shrink-0 group-open:rotate-180 transition-transform duration-300" />
+                      <ChevronDown size={20} className="text-[#ff4dd2] shrink-0 group-open:rotate-180 transition-transform duration-300" />
                     </summary>
                     <div className="p-5 pt-0 text-[#a0a0a0] text-sm md:text-base leading-relaxed border-t border-[#2A2B30]/30 mt-2 bg-[#141519]">
                       <p className="pt-3">{item.a}</p>
@@ -117,10 +117,10 @@ export default function FAQPage() {
         </div>
 
         {/* Still need help */}
-        <div className="mt-16 text-center bg-gradient-to-r from-[#ff4dd2]/10 via-[#ffd54a]/10 to-[#ff4dd2]/10 border border-[#2A2B30] rounded-2xl p-8">
+        <div className="mt-16 text-center bg-gradient-to-r from-[#ff4dd2]/10 via-[#ff4dd2]/10 to-[#ff4dd2]/10 border border-[#2A2B30] rounded-2xl p-8">
           <h3 className="text-2xl font-bold text-white mb-2">Still have questions?</h3>
           <p className="text-gray-400 mb-6">We're here to help you with any issues or inquiries you might have.</p>
-          <a href="/contact" className="inline-block px-8 py-3 bg-[#ffd54a] hover:bg-[#0596B2] text-[#000000] font-bold uppercase tracking-wider rounded-lg shadow-[0_0_15px_rgba(255, 213, 74,0.4)] transition-all">
+          <a href="/contact" className="inline-block px-8 py-3 bg-[#ff4dd2] hover:bg-[#0596B2] text-[#000000] font-bold uppercase tracking-wider rounded-lg shadow-[0_0_15px_rgba(255, 77, 210,0.4)] transition-all">
             Contact Support
           </a>
         </div>

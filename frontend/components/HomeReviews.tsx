@@ -46,16 +46,16 @@ export default function HomeReviews() {
     <div className="w-full mb-10 group/section relative mt-14">
       <div className="flex items-end gap-4 mb-4">
         <h2 className="text-xl md:text-2xl font-semibold text-white tracking-wide flex items-center gap-2 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
-          <MessageCircle className="text-[#ffd54a]" /> Community Reviews
+          <MessageCircle className="text-[#ff4dd2]" /> Community Reviews
         </h2>
-        <Link href="/reviews" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ffd54a] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
+        <Link href="/reviews" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ff4dd2] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
           View More
         </Link>
       </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-48 border border-white/5 rounded-2xl bg-[#121326]/30">
-          <div className="w-8 h-8 border-2 border-[#ffd54a]/20 border-t-[#ffd54a] rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-2 border-[#ff4dd2]/20 border-t-[#ff4dd2] rounded-full animate-spin"></div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -65,7 +65,7 @@ export default function HomeReviews() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl flex flex-col group hover:border-[#ffd54a]/30 transition-all duration-300"
+              className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl flex flex-col group hover:border-[#ff4dd2]/30 transition-all duration-300"
             >
               {/* Header: User and Score */}
               <div className="flex justify-between items-start mb-4">
@@ -108,7 +108,7 @@ export default function HomeReviews() {
               <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between">
                 <Link 
                   href="/reviews"
-                  className="text-[#ffd54a] text-xs font-bold hover:underline"
+                  className="text-[#ff4dd2] text-xs font-bold hover:underline"
                 >
                   Read full review
                 </Link>

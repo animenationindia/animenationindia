@@ -72,7 +72,7 @@ export default function FeedbackPage() {
   return (
     <div className="bg-[#050716] min-h-screen pt-32 lg:pt-36 pb-16 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#ffd54a]/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[700px] relative z-10">
         <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 text-center">Content Feedback</h1>

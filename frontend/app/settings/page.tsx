@@ -148,7 +148,7 @@ export default function SettingsPage() {
         
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-4xl md:text-5xl font-bebas text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] mb-2 flex items-center justify-center md:justify-start gap-3">
-            <SettingsIcon className="text-[#ff4dd2]" size={40} /> Account <span className="text-[#ffd54a] drop-shadow-[0_0_10px_rgba(255, 213, 74,0.6)]">Settings</span>
+            <SettingsIcon className="text-[#ff4dd2]" size={40} /> Account <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Settings</span>
           </h1>
           <p className="text-[#a0a0a0] text-sm md:text-base">Manage your profile, preferences, and account details.</p>
         </div>
@@ -162,7 +162,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all ${
                 activeTab === 'profile' 
                   ? 'bg-[#ff4dd2]/20 border border-[#ff4dd2] text-white shadow-[0_0_15px_rgba(255, 77, 210,0.2)]' 
-                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ffd54a]/50'
+                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ff4dd2]/50'
               }`}
             >
               <User size={20} className={activeTab === 'profile' ? 'text-[#ff4dd2]' : ''} /> Profile
@@ -172,7 +172,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all ${
                 activeTab === 'general' 
                   ? 'bg-[#ff4dd2]/20 border border-[#ff4dd2] text-white shadow-[0_0_15px_rgba(255, 77, 210,0.2)]' 
-                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ffd54a]/50'
+                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ff4dd2]/50'
               }`}
             >
               <SettingsIcon size={20} className={activeTab === 'general' ? 'text-[#ff4dd2]' : ''} /> Web Settings
@@ -182,7 +182,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all ${
                 activeTab === 'appearance' 
                   ? 'bg-[#ff4dd2]/20 border border-[#ff4dd2] text-white shadow-[0_0_15px_rgba(255, 77, 210,0.2)]' 
-                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ffd54a]/50'
+                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ff4dd2]/50'
               }`}
             >
               <Paintbrush size={20} className={activeTab === 'appearance' ? 'text-[#ff4dd2]' : ''} /> Appearance
@@ -192,7 +192,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all ${
                 activeTab === 'notifications' 
                   ? 'bg-[#ff4dd2]/20 border border-[#ff4dd2] text-white shadow-[0_0_15px_rgba(255, 77, 210,0.2)]' 
-                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ffd54a]/50'
+                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ff4dd2]/50'
               }`}
             >
               <Bell size={20} className={activeTab === 'notifications' ? 'text-[#ff4dd2]' : ''} /> Notifications
@@ -202,7 +202,7 @@ export default function SettingsPage() {
               className={`flex items-center gap-3 w-full p-4 rounded-xl font-bold transition-all ${
                 activeTab === 'privacy' 
                   ? 'bg-[#ff4dd2]/20 border border-[#ff4dd2] text-white shadow-[0_0_15px_rgba(255, 77, 210,0.2)]' 
-                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ffd54a]/50'
+                  : 'bg-[#121326] border border-white/5 text-gray-400 hover:text-white hover:border-[#ff4dd2]/50'
               }`}
             >
               <Shield size={20} className={activeTab === 'privacy' ? 'text-[#ff4dd2]' : ''} /> Privacy & Security
@@ -228,7 +228,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-[#ffd54a] text-sm font-bold mb-2 uppercase tracking-wider">Username</label>
+                    <label className="block text-[#ff4dd2] text-sm font-bold mb-2 uppercase tracking-wider">Username</label>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input 
                         type="text" 
@@ -248,7 +248,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[#ffd54a] text-sm font-bold mb-2 uppercase tracking-wider">Email Address</label>
+                    <label className="block text-[#ff4dd2] text-sm font-bold mb-2 uppercase tracking-wider">Email Address</label>
                     <input 
                       type="text" disabled value={user?.email || ''} 
                       className="w-full bg-[#050716] border border-white/10 rounded-lg p-3 text-gray-300 focus:outline-none opacity-70 cursor-not-allowed"
@@ -257,7 +257,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[#ffd54a] text-sm font-bold mb-2 uppercase tracking-wider">User ID</label>
+                    <label className="block text-[#ff4dd2] text-sm font-bold mb-2 uppercase tracking-wider">User ID</label>
                     <input 
                       type="text" disabled value={user?.id || ''} 
                       className="w-full bg-[#050716] border border-white/10 rounded-lg p-3 text-gray-500 text-sm focus:outline-none opacity-50 font-mono"
@@ -321,17 +321,17 @@ export default function SettingsPage() {
                 <h2 className="text-2xl font-bold text-white mb-6 border-b border-white/10 pb-4">Appearance Settings</h2>
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-[#ffd54a] text-sm font-bold mb-4 uppercase tracking-wider">App Theme</label>
+                    <label className="block text-[#ff4dd2] text-sm font-bold mb-4 uppercase tracking-wider">App Theme</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <button className="p-4 rounded-xl border-2 border-[#ff4dd2] bg-[#050716] text-left transition-all">
                         <div className="w-full h-16 bg-gradient-to-br from-[#050716] to-[#ff4dd2]/20 rounded-md mb-3 border border-white/10"></div>
                         <p className="text-white font-bold text-sm text-center">Deep Space Neon</p>
                       </button>
-                      <button className="p-4 rounded-xl border-2 border-white/10 bg-[#050716] hover:border-[#ffd54a]/50 opacity-50 cursor-not-allowed text-left transition-all">
+                      <button className="p-4 rounded-xl border-2 border-white/10 bg-[#050716] hover:border-[#ff4dd2]/50 opacity-50 cursor-not-allowed text-left transition-all">
                         <div className="w-full h-16 bg-gradient-to-br from-white to-gray-200 rounded-md mb-3 border border-gray-300"></div>
                         <p className="text-gray-400 font-bold text-sm text-center">Light Mode (Soon)</p>
                       </button>
-                      <button className="p-4 rounded-xl border-2 border-white/10 bg-[#050716] hover:border-[#ffd54a]/50 opacity-50 cursor-not-allowed text-left transition-all">
+                      <button className="p-4 rounded-xl border-2 border-white/10 bg-[#050716] hover:border-[#ff4dd2]/50 opacity-50 cursor-not-allowed text-left transition-all">
                         <div className="w-full h-16 bg-gradient-to-br from-gray-900 to-red-900/50 rounded-md mb-3 border border-white/10"></div>
                         <p className="text-gray-400 font-bold text-sm text-center">Crimson Dark (Soon)</p>
                       </button>
@@ -370,7 +370,7 @@ export default function SettingsPage() {
                     </div>
                     <button 
                       onClick={() => handleToggle('newEpisodeAlerts')}
-                      className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none cursor-pointer ${preferences.newEpisodeAlerts ? 'bg-[#ffd54a]' : 'bg-[#1f2029] border border-white/10'}`}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none cursor-pointer ${preferences.newEpisodeAlerts ? 'bg-[#ff4dd2]' : 'bg-[#1f2029] border border-white/10'}`}
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300 ${preferences.newEpisodeAlerts ? 'translate-x-7' : 'translate-x-1'}`}></div>
                     </button>
@@ -383,7 +383,7 @@ export default function SettingsPage() {
                     </div>
                     <button 
                       onClick={() => handleToggle('emailNewsletters')}
-                      className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none cursor-pointer ${preferences.emailNewsletters ? 'bg-[#ffd54a]' : 'bg-[#1f2029] border border-white/10'}`}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none cursor-pointer ${preferences.emailNewsletters ? 'bg-[#ff4dd2]' : 'bg-[#1f2029] border border-white/10'}`}
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300 ${preferences.emailNewsletters ? 'translate-x-7' : 'translate-x-1'}`}></div>
                     </button>
@@ -396,7 +396,7 @@ export default function SettingsPage() {
                     </div>
                     <button 
                       onClick={() => handleToggle('pushNotifications')}
-                      className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none cursor-pointer ${preferences.pushNotifications ? 'bg-[#ffd54a]' : 'bg-[#1f2029] border border-white/10'}`}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-300 focus:outline-none cursor-pointer ${preferences.pushNotifications ? 'bg-[#ff4dd2]' : 'bg-[#1f2029] border border-white/10'}`}
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300 ${preferences.pushNotifications ? 'translate-x-7' : 'translate-x-1'}`}></div>
                     </button>
@@ -454,7 +454,7 @@ export default function SettingsPage() {
                     <button 
                       onClick={handleSendResetEmail}
                       disabled={isSendingReset}
-                      className="text-[#ffd54a] text-sm hover:underline font-medium transition-colors"
+                      className="text-[#ff4dd2] text-sm hover:underline font-medium transition-colors"
                     >
                       {isSendingReset ? 'Sending...' : 'Forgot password? Send reset link to email'}
                     </button>
@@ -465,7 +465,7 @@ export default function SettingsPage() {
                       <h3 className="text-white font-bold mb-1">Two-Factor Authentication (2FA)</h3>
                       <p className="text-[#a0a0a0] text-sm">Add an extra layer of security to your account.</p>
                     </div>
-                    <button onClick={handle2FA} className="px-4 py-2 border border-[#ffd54a] text-[#ffd54a] hover:bg-[#ffd54a] hover:text-[#050716] font-bold rounded-lg transition-colors text-sm cursor-pointer">
+                    <button onClick={handle2FA} className="px-4 py-2 border border-[#ff4dd2] text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-[#050716] font-bold rounded-lg transition-colors text-sm cursor-pointer">
                       Enable
                     </button>
                   </div>

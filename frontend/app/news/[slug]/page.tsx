@@ -77,7 +77,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
               href={article.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[#ffd54a] hover:text-[#ff4dd2] transition-colors ml-auto"
+              className="flex items-center gap-1.5 text-[#ff4dd2] hover:text-[#ff4dd2] transition-colors ml-auto"
             >
               <ExternalLink size={13} />
               Original Source
@@ -103,7 +103,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
               <div
                 className="prose prose-invert prose-lg max-w-none
                   prose-p:text-[#d0d0d0] prose-p:leading-relaxed prose-p:mb-5
-                  prose-a:text-[#ffd54a] prose-a:no-underline hover:prose-a:text-[#ff4dd2]
+                  prose-a:text-[#ff4dd2] prose-a:no-underline hover:prose-a:text-[#ff4dd2]
                   prose-strong:text-white
                   prose-h2:text-white prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
                   prose-h3:text-white prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
@@ -162,7 +162,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
                         <span key={ci} className="text-[9px] font-bold uppercase tracking-widest bg-[#ff4dd2] text-white px-2 py-0.5 rounded-sm">{cat}</span>
                       ))}
                     </div>
-                    <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-[#ffd54a] transition-colors">{item.title}</h3>
+                    <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-[#ff4dd2] transition-colors">{item.title}</h3>
                     <p className="text-[11px] text-[#666] mt-1.5">{item.dateFormatted}</p>
                   </div>
                 </Link>

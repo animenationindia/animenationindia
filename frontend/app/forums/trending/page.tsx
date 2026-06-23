@@ -136,7 +136,7 @@ export default function TrendingPage() {
     <main className="min-h-screen bg-[#050716] pt-32 lg:pt-36 pb-20 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-[#f47521]/10 blur-[150px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ffd54a]/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/4 w-[500px] h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="container mx-auto px-4 max-w-[1000px] relative z-10">
         
@@ -156,7 +156,7 @@ export default function TrendingPage() {
               The hottest discussions across the ANI community right now. Updated dynamically based on user engagement.
             </p>
             {currentDate && (
-              <div className="mt-4 inline-block bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-sm font-bold text-[#ffd54a]">
+              <div className="mt-4 inline-block bg-white/5 border border-white/10 rounded-full px-4 py-1.5 text-sm font-bold text-[#ff4dd2]">
                 Today: {currentDate}
               </div>
             )}
@@ -298,7 +298,7 @@ export default function TrendingPage() {
                   
                   <div className="flex gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-1"><MessageSquare size={14} className="text-[#ff4dd2]"/> {selectedTopic.replies}</div>
-                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ffd54a]"/> {selectedTopic.views}</div>
+                    <div className="flex items-center gap-1"><Eye size={14} className="text-[#ff4dd2]"/> {selectedTopic.views}</div>
                   </div>
                 </div>
 

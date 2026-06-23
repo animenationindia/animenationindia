@@ -84,7 +84,7 @@ export default function MockVideoPlayer({ title }: { title: string }) {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                 <button 
                   onClick={() => setIsPlaying(true)}
-                  className="bg-neon-cyan text-white p-5 rounded-full hover:scale-110 transition-transform shadow-[0_0_30px_rgba(255, 213, 74,0.5)] cursor-pointer"
+                  className="bg-neon-cyan text-white p-5 rounded-full hover:scale-110 transition-transform shadow-[0_0_30px_rgba(255, 77, 210,0.5)] cursor-pointer"
                 >
                   <Play size={32} fill="currentColor" className="ml-1" />
                 </button>
