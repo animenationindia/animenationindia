@@ -29,6 +29,7 @@ import {
   getSciFiAnimeAniList,
   getEvergreenAnimeAniList,
   getSimilarToMHAAnimeAniList,
+  getHiddenGemsAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -89,7 +90,8 @@ export default async function Home() {
     romanceSeasonalAnimeList,
     sciFiAnime,
     evergreenAnime,
-    mhaSimilarAnime
+    mhaSimilarAnime,
+    hiddenGemsAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -118,7 +120,8 @@ export default async function Home() {
     getSeasonalRomanceAnimeAniList(currentYear, currentSeason),
     getSciFiAnimeAniList(),
     getEvergreenAnimeAniList(),
-    getSimilarToMHAAnimeAniList()
+    getSimilarToMHAAnimeAniList(),
+    getHiddenGemsAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -160,6 +163,7 @@ export default async function Home() {
   const safeSciFiAnime = dedupe(sciFiAnime || []).slice(0, 20);
   const safeEvergreenAnime = dedupe(evergreenAnime || []).slice(0, 25);
   const safeMhaSimilarAnime = dedupe(mhaSimilarAnime || []).slice(0, 20);
+  const safeHiddenGemsAnime = dedupe(hiddenGemsAnime || []).slice(0, 20);
 
   // Find a Romance anime with a banner image from this season, or fall back
   const romanceSeasonalAnime = romanceSeasonalAnimeList?.find(anime => anime.bannerImage) || romanceSeasonalAnimeList?.[0] || null;
@@ -325,6 +329,14 @@ export default async function Home() {
           <SectionSlider 
             title="Must Watch For My Hero Academia Fans" 
             data={safeMhaSimilarAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* Hidden Gems */}
+          <SectionSlider 
+            title="Hidden Gems" 
+            data={safeHiddenGemsAnime as any} 
             type="anime" 
             viewAllLink="" 
           />

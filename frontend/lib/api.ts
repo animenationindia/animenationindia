@@ -1318,6 +1318,38 @@ export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
+// Hidden Gems Curated List (20 titles including Makoto Shinkai movies and underrated gems)
+export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query ($ids: [Int]) {
+      Page(page: 1, perPage: 20) {
+        media(id_in: $ids, type: ANIME) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  const ids = [
+    21519, 106286, 145904, 1689, 16782, 9760, 433, 256, 10516, 20972, 
+    20607, 98707, 7785, 2246, 3297, 457, 10165, 109268, 16664, 5681
+  ];
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { ids } }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    const mediaList = data.data.Page.media as AniListMedia[];
+    
+    // Sort mediaList by the order of IDs in the array to preserve user preference
+    return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
 
 
 
