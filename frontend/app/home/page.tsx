@@ -24,6 +24,7 @@ import {
   getSportsZoneAnimeAniList,
   getSimilarToSAOAnimeAniList,
   getFantasyZoneAnimeAniList,
+  getSupernaturalWorldAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -70,7 +71,8 @@ export default async function Home() {
     shounenAnime,
     sportsAnime,
     saoSimilarAnime,
-    fantasyAnime
+    fantasyAnime,
+    supernaturalAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -94,7 +96,8 @@ export default async function Home() {
     getShounenZoneAnimeAniList(),
     getSportsZoneAnimeAniList(),
     getSimilarToSAOAnimeAniList(),
-    getFantasyZoneAnimeAniList()
+    getFantasyZoneAnimeAniList(),
+    getSupernaturalWorldAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -132,6 +135,7 @@ export default async function Home() {
   const safeSportsAnime = dedupe(sportsAnime || []).slice(0, 20);
   const safeSaoSimilarAnime = dedupe(saoSimilarAnime || []).slice(0, 20);
   const safeFantasyAnime = dedupe(fantasyAnime || []).slice(0, 20);
+  const safeSupernaturalAnime = dedupe(supernaturalAnime || []).slice(0, 20);
 
 
   return (
@@ -254,6 +258,14 @@ export default async function Home() {
           <SectionSlider 
             title="The Fantasy Zone" 
             data={safeFantasyAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* Supernatural World */}
+          <SectionSlider 
+            title="Supernatural World" 
+            data={safeSupernaturalAnime as any} 
             type="anime" 
             viewAllLink="" 
           />

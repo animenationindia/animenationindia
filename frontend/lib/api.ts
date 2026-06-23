@@ -1178,6 +1178,31 @@ export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
+// Supernatural World (Fetches top popular Supernatural anime)
+export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query {
+      Page(page: 1, perPage: 40) {
+        media(genre: "Supernatural", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    return data.data.Page.media as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
 
 
 
