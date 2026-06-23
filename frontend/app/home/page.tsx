@@ -22,6 +22,7 @@ import {
   getKickstartJourneyAnimeAniList,
   getShounenZoneAnimeAniList,
   getSportsZoneAnimeAniList,
+  getSimilarToSAOAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -66,7 +67,8 @@ export default async function Home() {
     notForKidsAnime,
     kickstartAnime,
     shounenAnime,
-    sportsAnime
+    sportsAnime,
+    saoSimilarAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -88,7 +90,8 @@ export default async function Home() {
     getNotForKidsAnimeAniList(),
     getKickstartJourneyAnimeAniList(),
     getShounenZoneAnimeAniList(),
-    getSportsZoneAnimeAniList()
+    getSportsZoneAnimeAniList(),
+    getSimilarToSAOAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -124,6 +127,7 @@ export default async function Home() {
   const safeKickstartAnime = dedupe(kickstartAnime || []);
   const safeShounenAnime = dedupe(shounenAnime || []).slice(0, 20);
   const safeSportsAnime = dedupe(sportsAnime || []).slice(0, 20);
+  const safeSaoSimilarAnime = dedupe(saoSimilarAnime || []).slice(0, 20);
 
 
   return (
@@ -230,6 +234,14 @@ export default async function Home() {
           <SectionSlider 
             title="The Sports Zone" 
             data={safeSportsAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* Inspired by Sword Art Online */}
+          <SectionSlider 
+            title="Inspired by Sword Art Online" 
+            data={safeSaoSimilarAnime as any} 
             type="anime" 
             viewAllLink="" 
           />
