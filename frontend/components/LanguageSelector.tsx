@@ -55,7 +55,17 @@ export default function LanguageSelector({ direction = 'top' }: { direction?: 't
       };
     }
 
-    // Determine current language from cookie
+    // Determine current language from localStorage first for reliable state matching
+    const localLangName = localStorage.getItem('preferred_language_name');
+    if (localLangName) {
+      const found = languages.find(l => l.name === localLangName);
+      if (found) {
+        setSelectedLang(found);
+        return;
+      }
+    }
+
+    // Fallback: Determine current language from cookie
     const getCookie = (name: string) => {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
@@ -74,6 +84,9 @@ export default function LanguageSelector({ direction = 'top' }: { direction?: 't
   const changeLanguage = (lang: typeof languages[0]) => {
     setSelectedLang(lang);
     setIsOpen(false);
+    
+    // Save selected language name to localStorage to persist state across reloads
+    localStorage.setItem('preferred_language_name', lang.name);
     
     // Set cookie for Google Translate (translates from 'en' to selected lang)
     const cookieString = `/en/${lang.code}`;
