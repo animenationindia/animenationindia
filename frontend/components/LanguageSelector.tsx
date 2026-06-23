@@ -90,8 +90,8 @@ export default function LanguageSelector({ direction = 'top' }: { direction?: 't
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Hidden container for Google Translate Widget */}
-      <div id="google_translate_element" className="hidden"></div>
+      {/* Hidden container for Google Translate Widget positioned at top of viewport to prevent page jumping to footer on initialization */}
+      <div id="google_translate_element" className="absolute top-0 left-0 w-0 h-0 opacity-0 overflow-hidden pointer-events-none"></div>
       
       {/* Main Button */}
       <motion.button 
