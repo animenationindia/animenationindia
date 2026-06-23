@@ -23,6 +23,7 @@ import {
   getShounenZoneAnimeAniList,
   getSportsZoneAnimeAniList,
   getSimilarToSAOAnimeAniList,
+  getFantasyZoneAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -68,7 +69,8 @@ export default async function Home() {
     kickstartAnime,
     shounenAnime,
     sportsAnime,
-    saoSimilarAnime
+    saoSimilarAnime,
+    fantasyAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -91,7 +93,8 @@ export default async function Home() {
     getKickstartJourneyAnimeAniList(),
     getShounenZoneAnimeAniList(),
     getSportsZoneAnimeAniList(),
-    getSimilarToSAOAnimeAniList()
+    getSimilarToSAOAnimeAniList(),
+    getFantasyZoneAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -128,6 +131,7 @@ export default async function Home() {
   const safeShounenAnime = dedupe(shounenAnime || []).slice(0, 20);
   const safeSportsAnime = dedupe(sportsAnime || []).slice(0, 20);
   const safeSaoSimilarAnime = dedupe(saoSimilarAnime || []).slice(0, 20);
+  const safeFantasyAnime = dedupe(fantasyAnime || []).slice(0, 20);
 
 
   return (
@@ -242,6 +246,14 @@ export default async function Home() {
           <SectionSlider 
             title="Inspired by Sword Art Online" 
             data={safeSaoSimilarAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* The Fantasy Zone */}
+          <SectionSlider 
+            title="The Fantasy Zone" 
+            data={safeFantasyAnime as any} 
             type="anime" 
             viewAllLink="" 
           />
