@@ -18,6 +18,7 @@ import {
   getTopMoviesAniList,
   getTopTVSeriesAniList,
   getYearAwardsAniList,
+  getNotForKidsAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -58,7 +59,8 @@ export default async function Home() {
     trailersRes,
     topMovies,
     topTVSeries,
-    yearAwards
+    yearAwards,
+    notForKidsAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -76,7 +78,8 @@ export default async function Home() {
     }).then(res => res.json()).catch(() => null),
     getTopMoviesAniList(),
     getTopTVSeriesAniList(),
-    getYearAwardsAniList(currentYear)
+    getYearAwardsAniList(currentYear),
+    getNotForKidsAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -108,6 +111,7 @@ export default async function Home() {
   const safeTopMovies = dedupe(topMovies || []);
   const safeTopTVSeries = dedupe(topTVSeries || []);
   const safeYearAwards = dedupe(yearAwards || []);
+  const safeNotForKidsAnime = dedupe(notForKidsAnime || []);
 
 
   return (
@@ -146,6 +150,14 @@ export default async function Home() {
             data={safeUpcomingAnime as any} 
             type="anime" 
             viewAllLink="/upcoming" 
+          />
+
+          {/* Anime Not For Kids */}
+          <SectionSlider 
+            title="Anime Not For Kids" 
+            data={safeNotForKidsAnime as any} 
+            type="anime" 
+            viewAllLink="" 
           />
 
           {/* 5. Top Picks for You */}

@@ -1011,3 +1011,34 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
   }
 }
 
+// Anime Not For Kids Curated List (25 titles)
+export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query ($ids: [Int]) {
+      Page(page: 1, perPage: 25) {
+        media(id_in: $ids, type: ANIME) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  const ids = [
+    1570, 137909, 101367, 170890, 21613, 153845, 147571, 10087, 136707, 166828,
+    138522, 156039, 111322, 169417, 130586, 146065, 6682, 1292, 153629, 21131,
+    129898, 166372, 144553, 155011, 103632
+  ];
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { ids } }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    return data.data.Page.media as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
+
