@@ -19,6 +19,7 @@ import {
   getTopTVSeriesAniList,
   getYearAwardsAniList,
   getNotForKidsAnimeAniList,
+  getKickstartJourneyAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -60,7 +61,8 @@ export default async function Home() {
     topMovies,
     topTVSeries,
     yearAwards,
-    notForKidsAnime
+    notForKidsAnime,
+    kickstartAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -79,7 +81,8 @@ export default async function Home() {
     getTopMoviesAniList(),
     getTopTVSeriesAniList(),
     getYearAwardsAniList(currentYear),
-    getNotForKidsAnimeAniList()
+    getNotForKidsAnimeAniList(),
+    getKickstartJourneyAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -112,6 +115,7 @@ export default async function Home() {
   const safeTopTVSeries = dedupe(topTVSeries || []);
   const safeYearAwards = dedupe(yearAwards || []);
   const safeNotForKidsAnime = dedupe(notForKidsAnime || []);
+  const safeKickstartAnime = dedupe(kickstartAnime || []);
 
 
   return (
@@ -185,6 +189,14 @@ export default async function Home() {
             topTV={safeTopTVSeries}
             awards={safeYearAwards}
             year={currentYear}
+          />
+
+          {/* Kickstart Your Anime Journey */}
+          <SectionSlider 
+            title="Kickstart Your Anime Journey" 
+            data={safeKickstartAnime as any} 
+            type="anime" 
+            viewAllLink="" 
           />
 
           {/* Announcement Banner */}

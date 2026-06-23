@@ -1041,4 +1041,35 @@ export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
+// Kickstart Your Anime Journey Curated List (25 titles)
+export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query ($ids: [Int]) {
+      Page(page: 1, perPage: 25) {
+        media(id_in: $ids, type: ANIME) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  const ids = [
+    154587, 5114, 16498, 1535, 108465, 113415, 11061, 20954, 21519, 9253,
+    199, 140960, 150672, 21459, 112641, 127230, 21087, 101922, 21234, 20464,
+    97986, 101348, 1575, 19, 1
+  ];
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { ids } }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    return data.data.Page.media as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
+
 
