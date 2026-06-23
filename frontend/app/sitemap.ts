@@ -56,6 +56,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/adchoices',
     '/disclaimer',
     '/do-not-sell',
+    '/report-violation',
     '/settings',
     '/watchlist',
     '/auth'
