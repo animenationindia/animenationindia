@@ -57,7 +57,7 @@ const faqs = [
     category: "Technical & Support",
     questions: [
       { q: "Why is the website loading slowly?", a: "Loading times depend on your internet connection and the response times of the external databases (like Jikan API) we fetch data from. We utilize aggressive caching to minimize this." },
-      { q: "Who do I contact to report a bug?", a: "You can report any bugs, visual glitches, or data inaccuracies through our 'Contact' page or by emailing support@animenationindia.online." },
+      { q: "Who do I contact to report a bug?", a: "You can report any bugs, visual glitches, or data inaccuracies through our 'Contact' page or by emailing animenationindia.global@gmail.com." },
       { q: "Can I request a new feature?", a: "Absolutely! We love community feedback. Please send your suggestions through the 'Content Feedback' form located in the footer." },
       { q: "Do you offer a premium ad-free subscription?", a: "ANI is currently completely free and does not force intrusive popup ads. We do not have a paid premium tier at this moment." },
       { q: "Why does the site look weird on my old browser?", a: "ANI uses modern web technologies (Next.js, Tailwind CSS) that require updated browsers. Please ensure you are using a modern, updated version of Chrome, Firefox, Safari, or Edge." },
