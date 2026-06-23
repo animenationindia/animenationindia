@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Eye, EyeOff, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
@@ -21,6 +21,11 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false); 
   
   const router = useRouter(); 
+
+  // Force scroll to top on page mount/load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
