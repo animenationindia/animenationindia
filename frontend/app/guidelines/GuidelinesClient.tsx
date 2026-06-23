@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { 
   Shield, 
   Users, 
@@ -584,12 +585,13 @@ export default function GuidelinesClient() {
             If you encounter anyone breaking these rules, do not engage. Report the post or comment immediately to our safety team.
           </p>
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <a 
-              href="mailto:support@animenationindia.online"
+            <Link 
+              href="/report-violation"
+              target="_blank"
               className="px-6 py-3.5 bg-red-500/20 hover:bg-red-500/30 text-white hover:text-white font-extrabold rounded-xl border border-red-500/40 hover:border-red-500/60 shadow-lg tracking-wider text-sm transition-all duration-300 flex items-center gap-2 cursor-pointer"
             >
               Report a Violation
-            </a>
+            </Link>
             <a 
               href="/faq" 
               className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white font-bold rounded-xl border border-white/5 hover:border-white/10 tracking-wider text-sm transition-all duration-300 flex items-center gap-2 cursor-pointer"
