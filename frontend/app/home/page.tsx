@@ -21,6 +21,7 @@ import {
   getNotForKidsAnimeAniList,
   getKickstartJourneyAnimeAniList,
   getShounenZoneAnimeAniList,
+  getSportsZoneAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -64,7 +65,8 @@ export default async function Home() {
     yearAwards,
     notForKidsAnime,
     kickstartAnime,
-    shounenAnime
+    shounenAnime,
+    sportsAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -85,7 +87,8 @@ export default async function Home() {
     getYearAwardsAniList(currentYear),
     getNotForKidsAnimeAniList(),
     getKickstartJourneyAnimeAniList(),
-    getShounenZoneAnimeAniList()
+    getShounenZoneAnimeAniList(),
+    getSportsZoneAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -120,6 +123,7 @@ export default async function Home() {
   const safeNotForKidsAnime = dedupe(notForKidsAnime || []);
   const safeKickstartAnime = dedupe(kickstartAnime || []);
   const safeShounenAnime = dedupe(shounenAnime || []).slice(0, 20);
+  const safeSportsAnime = dedupe(sportsAnime || []).slice(0, 20);
 
 
   return (
@@ -220,6 +224,14 @@ export default async function Home() {
             data={safePopularDubbed as any} 
             type="anime" 
             viewAllLink="/dubbed" 
+          />
+
+          {/* The Sports Zone */}
+          <SectionSlider 
+            title="The Sports Zone" 
+            data={safeSportsAnime as any} 
+            type="anime" 
+            viewAllLink="" 
           />
 
           {/* User Recommendations */}

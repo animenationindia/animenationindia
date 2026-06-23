@@ -1096,6 +1096,32 @@ export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
+// The Sports Zone (Fetches top popular Sports anime)
+export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query {
+      Page(page: 1, perPage: 40) {
+        media(genre: "Sports", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    return data.data.Page.media as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
+
 
 
 
