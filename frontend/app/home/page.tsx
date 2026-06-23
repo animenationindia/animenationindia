@@ -26,6 +26,7 @@ import {
   getFantasyZoneAnimeAniList,
   getSupernaturalWorldAnimeAniList,
   getSeasonalRomanceAnimeAniList,
+  getSciFiAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -83,7 +84,8 @@ export default async function Home() {
     saoSimilarAnime,
     fantasyAnime,
     supernaturalAnime,
-    romanceSeasonalAnimeList
+    romanceSeasonalAnimeList,
+    sciFiAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -109,7 +111,8 @@ export default async function Home() {
     getSimilarToSAOAnimeAniList(),
     getFantasyZoneAnimeAniList(),
     getSupernaturalWorldAnimeAniList(),
-    getSeasonalRomanceAnimeAniList(currentYear, currentSeason)
+    getSeasonalRomanceAnimeAniList(currentYear, currentSeason),
+    getSciFiAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -148,6 +151,7 @@ export default async function Home() {
   const safeSaoSimilarAnime = dedupe(saoSimilarAnime || []).slice(0, 20);
   const safeFantasyAnime = dedupe(fantasyAnime || []).slice(0, 20);
   const safeSupernaturalAnime = dedupe(supernaturalAnime || []).slice(0, 20);
+  const safeSciFiAnime = dedupe(sciFiAnime || []).slice(0, 20);
 
   // Find a Romance anime with a banner image from this season, or fall back
   const romanceSeasonalAnime = romanceSeasonalAnimeList?.find(anime => anime.bannerImage) || romanceSeasonalAnimeList?.[0] || null;
@@ -292,6 +296,14 @@ export default async function Home() {
               subtitle="★ Romance Pick of the Season" 
             />
           )}
+
+          {/* When Science Meets Fiction! */}
+          <SectionSlider 
+            title="When Science Meets Fiction!" 
+            data={safeSciFiAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
 
           {/* User Recommendations */}
           <HomeRecommendations />

@@ -1228,6 +1228,31 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
   }
 }
 
+// Sci-Fi Anime (Fetches top popular Sci-Fi anime)
+export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query {
+      Page(page: 1, perPage: 40) {
+        media(genre: "Sci-Fi", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    return data.data.Page.media as AniListMedia[];
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
 
 
 
