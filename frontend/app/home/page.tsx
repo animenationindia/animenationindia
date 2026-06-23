@@ -27,6 +27,7 @@ import {
   getSupernaturalWorldAnimeAniList,
   getSeasonalRomanceAnimeAniList,
   getSciFiAnimeAniList,
+  getEvergreenAnimeAniList,
   type AiringSchedule
 } from '../../lib/api';
 import TrailerSlider from '../../components/TrailerSlider';
@@ -85,7 +86,8 @@ export default async function Home() {
     fantasyAnime,
     supernaturalAnime,
     romanceSeasonalAnimeList,
-    sciFiAnime
+    sciFiAnime,
+    evergreenAnime
   ] = await Promise.all([
     getTodayReleasesAniList(1),
     getTopAiringAnimeAniList(),
@@ -112,7 +114,8 @@ export default async function Home() {
     getFantasyZoneAnimeAniList(),
     getSupernaturalWorldAnimeAniList(),
     getSeasonalRomanceAnimeAniList(currentYear, currentSeason),
-    getSciFiAnimeAniList()
+    getSciFiAnimeAniList(),
+    getEvergreenAnimeAniList()
   ]);
 
   const dedupe = (arr: any[]) => {
@@ -152,6 +155,7 @@ export default async function Home() {
   const safeFantasyAnime = dedupe(fantasyAnime || []).slice(0, 20);
   const safeSupernaturalAnime = dedupe(supernaturalAnime || []).slice(0, 20);
   const safeSciFiAnime = dedupe(sciFiAnime || []).slice(0, 20);
+  const safeEvergreenAnime = dedupe(evergreenAnime || []).slice(0, 25);
 
   // Find a Romance anime with a banner image from this season, or fall back
   const romanceSeasonalAnime = romanceSeasonalAnimeList?.find(anime => anime.bannerImage) || romanceSeasonalAnimeList?.[0] || null;
@@ -301,6 +305,14 @@ export default async function Home() {
           <SectionSlider 
             title="When Science Meets Fiction!" 
             data={safeSciFiAnime as any} 
+            type="anime" 
+            viewAllLink="" 
+          />
+
+          {/* Evergreen Anime on Anime Nation India */}
+          <SectionSlider 
+            title="Evergreen Anime on Anime Nation India" 
+            data={safeEvergreenAnime as any} 
             type="anime" 
             viewAllLink="" 
           />

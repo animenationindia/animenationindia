@@ -1253,6 +1253,39 @@ export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
+// Evergreen Anime Curated List (25 titles)
+export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
+  const query = `
+    query ($ids: [Int]) {
+      Page(page: 1, perPage: 25) {
+        media(id_in: $ids, type: ANIME) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+  const ids = [
+    1889, 20665, 120, 21420, 2001, 269, 20755, 101190, 918, 5114, 
+    9253, 11061, 1535, 1575, 4181, 1, 19, 4224, 20464, 21507, 
+    205, 30, 9989, 8769, 270
+  ];
+  try {
+    const res = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { ids } }),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    const data = await res.json();
+    const mediaList = data.data.Page.media as AniListMedia[];
+    
+    // Sort mediaList by the order of IDs in the array to preserve user preference
+    return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+  } catch {
+    return [] as AniListMedia[];
+  }
+}
+
 
 
 
