@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
-import { HelpCircle, ChevronDown } from 'lucide-react';
+import { HelpCircle, ChevronDown, Mail } from 'lucide-react';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'FAQ | Anime Nation India',
@@ -56,7 +57,7 @@ const faqs = [
     category: "Technical & Support",
     questions: [
       { q: "Why is the website loading slowly?", a: "Loading times depend on your internet connection and the response times of the external databases (like Jikan API) we fetch data from. We utilize aggressive caching to minimize this." },
-      { q: "Who do I contact to report a bug?", a: "You can report any bugs, visual glitches, or data inaccuracies through our 'Contact' page or by emailing support@Anime Nation India.com." },
+      { q: "Who do I contact to report a bug?", a: "You can report any bugs, visual glitches, or data inaccuracies through our 'Contact' page or by emailing support@animenationindia.online." },
       { q: "Can I request a new feature?", a: "Absolutely! We love community feedback. Please send your suggestions through the 'Content Feedback' form located in the footer." },
       { q: "Do you offer a premium ad-free subscription?", a: "ANI is currently completely free and does not force intrusive popup ads. We do not have a paid premium tier at this moment." },
       { q: "Why does the site look weird on my old browser?", a: "ANI uses modern web technologies (Next.js, Tailwind CSS) that require updated browsers. Please ensure you are using a modern, updated version of Chrome, Firefox, Safari, or Edge." },
@@ -71,43 +72,46 @@ const faqs = [
 
 export default function FAQPage() {
   return (
-    <div className="bg-[#050716] min-h-screen pt-32 pb-24 relative overflow-hidden">
+    <main className="bg-[#050716] min-h-screen pt-32 lg:pt-36 pb-24 relative overflow-hidden">
       {/* Background Gradients */}
-      <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-[#ff4dd2]/10 to-transparent opacity-50 z-0 pointer-events-none"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[500px] bg-[#ff4dd2]/10 blur-[120px] rounded-full pointer-events-none" />
       
+      {/* Grid overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
       <div className="container mx-auto px-4 lg:px-8 w-full max-w-[1000px] relative z-10">
         
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="w-16 h-16 mx-auto bg-[#ff4dd2]/20 rounded-full flex items-center justify-center mb-6">
-            <HelpCircle size={32} className="text-[#ff4dd2]" />
+          <div className="w-16 h-16 mx-auto bg-[#ff4dd2]/10 border border-[#ff4dd2]/30 rounded-2xl flex items-center justify-center mb-6 shadow-xl">
+            <HelpCircle size={32} className="text-[#ff4dd2] drop-shadow-[0_0_8px_rgba(255,77,210,0.5)]" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bebas tracking-widest text-white mb-4 uppercase drop-shadow-lg">
-            Frequently Asked <span className="text-[#ff4dd2]">Questions</span>
+          <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#ff4dd2] via-[#ff6600] to-yellow-400 mb-4 uppercase tracking-tighter drop-shadow-sm">
+            FAQ
           </h1>
-          <p className="text-[#a0a0a0] text-base md:text-lg max-w-2xl mx-auto">
-            Find answers to the most common questions about Anime Nation India. If you can't find what you're looking for, feel free to contact our support team.
+          <p className="text-[#a0a0a0] text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+            Find answers to the most common questions about <strong className="text-white">Anime Nation India</strong>. If you can't find what you're looking for, feel free to contact our support team.
           </p>
         </div>
 
         {/* FAQs */}
         <div className="space-y-12">
           {faqs.map((section, idx) => (
-            <div key={idx} className="bg-[#121326]/80 backdrop-blur-xl border border-[#2A2B30]/50 rounded-2xl p-6 md:p-8 shadow-xl">
-              <h2 className="text-2xl font-bold text-white mb-6 uppercase tracking-wider flex items-center gap-3">
-                <span className="w-1.5 h-6 bg-[#ff4dd2] rounded-full inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.6)]"></span>
+            <div key={idx} className="bg-[#121326]/60 backdrop-blur-xl border border-[#2A2B30]/40 rounded-2xl p-6 md:p-8 shadow-xl">
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-6 uppercase tracking-wider flex items-center gap-3">
+                <span className="w-1.5 h-6 bg-[#ff4dd2] rounded-full inline-block shadow-[0_0_8px_rgba(255,77,210,0.6)]"></span>
                 {section.category}
               </h2>
               
               <div className="space-y-4">
                 {section.questions.map((item, qIdx) => (
-                  <details key={qIdx} className="group bg-[#141519] border border-[#2A2B30]/50 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden">
-                    <summary className="flex items-center justify-between cursor-pointer p-5 font-semibold text-gray-200 hover:text-white hover:bg-[#1A1C23] transition-colors select-none">
-                      <span className="pr-6">{item.q}</span>
-                      <ChevronDown size={20} className="text-[#ff4dd2] shrink-0 group-open:rotate-180 transition-transform duration-300" />
+                  <details key={qIdx} className="group bg-[#03040b]/50 border border-white/5 hover:border-white/10 rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden transition-all duration-300">
+                    <summary className="flex items-center justify-between cursor-pointer p-5 font-bold text-gray-300 hover:text-white hover:bg-white/[0.02] transition-colors select-none">
+                      <span className="pr-6 text-base">{item.q}</span>
+                      <ChevronDown size={18} className="text-[#ff4dd2] shrink-0 group-open:rotate-180 transition-transform duration-300" />
                     </summary>
-                    <div className="p-5 pt-0 text-[#a0a0a0] text-sm md:text-base leading-relaxed border-t border-[#2A2B30]/30 mt-2 bg-[#141519]">
-                      <p className="pt-3">{item.a}</p>
+                    <div className="p-5 pt-0 text-[#a0a0a0] text-sm md:text-base leading-relaxed border-t border-white/[0.02] bg-[#03040b]/30">
+                      <p className="pt-4 text-gray-400 font-medium">{item.a}</p>
                     </div>
                   </details>
                 ))}
@@ -117,15 +121,19 @@ export default function FAQPage() {
         </div>
 
         {/* Still need help */}
-        <div className="mt-16 text-center bg-gradient-to-r from-[#ff4dd2]/10 via-[#ff4dd2]/10 to-[#ff4dd2]/10 border border-[#2A2B30] rounded-2xl p-8">
-          <h3 className="text-2xl font-bold text-white mb-2">Still have questions?</h3>
-          <p className="text-gray-400 mb-6">We're here to help you with any issues or inquiries you might have.</p>
-          <a href="/contact" className="inline-block px-8 py-3 bg-[#ff4dd2] hover:bg-[#0596B2] text-[#000000] font-bold uppercase tracking-wider rounded-lg shadow-[0_0_15px_rgba(255, 77, 210,0.4)] transition-all">
+        <div className="mt-16 text-center bg-gradient-to-r from-[#ff4dd2]/5 via-[#ff6600]/5 to-[#ff4dd2]/5 border border-[#2A2B30]/50 rounded-3xl p-8 md:p-12 backdrop-blur-md">
+          <Mail className="text-[#ff4dd2] size-12 mx-auto mb-4" />
+          <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-wide">Still have questions?</h3>
+          <p className="text-gray-400 mb-6 max-w-md mx-auto">We're here to help you with any issues or inquiries you might have.</p>
+          <Link 
+            href="/contact" 
+            className="inline-block bg-gradient-to-r from-[#ff4dd2]/20 to-[#f47521]/20 hover:from-[#ff4dd2]/30 hover:to-[#f47521]/30 border border-[#ff4dd2]/40 hover:border-[#ff4dd2]/60 text-white font-extrabold uppercase tracking-widest text-xs px-8 py-4 rounded-xl shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
             Contact Support
-          </a>
+          </Link>
         </div>
 
       </div>
-    </div>
+    </main>
   );
 }
