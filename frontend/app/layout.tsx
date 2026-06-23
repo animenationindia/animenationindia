@@ -7,7 +7,7 @@ import MobileBottomNav from "../components/MobileBottomNav";
 import BackButton from "../components/BackButton";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://animenationindia.online'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online'),
   title: "Anime Nation India - Watch Anime,Live Schedule, Reviews & Watchlist, Discover & Get Full Details of Anime",
   description: "Anime Nation India is your ultimate free anime database and discovery platform. Get full details, watch official trailers, track release schedules, and build your custom watchlist for English Subbed and Dubbed Anime. Discover your next favorite anime today!",
   keywords: ["anime", "watch anime", "anime database", "anime release calendar", "anime tracker", "English subbed anime", "dubbed anime", "simulcast", "Anime Nation India", "ANI"],

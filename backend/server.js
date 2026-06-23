@@ -36,7 +36,7 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // 🔥 FIX: Jikan 403 se bachne ke liye — User-Agent header zaroori hai
 const jikanHeaders = {
-  'User-Agent': 'AnimeNationIndia/1.0 (https://animenationindia.online)',
+  'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
   'Accept': 'application/json',
 };
 

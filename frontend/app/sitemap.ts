@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://animenationindia.online';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ওয়েবসাইটের সমস্ত পাবলিক পেজ (প্রাইভেট/লগইন পেজ বাদে)
