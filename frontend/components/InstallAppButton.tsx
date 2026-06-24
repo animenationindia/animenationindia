@@ -135,7 +135,7 @@ export default function InstallAppButton() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-bold text-white">iPhone / iPad (iOS)</h4>
-                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">Get instructions to download and install on Apple devices.</p>
+                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">Directly download the IPA and view the sideloading guide.</p>
                       </div>
                     </button>
                   </div>
@@ -146,30 +146,29 @@ export default function InstallAppButton() {
                     <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-2">
                       <div className="flex gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] flex items-center justify-center font-bold text-xs shrink-0">1</span>
-                        <p>Go to the GitHub Actions page of the repository by clicking the button below.</p>
+                        <p>Click the <strong>Download iOS IPA</strong> button below to download the app installer file.</p>
                       </div>
                       <div className="flex gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] flex items-center justify-center font-bold text-xs shrink-0">2</span>
-                        <p>Click on the latest completed workflow run, scroll down to <strong>Artifacts</strong>, and download the <strong>AnimeNationIndia-iOS-Device-Unsigned</strong> zip file.</p>
+                        <p>Open <strong>Sideloadly</strong> or <strong>AltStore</strong> on your Windows PC or Mac.</p>
                       </div>
                       <div className="flex gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] flex items-center justify-center font-bold text-xs shrink-0">3</span>
-                        <p>Unzip it on your Windows PC to get the <code>AnimeNationIndia.ipa</code> file.</p>
+                        <p>Connect your iPhone/iPad, drag the downloaded <code>AnimeNationIndia.ipa</code> file inside, enter your Apple ID, and click <strong>Start</strong> to install.</p>
                       </div>
                       <div className="flex gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] flex items-center justify-center font-bold text-xs shrink-0">4</span>
-                        <p>Connect your iPhone to your PC, open <strong>Sideloadly</strong>, drag the IPA file inside, enter your Apple ID, and click <strong>Start</strong> to install.</p>
+                        <p>On your device, go to <strong>Settings &gt; General &gt; VPN &amp; Device Management</strong> and trust your Apple ID profile to open the app.</p>
                       </div>
                     </div>
 
                     <div className="flex gap-3 mt-2">
                       <a
-                        href="https://github.com/animenationindia/animenationindia/actions"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="https://github.com/animenationindia/animenationindia/raw/main/ios-app/build-artifact/AnimeNationIndia.ipa"
+                        download="AnimeNationIndia.ipa"
                         className="flex-1 py-2.5 bg-[#ff4dd2] hover:bg-[#e03eb7] text-white text-center font-bold rounded-lg text-xs tracking-wider uppercase transition-colors"
                       >
-                        Go to Actions Tab
+                        Download iOS IPA
                       </a>
                       <button
                         onClick={() => setActiveTab("options")}

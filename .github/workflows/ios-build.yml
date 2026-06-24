@@ -10,9 +10,14 @@ jobs:
     name: Build iOS App
     runs-on: macos-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -41,6 +46,16 @@ jobs:
           cp -r build/Release-iphoneos/AnimeNationIndia.app build/Release-iphoneos/Payload/
           cd build/Release-iphoneos
           zip -r AnimeNationIndia.ipa Payload
+
+      - name: Commit and Push IPA to Repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p ios-app/build-artifact
+          cp ios-app/build/Release-iphoneos/AnimeNationIndia.ipa ios-app/build-artifact/AnimeNationIndia.ipa
+          git add ios-app/build-artifact/AnimeNationIndia.ipa
+          git commit -m "build(ios): update pre-compiled unsigned IPA [skip ci]" || echo "No changes to commit"
+          git push origin main
 
       - name: Upload Unsigned IPA Artifact
         uses: actions/upload-artifact@v4
