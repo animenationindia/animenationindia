@@ -163,7 +163,7 @@ export default function Footer() {
                 <DiscordIcon size={20} />
               </a>
               <a 
-                href="https://www.instagram.com/shouvik_das_official" 
+                href="https://www.instagram.com/animenationindia" 
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10 hover:text-white flex items-center justify-center text-gray-400 transition-all duration-300 hover:scale-110"
@@ -172,16 +172,16 @@ export default function Footer() {
                 <InstagramIcon size={20} />
               </a>
               <a 
-                href="https://x.com/shouvikdas155" 
+                href="https://www.facebook.com/share/18rPuGfsbr/" 
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10 hover:text-white flex items-center justify-center text-gray-400 transition-all duration-300 hover:scale-110"
-                aria-label="Twitter"
+                aria-label="Facebook"
               >
-                <TwitterIcon size={18} />
+                <FacebookIcon size={20} />
               </a>
               <a 
-                href="https://www.youtube.com/@shouvikdasvlogss" 
+                href="https://youtube.com/@animenationindia-in?si=SdEis-eh6dgju2dQ" 
                 target="_blank" 
                 rel="noreferrer" 
                 className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10 hover:text-white flex items-center justify-center text-gray-400 transition-all duration-300 hover:scale-110"
