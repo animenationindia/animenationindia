@@ -60,6 +60,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import android.app.Activity
+import android.content.pm.ActivityInfo
+import android.view.View
+import android.webkit.WebSettings
+import androidx.compose.runtime.DisposableEffect
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.animenationindia.theme.AnimeNationIndiaTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -91,15 +102,65 @@ fun AppScreen() {
     val webViewRef = remember { mutableStateOf<WebView?>(null) }
     val scope = rememberCoroutineScope()
     
-    // Back Handler: Intercept Android back press to go back in WebView history
-    val canGoBack by remember {
-        derivedStateOf {
-            webViewRef.value?.canGoBack() == true
+    // States for custom fullscreen video view
+    var customView by remember { mutableStateOf<View?>(null) }
+    var customViewCallback by remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+    
+    // Fullscreen back handler
+    val isFullscreen = customView != null
+    
+    BackHandler(enabled = isFullscreen || (webViewRef.value?.canGoBack() == true && !isOffline)) {
+        if (isFullscreen) {
+            // Exit fullscreen video
+            customView = null
+            customViewCallback?.onCustomViewHidden()
+            customViewCallback = null
+            
+            // Restore System UI
+            val window = (context as? Activity)?.window
+            if (window != null) {
+                val controller = WindowCompat.getInsetsController(window, window.decorView)
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+            
+            // Restore screen orientation
+            val activity = context as? Activity
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        } else {
+            // Web view navigation back
+            webViewRef.value?.goBack()
         }
     }
     
-    BackHandler(enabled = canGoBack && !isOffline) {
-        webViewRef.value?.goBack()
+    // Webview lifecycle observer (Pause/Resume JS and media playback on background/foreground)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> webViewRef.value?.onResume()
+                Lifecycle.Event.ON_PAUSE -> {
+                    // If playing video fullscreen, exit fullscreen when app goes background
+                    if (isFullscreen) {
+                        customView = null
+                        customViewCallback?.onCustomViewHidden()
+                        customViewCallback = null
+                        val window = (context as? Activity)?.window
+                        if (window != null) {
+                            val controller = WindowCompat.getInsetsController(window, window.decorView)
+                            controller.show(WindowInsetsCompat.Type.systemBars())
+                        }
+                        val activity = context as? Activity
+                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
+                    webViewRef.value?.onPause()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
     
     // Check network connectivity on retry or load
@@ -119,6 +180,7 @@ fun AppScreen() {
                 checkConnectionAndLoad()
             })
         } else {
+            // Render WebView Layout
             WebViewContainer(
                 url = "https://animenationindia.vercel.app/",
                 onProgressChange = { newProgress ->
@@ -149,6 +211,38 @@ fun AppScreen() {
                         delay(6000)
                         swipeRefreshLayout.isRefreshing = false
                     }
+                },
+                onShowCustomView = { view, callback ->
+                    customView = view
+                    customViewCallback = callback
+                    
+                    // Hide System UI
+                    val window = (context as? Activity)?.window
+                    if (window != null) {
+                        val controller = WindowCompat.getInsetsController(window, window.decorView)
+                        controller.hide(WindowInsetsCompat.Type.systemBars())
+                        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    }
+                    
+                    // Set Orientation to Landscape for full screen video smoothness
+                    val activity = context as? Activity
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                },
+                onHideCustomView = {
+                    customView = null
+                    customViewCallback?.onCustomViewHidden()
+                    customViewCallback = null
+                    
+                    // Show System UI
+                    val window = (context as? Activity)?.window
+                    if (window != null) {
+                        val controller = WindowCompat.getInsetsController(window, window.decorView)
+                        controller.show(WindowInsetsCompat.Type.systemBars())
+                    }
+                    
+                    // Reset orientation
+                    val activity = context as? Activity
+                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 }
             )
             
@@ -165,6 +259,20 @@ fun AppScreen() {
                     color = Color(0xFFFF4DD2), // Neon Pink
                     trackColor = Color(0x22FF4DD2)
                 )
+            }
+            
+            // Fullscreen Custom Video View Overlay
+            if (customView != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                ) {
+                    AndroidView(
+                        factory = { customView!! },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }
@@ -256,7 +364,9 @@ fun WebViewContainer(
     onPageFinished: (SwipeRefreshLayout?) -> Unit,
     onReceivedError: () -> Unit,
     webViewRef: MutableState<WebView?>,
-    onRefresh: (SwipeRefreshLayout) -> Unit
+    onRefresh: (SwipeRefreshLayout) -> Unit,
+    onShowCustomView: (View, WebChromeClient.CustomViewCallback) -> Unit,
+    onHideCustomView: () -> Unit
 ) {
     AndroidView(
         factory = { context ->
@@ -272,6 +382,10 @@ fun WebViewContainer(
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 
+                // Hardware layer acceleration for fast rendering
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+                
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = true
@@ -280,6 +394,15 @@ fun WebViewContainer(
                     useWideViewPort = true
                     loadWithOverviewMode = true
                     javaScriptCanOpenWindowsAutomatically = true
+                    
+                    // Hardware Acceleration and Smooth Rendering Optimizations
+                    cacheMode = WebSettings.LOAD_DEFAULT
+                    mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                    textZoom = 100 // Prevent layout breakage from system text scaling
+                    offscreenPreRaster = true // Smooth scrolling offscreen content pre-rendering
+                    safeBrowsingEnabled = true
+                    allowFileAccess = true
+                    allowContentAccess = true
                 }
                 
                 webViewClient = object : WebViewClient() {
@@ -303,6 +426,18 @@ fun WebViewContainer(
                 webChromeClient = object : WebChromeClient() {
                     override fun onProgressChanged(view: WebView?, newProgress: Int) {
                         onProgressChange(newProgress)
+                    }
+                    
+                    override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                        super.onShowCustomView(view, callback)
+                        if (view != null && callback != null) {
+                            onShowCustomView(view, callback)
+                        }
+                    }
+                    
+                    override fun onHideCustomView() {
+                        super.onHideCustomView()
+                        onHideCustomView()
                     }
                 }
                 
