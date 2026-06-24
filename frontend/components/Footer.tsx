@@ -301,8 +301,8 @@ export default function Footer() {
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6">
-            <a href="https://www.facebook.com/iamshouvikdas" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#1877F2] text-sm font-bold transition-all duration-300 hover:scale-105">Facebook</a>
-            <a href="https://www.instagram.com/shouvik_das_official" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#E1306C] text-sm font-bold transition-all duration-300 hover:scale-105">Instagram</a>
+            <a href="https://www.facebook.com/share/18rPuGfsbr/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#1877F2] text-sm font-bold transition-all duration-300 hover:scale-105">Facebook</a>
+            <a href="https://www.instagram.com/animenationindia" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#E1306C] text-sm font-bold transition-all duration-300 hover:scale-105">Instagram</a>
             <a href="https://x.com/shouvikdas155" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-white text-sm font-bold transition-all duration-300 hover:scale-105">X (Twitter)</a>
             <a href="https://shouvikdas-portfolio.vercel.app/portfolio" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-[#ff4dd2] text-sm font-bold transition-all duration-300 hover:scale-105">Portfolio</a>
             <a href="mailto:shouvikdaswork@gmail.com" className="text-gray-500 hover:text-green-500 text-sm font-bold transition-all duration-300 hover:scale-105">Email</a>
