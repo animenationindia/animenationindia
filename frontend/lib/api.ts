@@ -55,6 +55,50 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
   throw new Error("AniList request failed after maximum retries due to rate limit.");
 }
 
+export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME) {
+  let retries = 3;
+  let delay = 1000;
+  
+  const fetchOptions: any = {};
+  if (revalidate === 0) {
+    fetchOptions.cache = 'no-store';
+  } else {
+    fetchOptions.next = { revalidate };
+  }
+
+  while (retries > 0) {
+    try {
+      const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
+      
+      if (res.status === 429) {
+        console.warn(`Jikan API 429 Rate Limit hit on ${endpoint}. Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        retries--;
+        delay *= 2;
+        continue;
+      }
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          return null;
+        }
+        throw new Error(`Jikan API returned status ${res.status}`);
+      }
+      
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error(`Error in fetchJikan for ${endpoint}:`, error);
+      retries--;
+      if (retries === 0) return null;
+      await new Promise(resolve => setTimeout(resolve, delay));
+      delay *= 2;
+    }
+  }
+  return null;
+}
+
+
 
 export interface AniListMedia {
   id: number;
@@ -181,13 +225,7 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
 
     // Fetch up to 4 pages to ensure we get a good amount of the week's schedule
     while (hasNextPage && currentPage <= 4) {
-      const response = await fetch(ANILIST_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables: { page: currentPage, start, end } }),
-        next: { revalidate: GLOBAL_CACHE_TIME } 
-      });
-      const data = await response.json();
+      const data = await fetchAniList(query, { page: currentPage, start, end });
       if (data.data?.Page?.airingSchedules) {
         allSchedules = allSchedules.concat(data.data.Page.airingSchedules);
         hasNextPage = data.data.Page.pageInfo.hasNextPage;
@@ -224,13 +262,7 @@ export async function getTodayReleasesAniList(page = 1) {
     }
   `;
   try {
-    const response = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { page, start: startOfDay, end: endOfDay } }),
-      next: { revalidate: GLOBAL_CACHE_TIME } 
-    });
-    const data = await response.json();
+    const data = await fetchAniList(query, { page, start: startOfDay, end: endOfDay });
     return data.data.Page; 
   } catch { 
     return { airingSchedules: [] as AiringSchedule[], pageInfo: { hasNextPage: false, currentPage: 1 } }; 
@@ -252,8 +284,7 @@ export async function getPastWeekReleasesAniList(page = 1) {
     }
   `;
   try {
-    const response = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables: { page, start, end } }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await response.json();
+    const data = await fetchAniList(query, { page, start, end });
     return data.data.Page; 
   } catch { return { airingSchedules: [] as AiringSchedule[] }; }
 }
@@ -273,8 +304,7 @@ export async function getPastMonthReleasesAniList(page = 1) {
     }
   `;
   try {
-    const response = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables: { page, start, end } }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await response.json();
+    const data = await fetchAniList(query, { page, start, end });
     return data.data.Page; 
   } catch { return { airingSchedules: [] as AiringSchedule[] }; }
 }
@@ -291,8 +321,7 @@ export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -311,8 +340,7 @@ export async function getTrendingAnimeAniList(limit: number = 10): Promise<AniLi
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     const mediaList = data.data.Page.media as AniListMedia[];
     const animeWithBanners = mediaList.filter((anime) => anime.bannerImage !== null);
     // If we request more than banner anime, just return mediaList directly
@@ -344,13 +372,7 @@ export async function getPopularAnimePageAniList(page: number = 1): Promise<{ me
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ query, variables: { page } }), 
-      next: { revalidate: GLOBAL_CACHE_TIME } 
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { page });
     return {
       media: data.data.Page.media as AniListMedia[],
       pageInfo: data.data.Page.pageInfo
@@ -373,8 +395,7 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     const mediaList = data.data.Page.media as AniListMedia[];
     const animeWithBanners = mediaList.filter((anime) => anime.bannerImage !== null);
     return animeWithBanners.slice(0, 10);
@@ -386,9 +407,8 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
 // ৪. Details Page এর জন্য Jikan Full Info
 export async function getAnimeFullDetails(id: string) {
   try {
-    const res = await fetch(`${JIKAN_API_URL}/anime/${id}/full`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return data.data;
+    const res = await fetchJikan(`/anime/${id}/full`);
+    return res?.data || null;
   } catch { 
     return null; 
   }
@@ -397,9 +417,8 @@ export async function getAnimeFullDetails(id: string) {
 // ৫. ক্যারেক্টার ও ভয়েস অ্যাক্টর (Jikan)
 export async function getAnimeCharacters(id: string) {
   try {
-    const res = await fetch(`${JIKAN_API_URL}/anime/${id}/characters`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return data.data || []; 
+    const res = await fetchJikan(`/anime/${id}/characters`);
+    return res?.data || []; 
   } catch { 
     return []; 
   }
@@ -408,9 +427,8 @@ export async function getAnimeCharacters(id: string) {
 // ৫.১ Episodes (Jikan)
 export async function getAnimeEpisodes(id: string) {
   try {
-    const res = await fetch(`${JIKAN_API_URL}/anime/${id}/episodes`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return data.data || []; 
+    const res = await fetchJikan(`/anime/${id}/episodes`);
+    return res?.data || []; 
   } catch { 
     return []; 
   }
@@ -433,13 +451,7 @@ export async function getAniListExtraInfo(idMal: number): Promise<AniListExtra |
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id: idMal } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { id: idMal });
     return (data.data?.Media as AniListExtra) || null;
   } catch { 
     return null; 
@@ -458,8 +470,7 @@ export async function getNewReleasesAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -478,8 +489,7 @@ export async function getCurrentSeasonAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -498,8 +508,7 @@ export async function getUpcomingAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -518,8 +527,7 @@ export async function getPopularDubbedAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -530,8 +538,7 @@ export async function getPopularDubbedAniList(): Promise<AniListMedia[]> {
 export async function getTopCharactersAniList(page: number = 1): Promise<CharacterItem[]> {
   const query = `query($page:Int){Page(page:$page,perPage:24){characters(sort:FAVOURITES_DESC){id name{full} image{large} favourites}}}`;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables: { page } }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query, { page });
     return data.data.Page.characters as CharacterItem[];
   } catch { 
     return [] as CharacterItem[]; 
@@ -542,14 +549,12 @@ export async function getTopCharactersAniList(page: number = 1): Promise<Charact
 export async function getTopStaffAniList(page: number = 1): Promise<StaffItem[]> {
   const query = `query($page:Int){Page(page:$page,perPage:24){staff(sort:FAVOURITES_DESC){id name{full} image{large} favourites}}}`;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables: { page } }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query, { page });
     return data.data.Page.staff as StaffItem[];
   } catch { 
     return [] as StaffItem[]; 
   }
 }
-
 
 // ১৩. Search Anime (With Pagination)
 export async function searchAnimeAniList(queryText: string, page: number = 1) {
@@ -569,13 +574,7 @@ export async function searchAnimeAniList(queryText: string, page: number = 1) {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { search: queryText, page: page } }),
-      cache: 'no-store'
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { search: queryText, page: page }, 0);
     return data.data.Page; 
   } catch (e) { 
     console.error("Search Error:", e);
@@ -633,13 +632,7 @@ export async function getFilteredAnimeAniList(params: {
   `;
 
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, variables);
     return data.data.Page;
   } catch (e) {
     console.error("Filter API Error:", e);
@@ -649,12 +642,8 @@ export async function getFilteredAnimeAniList(params: {
 // ??. Jikan API - Get All Genres
 export async function getJikanGenres() {
   try {
-    const res = await fetch('https://api.jikan.moe/v4/genres/anime', {
-      next: { revalidate: GLOBAL_CACHE_TIME } // Cache for 1 hour
-    });
-    if (!res.ok) throw new Error('Failed to fetch Jikan genres');
-    const data = await res.json();
-    return data.data || [];
+    const data = await fetchJikan('/genres/anime');
+    return data?.data || [];
   } catch (error) {
     console.error(error);
     return [];
@@ -664,12 +653,9 @@ export async function getJikanGenres() {
 // ??. Jikan API - Get Anime by Genre
 export async function getJikanAnimeByGenre(genreId: string, page = 1, orderBy = 'start_date', sort = 'desc') {
   try {
-    const url = `https://api.jikan.moe/v4/anime?genres=${genreId}&page=${page}&limit=24&order_by=${orderBy}&sort=${sort}`;
-    const res = await fetch(url, {
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    if (!res.ok) throw new Error('Failed to fetch anime by genre from Jikan');
-    const data = await res.json();
+    const endpoint = `/anime?genres=${genreId}&page=${page}&limit=24&order_by=${orderBy}&sort=${sort}`;
+    const data = await fetchJikan(endpoint);
+    if (!data) return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
     
     // Transform Jikan response to match our AnimeCard props (AniList format)
     const transformedMedia = (data.data || []).map((anime: any) => ({
@@ -709,9 +695,8 @@ export async function getJikanAnimeByGenre(genreId: string, page = 1, orderBy = 
 // 15. Recommendations (Jikan)
 export async function getAnimeRecommendations(id: string) {
   try {
-    const res = await fetch(`https://api.jikan.moe/v4/anime/${id}/recommendations`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return (data.data || []).map((rec: any) => ({
+    const data = await fetchJikan(`/anime/${id}/recommendations`);
+    return (data?.data || []).map((rec: any) => ({
       id: rec.entry.mal_id,
       idMal: rec.entry.mal_id,
       title: {
@@ -732,9 +717,8 @@ export async function getAnimeRecommendations(id: string) {
 // 16. Top Characters (Jikan)
 export async function getTopCharactersJikan() {
   try {
-    const res = await fetch('https://api.jikan.moe/v4/top/characters?limit=15', { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return (data.data || []).map((char: any) => ({
+    const data = await fetchJikan('/top/characters?limit=15');
+    return (data?.data || []).map((char: any) => ({
       id: char.mal_id,
       name: { full: char.name },
       image: { large: char.images?.jpg?.image_url },
@@ -749,9 +733,8 @@ export async function getTopCharactersJikan() {
 // 17. Top People / Staff (Jikan)
 export async function getTopPeopleJikan() {
   try {
-    const res = await fetch('https://api.jikan.moe/v4/top/people?limit=15', { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return (data.data || []).map((person: any) => ({
+    const data = await fetchJikan('/top/people?limit=15');
+    return (data?.data || []).map((person: any) => ({
       id: person.mal_id,
       name: { full: person.name },
       image: { large: person.images?.jpg?.image_url },
@@ -777,10 +760,8 @@ export async function getCharacterDetailsJikan(id: string) {
 
 export async function getPersonDetailsJikan(id: string) {
   try {
-    const res = await fetch(`https://api.jikan.moe/v4/people/${id}/full`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.data;
+    const data = await fetchJikan(`/people/${id}/full`);
+    return data?.data || null;
   } catch (error) {
     console.error("getPersonDetailsJikan Error:", error);
     return null;
@@ -791,9 +772,8 @@ export async function getPersonDetailsJikan(id: string) {
 
 export async function getMangaFullDetails(id: string) {
   try {
-    const res = await fetch(`${JIKAN_API_URL}/manga/${id}/full`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return data.data;
+    const data = await fetchJikan(`/manga/${id}/full`);
+    return data?.data || null;
   } catch { 
     return null; 
   }
@@ -801,9 +781,8 @@ export async function getMangaFullDetails(id: string) {
 
 export async function getMangaCharacters(id: string) {
   try {
-    const res = await fetch(`${JIKAN_API_URL}/manga/${id}/characters`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return data.data || []; 
+    const data = await fetchJikan(`/manga/${id}/characters`);
+    return data?.data || []; 
   } catch { 
     return []; 
   }
@@ -811,9 +790,8 @@ export async function getMangaCharacters(id: string) {
 
 export async function getMangaRecommendations(id: string) {
   try {
-    const res = await fetch(`${JIKAN_API_URL}/manga/${id}/recommendations`, { next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
-    return (data.data || []).map((rec: any) => ({
+    const data = await fetchJikan(`/manga/${id}/recommendations`);
+    return (data?.data || []).map((rec: any) => ({
       id: rec.entry.mal_id,
       idMal: rec.entry.mal_id,
       title: {
@@ -846,13 +824,7 @@ export async function getAniListMangaExtraInfo(idMal: number): Promise<AniListEx
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id: idMal } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { id: idMal });
     return (data.data?.Media as AniListExtra) || null;
   } catch { 
     return null; 
@@ -879,71 +851,45 @@ export async function searchMangaJikan(queryText: string, page = 1, type = '', i
     queryParams.append('type', type);
   }
 
-  const url = `https://api.jikan.moe/v4/manga?${queryParams.toString()}`;
+  const endpoint = `/manga?${queryParams.toString()}`;
+  const revalidate = queryText.trim() ? 0 : GLOBAL_CACHE_TIME;
   
-  let retries = 3;
-  let delay = 1000;
-  
-  while (retries > 0) {
-    try {
-      const fetchOptions: any = {};
-      if (queryText.trim()) {
-        fetchOptions.cache = 'no-store';
-      } else {
-        fetchOptions.next = { revalidate: GLOBAL_CACHE_TIME };
-      }
-      const res = await fetch(url, fetchOptions);
-      
-      if (res.status === 429) {
-        console.warn(`Jikan API 429 Rate Limit hit in searchMangaJikan. Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        retries--;
-        delay *= 2;
-        continue;
-      }
-      
-      if (!res.ok) throw new Error(`Jikan API returned status ${res.status}`);
-      
-      const data = await res.json();
-      
-      const transformedMedia = (data.data || []).map((manga: any) => ({
-        id: manga.mal_id,
-        idMal: manga.mal_id,
-        title: {
-          romaji: manga.title || manga.title_english,
-          english: manga.title_english || manga.title,
-        },
-        coverImage: {
-          large: manga.images?.webp?.large_image_url || manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url,
-          extraLarge: manga.images?.webp?.large_image_url || manga.images?.jpg?.large_image_url,
-        },
-        averageScore: manga.score ? Math.round(manga.score * 10) : null,
-        format: manga.type,
-        type: 'MANGA',
-        status: manga.publishing ? 'RELEASING' : 'FINISHED',
-        seasonYear: manga.published?.prop?.from?.year || null,
-        genres: manga.genres?.map((g: any) => g.name) || [],
-      }));
+  try {
+    const data = await fetchJikan(endpoint, revalidate);
+    if (!data) return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
+    
+    const transformedMedia = (data.data || []).map((manga: any) => ({
+      id: manga.mal_id,
+      idMal: manga.mal_id,
+      title: {
+        romaji: manga.title || manga.title_english,
+        english: manga.title_english || manga.title,
+      },
+      coverImage: {
+        large: manga.images?.webp?.large_image_url || manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url,
+        extraLarge: manga.images?.webp?.large_image_url || manga.images?.jpg?.large_image_url,
+      },
+      averageScore: manga.score ? Math.round(manga.score * 10) : null,
+      format: manga.type,
+      type: 'MANGA',
+      status: manga.publishing ? 'RELEASING' : 'FINISHED',
+      seasonYear: manga.published?.prop?.from?.year || null,
+      genres: manga.genres?.map((g: any) => g.name) || [],
+    }));
 
-      return {
-        media: transformedMedia,
-        pageInfo: {
-          total: data.pagination?.items?.total || 0,
-          currentPage: page,
-          lastPage: data.pagination?.last_visible_page || 1,
-          hasNextPage: data.pagination?.has_next_page || false,
-        }
-      };
-    } catch (error) {
-      console.error("Error in searchMangaJikan:", error);
-      retries--;
-      if (retries === 0) break;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay *= 2;
-    }
+    return {
+      media: transformedMedia,
+      pageInfo: {
+        total: data.pagination?.items?.total || 0,
+        currentPage: page,
+        lastPage: data.pagination?.last_visible_page || 1,
+        hasNextPage: data.pagination?.has_next_page || false,
+      }
+    };
+  } catch (error) {
+    console.error("Error in searchMangaJikan:", error);
+    return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
   }
-  
-  return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
 }
 
 // ৭. Top Movies (For Homepage Lists)
@@ -958,8 +904,7 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -978,8 +923,7 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query }), next: { revalidate: GLOBAL_CACHE_TIME } });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -998,13 +942,7 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ query, variables: { year } }), 
-      next: { revalidate: GLOBAL_CACHE_TIME } 
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { year });
     return data.data.Page.media as AniListMedia[];
   } catch { 
     return [] as AniListMedia[]; 
@@ -1028,13 +966,7 @@ export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
     129898, 166372, 144553, 155011, 103632
   ];
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { ids } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { ids });
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1058,13 +990,7 @@ export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]>
     97986, 101348, 1575, 19, 1
   ];
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { ids } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { ids });
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1083,13 +1009,7 @@ export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1108,13 +1028,7 @@ export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1137,13 +1051,7 @@ export async function getSimilarToSAOAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id: 11757 } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { id: 11757 });
     const mediaList = (data.data?.Media?.recommendations?.nodes || [])
       .map((node: any) => node.mediaRecommendation)
       .filter((media: any) => media !== null && media !== undefined);
@@ -1165,13 +1073,7 @@ export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1190,13 +1092,7 @@ export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1215,13 +1111,7 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { year, season } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { year, season });
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1240,13 +1130,7 @@ export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query);
     return data.data.Page.media as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
@@ -1270,13 +1154,7 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
     205, 30, 9989, 8769, 270
   ];
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { ids } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { ids });
     const mediaList = data.data.Page.media as AniListMedia[];
     
     // Sort mediaList by the order of IDs in the array to preserve user preference
@@ -1302,13 +1180,7 @@ export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
     }
   `;
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { id: 21459 } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { id: 21459 });
     const mediaList = (data.data?.Media?.recommendations?.nodes || [])
       .map((node: any) => node.mediaRecommendation)
       .filter((media: any) => media !== null && media !== undefined);
@@ -1334,13 +1206,7 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
     20607, 98707, 7785, 2246, 3297, 457, 10165, 109268, 16664, 5681
   ];
   try {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables: { ids } }),
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    const data = await res.json();
+    const data = await fetchAniList(query, { ids });
     const mediaList = data.data.Page.media as AniListMedia[];
     
     // Sort mediaList by the order of IDs in the array to preserve user preference
