@@ -166,7 +166,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className="group relative w-full mb-4 flex flex-col cursor-pointer bg-transparent"
     >
-      <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} className="block w-full h-full relative">
+      <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative">
         
         {/* 🖼️ Image Container */}
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255, 77, 210,0.4)] transition-all duration-300">

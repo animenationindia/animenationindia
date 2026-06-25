@@ -36,6 +36,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*).(png|jpg|jpeg|gif|svg|ico|webp|woff2|json|txt|css|js)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=2592000, stale-while-revalidate=86400',
+          },
+        ],
+      },
+    ];
+  },
   turbopack: {},
 };
 
