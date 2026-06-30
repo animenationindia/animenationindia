@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import BackToTop from "../components/BackToTop";
 import MobileBottomNav from "../components/MobileBottomNav";
 import BackButton from "../components/BackButton";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online'),
@@ -49,6 +50,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="overflow-x-hidden">
       <body className="bg-[#050716] text-[#ffffff] min-h-screen flex flex-col font-sans selection:bg-[#ff4dd2] selection:text-white overflow-x-hidden w-full max-w-[100vw] pb-[60px] md:pb-0">
+        <Script 
+          src="https://news.google.com/swg/js/v1/swg-basic.js" 
+          strategy="afterInteractive" 
+        />
+        <Script id="swg-basic-init" strategy="afterInteractive">
+          {`
+            (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
+              basicSubscriptions.init({
+                type: "NewsArticle",
+                isPartOfType: ["Product"],
+                isPartOfProductId: "CAows4THDA:openaccess",
+                clientOptions: { theme: "light", lang: "en-GB" },
+              });
+            });
+          `}
+        </Script>
         <Navbar />
         <BackButton />
         {/* Main Content */}
