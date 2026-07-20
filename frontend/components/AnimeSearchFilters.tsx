@@ -80,10 +80,17 @@ export default function AnimeSearchFilters({
   const containerRef = useRef<HTMLDivElement>(null);
   const suggestionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 🔑 KEY FIX: track if user is actively typing so URL sync doesn't reset the input
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync state with URL on back/forward navigation
+  // Sync state with URL ONLY on back/forward navigation (not on debounced router.push)
   useEffect(() => {
-    setQuery(searchParams.get('q') || '');
+    // If user is actively typing, skip syncing query from URL
+    if (!isTypingRef.current) {
+      setQuery(searchParams.get('q') || '');
+    }
+    // Filters are always safe to sync (they don't have typing latency)
     setSelectedGenres(searchParams.get('genres') ? searchParams.get('genres')!.split(',') : []);
     setSelectedFormat(searchParams.get('format') || '');
     setSelectedStatus(searchParams.get('status') || '');
@@ -146,13 +153,15 @@ export default function AnimeSearchFilters({
     };
   }, [query]);
 
-  // Debounced page navigation (600ms after typing stops)
+  // Debounced page navigation (700ms after typing fully stops)
   const pushSearch = useCallback(
     (q: string, params?: Record<string, string>) => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = setTimeout(() => {
-        const url = new URLSearchParams(searchParams.toString());
-        if (q.trim()) url.set('q', q.trim()); else url.delete('q');
+        // Mark typing as done BEFORE router.push so URL sync is allowed
+        isTypingRef.current = false;
+        const url = new URLSearchParams();
+        if (q.trim()) url.set('q', q.trim());
         url.set('page', '1');
         if (params) {
           Object.entries(params).forEach(([k, v]) => {
@@ -160,12 +169,20 @@ export default function AnimeSearchFilters({
           });
         }
         startTransition(() => router.push(`${pathname}?${url.toString()}`));
-      }, 600);
+      }, 700);
     },
-    [searchParams, pathname, router]
+    [pathname, router]
   );
 
   const handleQueryChange = (val: string) => {
+    // Mark as typing immediately — blocks URL sync from resetting input
+    isTypingRef.current = true;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    // Safety: after 2s of no typing, release the block
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 2000);
+
     setQuery(val);
     setActiveSuggestion(-1);
     pushSearch(val, {
