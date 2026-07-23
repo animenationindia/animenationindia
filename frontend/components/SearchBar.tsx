@@ -12,7 +12,7 @@ export default function SearchBar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) {
-      // 🌟 ইউজার সার্চ করলে তাকে /search?q=নাম এই পেজে নিয়ে যাবে
+      // Redirect user to search page with encoded query parameter
       router.push(`/search?q=${encodeURIComponent(query.trim())}`);
     }
   };

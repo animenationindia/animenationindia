@@ -1,16 +1,59 @@
+import { cache } from 'react';
 import { getAnimeFullDetails, getAnimeEpisodes } from '@/lib/api';
+import { sanitizeDescription } from '@/lib/sanitize';
 import Link from 'next/link';
 import WatchPageContent from '@/components/WatchPageContent';
+import type { Metadata } from 'next';
 
 interface Params {
   id: string;
+}
+
+// React cache() wrapper to deduplicate fetch between generateMetadata and WatchPage
+const getCachedAnime = cache(async (id: string) => {
+  return getAnimeFullDetails(id);
+});
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const anime = await getCachedAnime(id);
+    if (!anime) throw new Error("Anime not found");
+
+    const title = anime.title?.english || anime.title?.romaji || 'Watch Anime';
+    const rawDesc = anime.synopsis || anime.description || 'Watch anime online on Anime Nation India.';
+    const cleanDesc = sanitizeDescription(rawDesc).replace(/\s+/g, ' ').slice(0, 160);
+    const cover = anime.images?.jpg?.large_image_url || anime.coverImage?.extraLarge || anime.coverImage?.large || '/ani-logo.png';
+
+    return {
+      title: `${title} - Watch Online | Anime Nation India`,
+      description: cleanDesc,
+      openGraph: {
+        title: `${title} - Stream & Watch | Anime Nation India`,
+        description: cleanDesc,
+        images: [{ url: cover, alt: title }],
+        type: 'video.other',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${title} - Anime Nation India`,
+        description: cleanDesc,
+        images: [cover],
+      },
+    };
+  } catch {
+    return {
+      title: 'Watch Anime Online - Anime Nation India',
+      description: 'Stream anime online, view release schedule, and manage your watchlist.',
+    };
+  }
 }
 
 export default async function WatchPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   
   const [anime, episodesData] = await Promise.all([
-    getAnimeFullDetails(id),
+    getCachedAnime(id),
     getAnimeEpisodes(id)
   ]);
 

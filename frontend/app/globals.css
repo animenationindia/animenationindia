@@ -28,6 +28,27 @@ html {
   -webkit-overflow-scrolling: touch; /* Momentum scrolling for mobile devices */
 }
 
+/* Lenis smooth scroll helper rules */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -37,7 +58,40 @@ body {
   -webkit-overflow-scrolling: touch; /* Momentum scrolling for mobile devices */
 }
 
-/* 🚀 GPU Hardware Acceleration for heavy filters (Blurs, Backdrop-filters) to make scrolling buttery smooth on mobile */
+/* 🌟 Custom Buttery Global Scrollbar (Site-Wide Polish) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050716;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff4dd2 0%, #a00078 100%);
+  border-radius: 9999px;
+  border: 2px solid #050716;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff85e1 0%, #ff4dd2 100%);
+  box-shadow: 0 0 10px rgba(255, 77, 210, 0.6);
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ff4dd2 #050716;
+}
+
+/* 🚀 GPU Hardware Acceleration & Off-screen Content Visibility Optimization */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 320px;
+}
+
+.gpu-accelerate,
 .glass-card,
 [class*="blur-["],
 [class*="backdrop-blur"] {
@@ -129,6 +183,20 @@ body {
 
   .animate-glitch {
     animation: glitch 1.5s infinite linear alternate-reverse;
+  }
+
+  /* Shimmer Animations */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 1.5s infinite;
   }
 }
 

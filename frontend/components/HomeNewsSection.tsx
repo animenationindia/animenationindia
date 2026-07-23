@@ -4,12 +4,26 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Megaphone, ChevronRight } from 'lucide-react';
 import type { NewsItem } from '../lib/getNews';
+import ErrorState from './ErrorState';
 
 interface HomeNewsSectionProps {
   news: NewsItem[];
+  onRetry?: () => void;
+  isError?: boolean;
 }
 
-export default function HomeNewsSection({ news }: HomeNewsSectionProps) {
+export default function HomeNewsSection({ news, onRetry, isError = false }: HomeNewsSectionProps) {
+  if (isError) {
+    return (
+      <section className="w-full my-8 text-white">
+        <ErrorState 
+          message="Failed to fetch anime news. Please try again."
+          onRetry={onRetry}
+        />
+      </section>
+    );
+  }
+
   if (!news || news.length === 0) return null;
 
   // Format date like: "Jun 22, 2026 9:23 AM"
@@ -24,15 +38,12 @@ export default function HomeNewsSection({ news }: HomeNewsSectionProps) {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
-      }) + ' GMT+5:30'; // Static display to match screenshot style
+      }) + ' GMT+5:30';
     } catch {
       return dateStr;
     }
   };
 
-  // Slice news items as shown in the screenshot:
-  // Top News: first 2 items
-  // Latest: next 6 items
   const topNews = news.slice(0, 2);
   const latestNews = news.slice(2, 8);
 
@@ -119,7 +130,7 @@ export default function HomeNewsSection({ news }: HomeNewsSectionProps) {
                 {/* Text Content */}
                 <div className="flex flex-col gap-1 min-w-0">
                   <Link href={`/news/${item.id}`}>
-                    <h4 className="text-sm font-bold leading-tight text-white group-hover:text-[#ff4dd2] transition-colors line-clamp-2">
+                    <h4 className="text-base font-bold leading-tight text-white group-hover:text-[#ff4dd2] transition-colors line-clamp-2">
                       {item.title}
                     </h4>
                   </Link>

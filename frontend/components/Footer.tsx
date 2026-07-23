@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Orbitron } from 'next/font/google';
 import { Globe, ChevronDown, Send, Code, Mail, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -136,7 +137,7 @@ export default function Footer() {
                 whileHover={{ rotateY: 15, rotateX: -10, scale: 1.05 }}
                 className="relative w-14 h-14 rounded-xl overflow-hidden bg-gradient-to-br from-gray-800 to-black border border-white/10 shadow-[0_0_20px_rgba(255, 77, 210,0.3)] group-hover:shadow-[0_0_30px_rgba(255, 77, 210,0.5)] flex items-center justify-center transform-style-3d transition-all duration-500 shrink-0"
               >
-                <img src="/ani-logo.png" alt="Anime Nation India Logo" className="absolute inset-0 w-full h-full object-cover p-1 drop-shadow-2xl translate-z-10" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                <Image src="/ani-logo.png" alt="Anime Nation India Logo" fill sizes="56px" className="object-cover p-1 drop-shadow-2xl translate-z-10" />
               </motion.div>
               <div className="flex flex-col items-start text-left">
                 <span className="text-2xl md:text-3xl text-white font-bold tracking-wide transition-all duration-500 leading-tight">

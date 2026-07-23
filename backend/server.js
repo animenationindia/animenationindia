@@ -6,15 +6,28 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
 
 // 🔥 Email Pathanor Setup (Nodemailer) 🔥
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Tomar Gmail
-    pass: process.env.EMAIL_PASS  // Gmail App Password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
+
+// 🔥 Strict Security Checks for Environment Variables 🔥
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret || jwtSecret.length < 32) {
+  console.error(
+    "CRITICAL SECURITY ERROR: JWT_SECRET environment variable is missing or too short (minimum 32 characters required).\n" +
+    "Server will not start for security reasons."
+  );
+  process.exit(1);
+}
 
 // 🔥 Modules import kora holo
 const bcrypt = require('bcryptjs');
@@ -31,23 +44,106 @@ let cachedNews = [];
 let lastFetchTime = 0;
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-// 🔥 FIX: Jikan rate limit se bachne ke liye delay helper
+// Delay helper for rate limits
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// 🔥 FIX: Jikan 403 se bachne ke liye — User-Agent header zaroori hai
+// Jikan headers for 403 prevention
 const jikanHeaders = {
   'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
   'Accept': 'application/json',
 };
 
 const app = express();
-app.use(cors());
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+// 🔒 Security Middleware: Helmet HTTP Headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false,
+}));
+
+// Key generator helper for rate limiting (normalizes IPv4-mapped IPv6)
+const getClientIp = (req) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  const rawIp = forwarded ? (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : forwarded[0]) : (req.ip || req.socket?.remoteAddress || '127.0.0.1');
+  return String(rawIp).replace(/^::ffff:/, '');
+};
+
+// 🔒 Security Middleware: Rate Limiters
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login attempts per 15 mins
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: getClientIp,
+  validate: false,
+  message: { message: "Too many login attempts. Please try again after 15 minutes." }
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 registration attempts per 15 mins
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: getClientIp,
+  validate: false,
+  message: { message: "Too many account registration attempts. Please try again after 15 minutes." }
+});
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 contact form submissions per 15 mins
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: getClientIp,
+  validate: false,
+  message: { success: false, message: "Too many contact form submissions. Please try again after 15 minutes." }
+});
+
+// Validation Runner Middleware
+const validate = (validations) => {
+  return async (req, res, next) => {
+    for (let validation of validations) {
+      await validation.run(req);
+    }
+    const errors = validationResult(req);
+    if (errors.isEmpty()) {
+      return next();
+    }
+    return res.status(400).json({ message: errors.array()[0].msg, errors: errors.array() });
+  };
+};
+
+// 🔥 Strict CORS Configuration 🔥
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://animenationindia.online',
+  'https://www.animenationindia.online',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS Error: Access from origin ${origin} blocked by security policy.`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('🔥 MongoDB Atlas Connected Successfully!'))
-  .catch((err) => console.log('MongoDB Error: ', err));
+  .catch((err) => console.error('MongoDB Error: ', err));
 
 // ==========================================
 // MONGODB SCHEMAS
@@ -94,7 +190,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// 🔥 NEW: Contact Message Schema 🔥
+// Contact Message Schema
 const messageSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
@@ -109,44 +205,71 @@ const Message = mongoose.model('Message', messageSchema);
 // 🔥 AUTHENTICATION ROUTES 🔥
 // ==========================================
 
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "Email is already registered!" });
+app.post(
+  '/api/auth/register',
+  registerLimiter,
+  validate([
+    body('email').trim().isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
+    body('username').trim().isLength({ min: 2, max: 30 }).withMessage('Username must be between 2 and 30 characters').escape()
+  ]),
+  async (req, res) => {
+    try {
+      const { username, email, password } = req.body;
+      const existingUser = await User.findOne({ email });
+      if (existingUser) return res.status(400).json({ message: "Email is already registered!" });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+      // OWASP Recommendation 2026: 12 salt rounds
+      const salt = await bcrypt.genSalt(12);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User({ username, email, password: hashedPassword });
-    await newUser.save();
+      const newUser = new User({ username, email, password: hashedPassword });
+      await newUser.save();
 
-    console.log(`New User Registered: ${username}`);
-    res.status(201).json({ message: "Account created successfully!" });
-  } catch (error) {
-    res.status(500).json({ message: "Server Error during Signup" });
+      // PII removed from server log
+      console.log('New User Registered Successfully');
+      res.status(201).json({ message: "Account created successfully!" });
+    } catch (error) {
+      console.error('Signup Error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Invalid Email or Password!" });
+app.post(
+  '/api/auth/login',
+  loginLimiter,
+  validate([
+    body('email').trim().isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password is required')
+  ]),
+  async (req, res) => {
+    try {
+      const { email, password } = req.body;
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid Email or Password!" });
+      // Prevent NoSQL Injection: Ensure string types explicitly
+      if (typeof email !== 'string' || typeof password !== 'string') {
+        return res.status(400).json({ message: "Invalid email or password payload format!" });
+      }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret_123", { expiresIn: '7d' });
+      const user = await User.findOne({ email });
+      if (!user) return res.status(400).json({ message: "Invalid Email or Password!" });
 
-    res.json({
-      token,
-      user: { id: user._id, username: user.username, email: user.email }
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server Error during Login" });
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) return res.status(400).json({ message: "Invalid Email or Password!" });
+
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+      res.json({
+        token,
+        user: { id: user._id, username: user.username, email: user.email }
+      });
+    } catch (error) {
+      console.error('Login Error:', error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
 // ==========================================
 // 🔥 JWT AUTH MIDDLEWARE 🔥
@@ -158,7 +281,7 @@ const verifyToken = (req, res, next) => {
   }
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret_123");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Contains id from login: { id: user._id }
     next();
   } catch (err) {
@@ -176,6 +299,10 @@ app.post('/api/watchlist', verifyToken, async (req, res) => {
     const userId = req.user.id;
     if (!userId) return res.status(401).json({ message: "Please login to bookmark anime!" });
 
+    if (!anime || !anime.mal_id) {
+      return res.status(400).json({ message: "Invalid anime object" });
+    }
+
     const watchlistItem = await Watchlist.findOneAndUpdate(
       { userId, mal_id: anime.mal_id },
       { userId, mal_id: anime.mal_id, animeData: anime },
@@ -183,7 +310,8 @@ app.post('/api/watchlist', verifyToken, async (req, res) => {
     );
     res.status(201).json({ message: "Saved to your collection!" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Watchlist Add Error:', error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -196,7 +324,8 @@ app.get('/api/watchlist/:userId', verifyToken, async (req, res) => {
     const formattedList = list.map(item => item.animeData);
     res.json(formattedList);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Watchlist Fetch Error:', error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -208,41 +337,47 @@ app.delete('/api/watchlist/:userId/:mal_id', verifyToken, async (req, res) => {
     await Watchlist.findOneAndDelete({ userId, mal_id });
     res.json({ message: "Removed from Watchlist!" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Watchlist Delete Error:', error);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
 // ==========================================
 // 🔥 CONTACT FORM API ROUTE (Database + Email) 🔥
 // ==========================================
-app.post('/api/contact', async (req, res) => {
-  try {
-    const { name, email, subject, message } = req.body;
-    if (!name || !email || !message) {
-      return res.status(400).json({ success: false, message: "Please fill all required fields!" });
+app.post(
+  '/api/contact',
+  contactLimiter,
+  validate([
+    body('name').trim().notEmpty().withMessage('Name is required').escape(),
+    body('email').trim().isEmail().withMessage('Valid email address is required').normalizeEmail(),
+    body('subject').trim().escape(),
+    body('message').trim().notEmpty().withMessage('Message is required')
+  ]),
+  async (req, res) => {
+    try {
+      const { name, email, subject, message } = req.body;
+      
+      const newMessage = new Message({ name, email, subject, message });
+      await newMessage.save();
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: process.env.EMAIL_TO || process.env.EMAIL_USER,
+        replyTo: email,
+        subject: `New Anime Nation India Message: ${subject || 'General Inquiry'}`,
+        text: `You got a new message from ${name} (${email}):\n\n${message}`
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      res.status(201).json({ success: true, message: "Message sent successfully! We will get back to you soon." });
+    } catch (error) {
+      console.error("Contact Error:", error);
+      res.status(500).json({ success: false, message: "Failed to send message." });
     }
-    
-    // 1. Database-e save koro
-    const newMessage = new Message({ name, email, subject, message });
-    await newMessage.save();
-
-    // 2. Tomar mail-e email pathao
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_TO || process.env.EMAIL_USER, // Send to target EMAIL_TO address
-      replyTo: email, // Reply korle jate direct user-er mail e jay
-      subject: `New Anime Nation India Message: ${subject}`,
-      text: `You got a new message from ${name} (${email}):\n\n${message}`
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.status(201).json({ success: true, message: "Message sent successfully! We will get back to you soon." });
-  } catch (error) {
-    console.error("Contact Error:", error);
-    res.status(500).json({ success: false, message: "Failed to send message." });
   }
-});
+);
 
 // ==========================================
 // 🔥 OTHER DATA ROUTES 🔥
@@ -252,7 +387,7 @@ app.get('/api/anime/season/:year/:season', async (req, res) => {
   const { year, season } = req.params;
   const page = req.query.page || 1;
   try {
-    await delay(300); // safety delay for rate limits
+    await delay(300);
     const response = await fetch(`https://api.jikan.moe/v4/seasons/${year}/${season}?page=${page}`, { headers: jikanHeaders });
     if (!response.ok) {
       throw new Error(`Jikan API Error: ${response.status}`);
@@ -261,7 +396,7 @@ app.get('/api/anime/season/:year/:season', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error(`❌ Seasonal Anime Fetch Error (${year}/${season}):`, error.message);
-    res.status(500).json({ success: false, message: "Error fetching seasonal anime", error: error.message });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
@@ -270,7 +405,6 @@ app.get('/api/hero', async (req, res) => {
     const savedHero = await HeroAnime.find();
     const now = new Date();
     
-    // Check if cache exists and is fresh (< 24 hours old)
     if (savedHero.length > 0 && savedHero[0].last_updated) {
       const diffHours = (now - savedHero[0].last_updated) / (1000 * 60 * 60);
       if (diffHours < 24) {
@@ -285,7 +419,7 @@ app.get('/api/hero', async (req, res) => {
     }
     
     const data = await response.json();
-    if(data && data.data) {
+    if (data && data.data) {
        const updatedData = data.data.map(item => ({...item, last_updated: now}));
        await HeroAnime.deleteMany({}); 
        await HeroAnime.insertMany(updatedData); 
@@ -295,7 +429,8 @@ app.get('/api/hero', async (req, res) => {
     if (savedHero.length > 0) return res.json({ data: savedHero });
     return res.status(500).json({ message: "Failed to fetch hero anime" });
   } catch (error) { 
-    res.status(500).json({ error: error.message }); 
+    console.error('Hero Fetch Error:', error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
@@ -318,7 +453,7 @@ app.get('/api/trending', async (req, res) => {
     }
     
     const data = await response.json();
-    if(data && data.data) {
+    if (data && data.data) {
        const updatedData = data.data.map(item => ({...item, last_updated: now}));
        await TrendingAnime.deleteMany({}); 
        await TrendingAnime.insertMany(updatedData);
@@ -328,18 +463,22 @@ app.get('/api/trending', async (req, res) => {
     if (savedTrending.length > 0) return res.json({ data: savedTrending });
     return res.status(500).json({ message: "Failed to fetch trending anime" });
   } catch (error) { 
-    res.status(500).json({ error: error.message }); 
+    console.error('Trending Fetch Error:', error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
 app.get('/api/anime/search', async (req, res) => {
   const query = req.query.q;
-  if (!query) return res.status(400).json({ message: "Search query required" });
+  if (!query || typeof query !== 'string') return res.status(400).json({ message: "Search query required" });
   try {
-    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=5`, { headers: jikanHeaders });
+    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=5`, { headers: jikanHeaders });
     const data = await response.json();
     res.json(data.data || []);
-  } catch (error) { res.status(500).json({ message: "Error searching anime" }); }
+  } catch (error) {
+    console.error('Anime Search Error:', error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 // ==========================================
@@ -349,13 +488,10 @@ app.get('/api/news', async (req, res) => {
     try {
         const now = Date.now();
         
-        // Cache Check
         if (cachedNews.length > 0 && (now - lastFetchTime < CACHE_DURATION)) {
-            console.log("Serving Anime News from Cache ⚡");
             return res.json({ success: true, data: cachedNews });
         }
 
-        console.log("Fetching Fresh News from MyAnimeList 📰...");
         const feed = await parser.parseURL('https://myanimelist.net/rss/news.xml');
         
         const formattedNews = feed.items.map(item => {
@@ -376,16 +512,14 @@ app.get('/api/news', async (req, res) => {
         res.json({ success: true, data: cachedNews });
     } catch (error) {
         console.error("News Fetch Error:", error);
-        res.status(500).json({ success: false, message: "Failed to fetch news" });
+        res.status(500).json({ success: false, message: "Internal server error" });
     }
 });
-
 
 // ==========================================
 // 🔥 TRAILERS ROUTES 🔥
 // ==========================================
 
-// Get latest trailers (upcoming + airing anime with youtube_id)
 app.get('/api/trailers', async (req, res) => {
   try {
     await delay(300);
@@ -400,15 +534,14 @@ app.get('/api/trailers', async (req, res) => {
     const unique = Array.from(new Map(withTrailers.map(a => [a.mal_id, a])).values());
     res.json({ success: true, data: unique });
   } catch (error) {
-    console.error("❌ Trailers Fetch Error:", error.message);
-    res.status(500).json({ success: false, message: "Error fetching trailers", error: error.message });
+    console.error("❌ Trailers Fetch Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-// Search trailers by anime name
 app.get('/api/trailers/search', async (req, res) => {
   const query = req.query.q;
-  if (!query) return res.status(400).json({ message: "Query required" });
+  if (!query || typeof query !== 'string') return res.status(400).json({ message: "Query required" });
   try {
     const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=20`, { headers: jikanHeaders });
     if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
@@ -416,11 +549,10 @@ app.get('/api/trailers/search', async (req, res) => {
     const withTrailers = (data.data || []).filter(a => a.trailer?.youtube_id);
     res.json({ success: true, data: withTrailers });
   } catch (error) {
-    console.error("❌ Trailer Search Error:", error.message);
-    res.status(500).json({ success: false, message: "Error searching trailers", error: error.message });
+    console.error("❌ Trailer Search Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
-
 
 // ==========================================
 // 🔥 ADVANCED MANGA & ANIME ROUTES 🔥
@@ -435,8 +567,8 @@ app.get('/api/manga/top', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) { 
-    console.error("❌ Top Manga Fetch Error:", error.message);
-    res.status(500).json({ message: "Error fetching Top Manga", error: error.message }); 
+    console.error("❌ Top Manga Fetch Error:", error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
@@ -450,22 +582,23 @@ app.get('/api/manga/all', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) { 
-    console.error("❌ All Manga Fetch Error:", error.message);
-    res.status(500).json({ message: "Error fetching All Manga", error: error.message }); 
+    console.error("❌ All Manga Fetch Error:", error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
 app.get('/api/manga/search', async (req, res) => {
   const query = req.query.q;
+  if (!query || typeof query !== 'string') return res.status(400).json({ message: "Search query required" });
   try {
-    const response = await fetch(`https://api.jikan.moe/v4/manga?q=${query}&limit=5`, { headers: jikanHeaders });
+    const response = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=5`, { headers: jikanHeaders });
     if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
     
     const data = await response.json();
     res.json(data);
   } catch (error) { 
-    console.error("❌ Manga Search Error:", error.message);
-    res.status(500).json({ message: "Error searching Manga", error: error.message }); 
+    console.error("❌ Manga Search Error:", error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
@@ -477,8 +610,8 @@ app.get('/api/manga/:id', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) { 
-    console.error("❌ Manga Details Error:", error.message);
-    res.status(500).json({ message: "Error fetching Manga Details", error: error.message }); 
+    console.error("❌ Manga Details Error:", error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
@@ -490,8 +623,8 @@ app.get('/api/anime/:id', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) { 
-    console.error("❌ Anime Details Error:", error.message);
-    res.status(500).json({ message: "Error fetching Anime Details", error: error.message }); 
+    console.error("❌ Anime Details Error:", error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
@@ -503,8 +636,8 @@ app.get('/api/anime/:id/recommendations', async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) { 
-    console.error("❌ Anime Recommendations Error:", error.message);
-    res.status(500).json({ message: "Error fetching Recommendations", error: error.message }); 
+    console.error("❌ Anime Recommendations Error:", error);
+    res.status(500).json({ message: "Internal server error" }); 
   }
 });
 

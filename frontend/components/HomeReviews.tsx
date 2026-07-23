@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Star, MessageCircle, ThumbsUp } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -70,11 +71,15 @@ export default function HomeReviews() {
               {/* Header: User and Score */}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <img 
-                    src={review.user.images.jpg.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user.username}`} 
-                    alt={review.user.username} 
-                    className="w-10 h-10 rounded-full border border-white/10 object-cover"
-                  />
+                  <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 shrink-0">
+                    <Image 
+                      src={review.user.images.jpg.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user.username}`} 
+                      alt={review.user.username} 
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
+                  </div>
                   <div>
                     <h4 className="text-white font-bold text-sm">{review.user.username}</h4>
                     <p className="text-gray-500 text-xs">{new Date(review.date).toLocaleDateString()}</p>
@@ -88,11 +93,15 @@ export default function HomeReviews() {
 
               {/* Anime Info */}
               <div className="flex items-center gap-3 mb-4 bg-white/5 p-2 rounded-lg">
-                <img 
-                  src={review.entry.images.jpg.image_url} 
-                  alt={review.entry.title} 
-                  className="w-10 h-14 object-cover rounded shadow-md"
-                />
+                <div className="relative w-10 h-14 rounded overflow-hidden shadow-md shrink-0">
+                  <Image 
+                    src={review.entry.images.jpg.image_url} 
+                    alt={review.entry.title} 
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                </div>
                 <div>
                   <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Reviewed</p>
                   <h3 className="text-white font-bold text-sm line-clamp-1">{review.entry.title}</h3>

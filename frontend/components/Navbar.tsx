@@ -62,10 +62,10 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen]);
 
-  // 🌟 ইউজারের লগইন স্টেট চেক করার জন্য
+  // User Authentication State
   const [user, setUser] = useState<any>(null);
 
-  // 🌟 Scroll Event Listener for Dynamic Glassmorphism
+  // Scroll Event Listener for Dynamic Glassmorphism
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
@@ -76,7 +76,7 @@ export default function Navbar() {
 
   // Search is handled on the dedicated search page (/search)
 
-  // 🌟 Auth Listener: ইউজার লগইন/লগআউট করলে সাথে সাথে আপডেট হবে
+  // Auth Listener: Updates state immediately when user logs in/out
   useEffect(() => {
     const checkUser = () => {
       const token = localStorage.getItem('user_token');
@@ -102,7 +102,7 @@ export default function Navbar() {
     };
   }, []);
 
-  // 🌟 লগআউট ফাংশন
+  // Logout Handler
   const handleLogout = () => {
     localStorage.removeItem('user_token');
     localStorage.removeItem('user_name');
@@ -130,8 +130,8 @@ export default function Navbar() {
 
   return (
     <>
-      <div className={`fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-[#050716] to-transparent z-40 pointer-events-none transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`} />
-      <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ${
+      <div className={`fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-[#050716] to-transparent z-40 pointer-events-none transition-opacity duration-500 ${pathname === '/' ? 'md:hidden' : ''} ${isScrolled ? 'opacity-100' : 'opacity-0'}`} />
+      <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ${pathname === '/' ? 'md:hidden' : ''} ${
         isScrolled 
           ? 'bg-[#050716]/95 backdrop-blur-2xl border-b border-[#ff4dd2]/40 shadow-[0_4px_30px_rgba(255,77,210,0.15)]' 
           : 'bg-[#121326]/60 backdrop-blur-xl border-b border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]'
@@ -144,7 +144,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 h-full">
           <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
             <div className="relative w-10 h-10 min-w-[40px] min-h-[40px] max-w-[40px] max-h-[40px] rounded-full overflow-hidden shadow-[0_0_15px_rgba(255, 77, 210,0.5),inset_0_2px_4px_rgba(255,255,255,0.3)] bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center text-xs text-center border border-[#ff4dd2]/30 group-hover:scale-105 transition-transform shrink-0">
-              <img src="/ani-logo.png" alt="Logo" className="absolute inset-0 w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <Image src="/ani-logo.png" alt="Logo" fill sizes="40px" priority className="object-contain" />
             </div>
             <span className={`${orbitron.className} hidden sm:block text-base lg:text-[20px] text-transparent bg-clip-text bg-gradient-to-b from-[#ffffff] to-[#ff4dd2] tracking-wide transition-all duration-300 drop-shadow-[0_4px_10px_rgba(255, 77, 210,0.6)] font-black`}>
               Anime Nation India

@@ -19,6 +19,7 @@ export default function SettingsPage() {
     pushNotifications: true,
     privateWatchlist: true,
   });
+  const [theme, setTheme] = useState('dark');
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMsg, setUpdateMsg] = useState({ type: '', text: '' });
@@ -30,6 +31,23 @@ export default function SettingsPage() {
   const [isSendingReset, setIsSendingReset] = useState(false);
 
   const router = useRouter();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+  }, []);
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   useEffect(() => {
     const getUserData = () => {
@@ -323,13 +341,19 @@ export default function SettingsPage() {
                   <div>
                     <label className="block text-[#ff4dd2] text-sm font-bold mb-4 uppercase tracking-wider">App Theme</label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <button className="p-4 rounded-xl border-2 border-[#ff4dd2] bg-[#050716] text-left transition-all">
+                      <button 
+                        onClick={() => handleThemeChange('dark')} 
+                        className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${theme === 'dark' ? 'border-[#ff4dd2] bg-[#050716] shadow-[0_0_15px_rgba(255,77,210,0.3)]' : 'border-white/10 bg-[#050716] hover:border-[#ff4dd2]/50'}`}
+                      >
                         <div className="w-full h-16 bg-gradient-to-br from-[#050716] to-[#ff4dd2]/20 rounded-md mb-3 border border-white/10"></div>
-                        <p className="text-white font-bold text-sm text-center">Deep Space Neon</p>
+                        <p className="text-white font-bold text-sm text-center">Deep Space Dark</p>
                       </button>
-                      <button className="p-4 rounded-xl border-2 border-white/10 bg-[#050716] hover:border-[#ff4dd2]/50 opacity-50 cursor-not-allowed text-left transition-all">
-                        <div className="w-full h-16 bg-gradient-to-br from-white to-gray-200 rounded-md mb-3 border border-gray-300"></div>
-                        <p className="text-gray-400 font-bold text-sm text-center">Light Mode (Soon)</p>
+                      <button 
+                        onClick={() => handleThemeChange('light')} 
+                        className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${theme === 'light' ? 'border-[#ff4dd2] bg-[#1a1c2e] shadow-[0_0_15px_rgba(255,77,210,0.3)]' : 'border-white/10 bg-[#0d0e1b] hover:border-[#ff4dd2]/50'}`}
+                      >
+                        <div className="w-full h-16 bg-gradient-to-br from-gray-100 to-indigo-100 rounded-md mb-3 border border-gray-300"></div>
+                        <p className="text-white font-bold text-sm text-center">Neon Light</p>
                       </button>
                       <button className="p-4 rounded-xl border-2 border-white/10 bg-[#050716] hover:border-[#ff4dd2]/50 opacity-50 cursor-not-allowed text-left transition-all">
                         <div className="w-full h-16 bg-gradient-to-br from-gray-900 to-red-900/50 rounded-md mb-3 border border-white/10"></div>

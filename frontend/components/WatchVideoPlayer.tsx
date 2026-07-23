@@ -48,34 +48,49 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
     }
   }, [episodeNumber]);
 
-  // Handle Controls Visibility Timeout
+  // Handle Controls Visibility Timeout with rAF & 50ms Throttling
   useEffect(() => {
+    let animationFrameId: number | null = null;
+    let lastMoveTime = 0;
+
     const handleMouseMove = () => {
-      setShowControls(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        if (isPlaying) {
-          setShowControls(false);
-          setShowSettings(false);
-        }
-      }, 3000);
+      const now = Date.now();
+      if (now - lastMoveTime < 50) return;
+      lastMoveTime = now;
+
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+      animationFrameId = requestAnimationFrame(() => {
+        setShowControls(true);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          if (isPlaying) {
+            setShowControls(false);
+            setShowSettings(false);
+          }
+        }, 3000);
+      });
+    };
+
+    const handleMouseLeave = () => {
+      if (isPlaying) {
+        setShowControls(false);
+        setShowSettings(false);
+      }
     };
 
     const currentRef = containerRef.current;
     if (currentRef) {
-      currentRef.addEventListener('mousemove', handleMouseMove);
-      currentRef.addEventListener('mouseleave', () => {
-        if (isPlaying) {
-          setShowControls(false);
-          setShowSettings(false);
-        }
-      });
+      currentRef.addEventListener('mousemove', handleMouseMove, { passive: true });
+      currentRef.addEventListener('mouseleave', handleMouseLeave);
     }
 
     return () => {
       if (currentRef) {
         currentRef.removeEventListener('mousemove', handleMouseMove);
+        currentRef.removeEventListener('mouseleave', handleMouseLeave);
       }
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [isPlaying]);
@@ -230,6 +245,7 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
       <video
         ref={videoRef}
         src={videoUrl}
+        preload="metadata"
         className="w-full h-full object-contain"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
@@ -362,26 +378,27 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
                 {/* Left Controls */}
                 <div className="flex items-center gap-4">
                   {/* Play/Pause */}
-                  <button onClick={togglePlay} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer">
+                  <button aria-label={isPlaying ? "Pause video" : "Play video"} onClick={togglePlay} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer">
                     {isPlaying ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
                   </button>
 
                   {/* Skip Backward 10s */}
-                  <button onClick={handleRewind} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer" title="Rewind 10s">
+                  <button aria-label="Rewind 10 seconds" onClick={handleRewind} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer" title="Rewind 10s">
                     <RotateCcw size={18} />
                   </button>
 
                   {/* Skip Forward 10s */}
-                  <button onClick={handleForward} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer" title="Forward 10s">
+                  <button aria-label="Forward 10 seconds" onClick={handleForward} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer" title="Forward 10s">
                     <RotateCw size={18} />
                   </button>
 
                   {/* Volume Control */}
                   <div className="flex items-center gap-2 group/volume">
-                    <button onClick={toggleMute} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer">
+                    <button aria-label={isMuted ? "Unmute video" : "Mute video"} onClick={toggleMute} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer">
                       {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                     </button>
                     <input 
+                      aria-label="Volume"
                       type="range"
                       min="0"
                       max="1"
@@ -404,6 +421,7 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
                   
                   {/* CC (Subtitles) toggle */}
                   <button 
+                    aria-label={ccEnabled ? "Disable subtitles" : "Enable subtitles"}
                     onClick={(e) => {
                       e.stopPropagation();
                       setCcEnabled(!ccEnabled);
@@ -418,6 +436,7 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
 
                   {/* Picture-in-Picture */}
                   <button 
+                    aria-label="Picture in Picture"
                     onClick={togglePiP} 
                     className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer"
                     title="Picture in Picture"
@@ -427,6 +446,7 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
 
                   {/* Settings button */}
                   <button 
+                    aria-label="Player settings"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowSettings(!showSettings);
@@ -438,7 +458,7 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
                   </button>
 
                   {/* Fullscreen */}
-                  <button onClick={toggleFullscreen} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer" title="Fullscreen">
+                  <button aria-label="Toggle fullscreen" onClick={toggleFullscreen} className="text-white hover:text-[#ff4dd2] transition-colors cursor-pointer" title="Fullscreen">
                     <Maximize size={20} />
                   </button>
 

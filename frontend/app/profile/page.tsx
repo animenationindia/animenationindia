@@ -83,11 +83,11 @@ export default function ProfilePage() {
     router.push('/auth');
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="min-h-[80vh] flex flex-col justify-center items-center text-[#ff4dd2] bg-[#050716]">
         <div className="w-12 h-12 border-4 border-[#ff4dd2]/30 border-t-[#ff4dd2] rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(255, 77, 210,0.5)]" />
-        <h2 className="font-bebas tracking-widest text-xl animate-pulse">Loading Profile...</h2>
+        <h2 className="font-bebas tracking-widest text-xl animate-pulse">Authenticating Profile...</h2>
       </div>
     );
   }

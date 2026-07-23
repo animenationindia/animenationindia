@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { useSmoothScroll } from './SmoothScrollProvider';
+
 export default function BackToTop() {
   const [isVisible, setIsVisible] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
+  const { lenis } = useSmoothScroll();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
@@ -34,10 +37,14 @@ export default function BackToTop() {
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    if (lenis) {
+      lenis.scrollTo(0);
+    } else {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
   };
 
   return (

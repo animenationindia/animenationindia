@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, X, ChevronDown, Check, Loader2, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { BACKEND_URL } from '../lib/config'; 
+import { useWatchlist } from '../hooks/useWatchlist';
 
 interface WatchlistDropdownProps {
   animeId: number | string;
@@ -16,35 +16,14 @@ interface WatchlistDropdownProps {
 
 export default function WatchlistDropdown({ animeId, title, image, variant = 'default', type = 'Anime' }: WatchlistDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [status, setStatus] = useState('ADD'); 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // ১. পেজ লোড হওয়ার সময় ইউজার কি এই অ্যানিমেটা আগে থেকেই সেভ করে রেখেছে কি না তা চেক করা
-  useEffect(() => {
-    const fetchCurrentStatus = async () => {
-      const token = localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id');
-      if (token && userId) {
-        try {
-          const response = await fetch(`${BACKEND_URL}/api/watchlist/${userId}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            const existing = data.find((item: any) => Number(item.mal_id || item.anime_id) === Number(animeId));
-            if (existing) setStatus(existing.status || 'PLAN_TO_WATCH');
-          }
-        } catch {
-          // ignore silent fail
-        }
-      }
-    };
-    fetchCurrentStatus();
-  }, [animeId]);
+  const { getItemStatus, addToWatchlist, removeFromWatchlist } = useWatchlist();
+  const status = getItemStatus(animeId);
 
-  // বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হওয়ার লজিক
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -55,13 +34,11 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 🚀 আসল REST API লজিক
   const updateStatus = async (newStatus: string) => {
-    setIsLoading(true);
+    setIsUpdating(true);
     setIsOpen(false);
 
     try {
-      // ২. চেক করা ইউজার লগইন আছে কি না
       const token = localStorage.getItem('user_token');
       const userId = localStorage.getItem('user_id');
       
@@ -72,56 +49,18 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
       }
 
       if (newStatus === 'REMOVE') {
-        // ৩. ডেটাবেস থেকে রিমুভ করা
-        const response = await fetch(`${BACKEND_URL}/api/watchlist/${userId}/${animeId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        
-        if (!response.ok) throw new Error('Failed to remove item');
-        setStatus('ADD');
+        await removeFromWatchlist(animeId);
       } else {
-        // ৪. ডেটাবেসে অ্যাড বা আপডেট করা
-        const animePayload = {
-          mal_id: Number(animeId),
-          title: title,
-          title_english: title,
-          type: type,
-          images: {
-            webp: {
-              large_image_url: image
-            }
-          },
-          score: null,
-          episodes: null,
-          anime_id: Number(animeId),
-          anime_title: title,
-          anime_image: image,
-          status: newStatus
-        };
-
-        const response = await fetch(`${BACKEND_URL}/api/watchlist`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ anime: animePayload, userId })
+        await addToWatchlist({
+          animeId,
+          title,
+          image,
+          status: newStatus,
+          type,
         });
-
-        if (!response.ok) throw new Error('Failed to save item');
-        setStatus(newStatus);
-      }
-      
-    } catch (error) {
-      console.error('Error updating watchlist:', error);
-      if (error instanceof Error) {
-        alert("Error: " + error.message);
-      } else {
-        alert("An unexpected error occurred while updating the watchlist.");
       }
     } finally {
-      setIsLoading(false);
+      setIsUpdating(false);
     }
   };
 
@@ -136,11 +75,11 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
 
   const getButtonContent = () => {
     if (variant === 'icon') {
-      if (isLoading) return <Loader2 size={18} className="animate-spin text-[#ff4dd2]" />;
+      if (isUpdating) return <Loader2 size={18} className="animate-spin text-[#ff4dd2]" />;
       return <Bookmark size={18} className={`md:w-5 md:h-5 ${status !== 'ADD' ? 'fill-current text-[#ff4dd2]' : 'text-[#ff4dd2] group-hover/btn:fill-current'}`} />;
     }
 
-    if (isLoading) return <><Loader2 size={18} className="animate-spin" /> Updating...</>;
+    if (isUpdating) return <><Loader2 size={18} className="animate-spin" /> Updating...</>;
     if (status === 'ADD') return <><Plus size={20} /> {isBook ? 'Add to List' : 'Add to Watchlist'}</>;
     return <><Check size={18} /> {getStatusLabel(status)}</>;
   };
@@ -151,7 +90,7 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={() => setIsOpen(!isOpen)}
-        disabled={isLoading}
+        disabled={isUpdating}
         className={variant === 'icon'
           ? `w-[44px] h-[44px] md:w-[48px] md:h-[48px] flex-shrink-0 flex items-center justify-center border transition-colors group/btn rounded-sm disabled:opacity-70 cursor-pointer ${
               status !== 'ADD'

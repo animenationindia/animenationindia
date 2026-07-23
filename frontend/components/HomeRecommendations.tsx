@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Users } from 'lucide-react';
 
@@ -63,23 +64,27 @@ export default function HomeRecommendations() {
               <div className="flex w-full h-40 relative">
                 {rec.entry.length === 2 && (
                   <>
-                    <div className="w-1/2 h-full overflow-hidden">
-                      <img 
+                    <div className="relative w-1/2 h-full overflow-hidden">
+                      <Image 
                         src={rec.entry[0].images.jpg.image_url} 
                         alt={rec.entry[0].title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        fill
+                        sizes="(max-width: 768px) 50vw, 20vw"
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     </div>
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                       <div className="w-8 h-8 rounded-full bg-[#050716] border border-[#ff4dd2]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
                         <ArrowRight size={14} className="text-[#ff4dd2]" />
                       </div>
                     </div>
-                    <div className="w-1/2 h-full overflow-hidden">
-                      <img 
+                    <div className="relative w-1/2 h-full overflow-hidden">
+                      <Image 
                         src={rec.entry[1].images.jpg.image_url} 
                         alt={rec.entry[1].title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        fill
+                        sizes="(max-width: 768px) 50vw, 20vw"
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     </div>
                   </>

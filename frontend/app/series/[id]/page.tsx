@@ -1,35 +1,73 @@
 // app/series/[id]/page.tsx
-
+import { cache, Suspense } from 'react';
+import { notFound } from 'next/navigation';
 import { getAnimeFullDetails, getAnimeCharacters, getAniListExtraInfo, getAnimeRecommendations } from '../../../lib/api';
+import { sanitizeDescription } from '../../../lib/sanitize';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Play, Star } from 'lucide-react';
 import AnimeDetailActions from '../../../components/AnimeDetailActions';
-import AnimeCard from '../../../components/AnimeCard';
 import SectionSlider from '../../../components/SectionSlider';
+import ReadMoreText from '../../../components/ReadMoreText';
+import ErrorBoundary from '../../../components/ErrorBoundary';
 import type { Metadata } from 'next';
 
 interface Params {
   id: string;
 }
 
+// React cache() wrapper to deduplicate fetch between generateMetadata and AnimeDetails page component
+const getCachedAnimeDetails = cache(async (id: string) => {
+  return getAnimeFullDetails(id);
+});
+
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
-  const anime = await getAnimeFullDetails(id);
-  if (!anime) return { title: 'Anime Not Found - Anime Nation India' };
-  
-  const title = anime.title_english || anime.title || 'Unknown Title';
-  const description = anime.synopsis ? anime.synopsis.substring(0, 160) + '...' : 'View full anime details, episodes, and trailers on Anime Nation India.';
-  
-  return {
-    title: `${title} - Anime Nation India`,
-    description,
-    openGraph: {
-      title: `${title} - Anime Nation India`,
-      description,
-      images: [anime.images?.jpg?.large_image_url || ''],
+  const numId = Number(id);
+
+  try {
+    const [jikanRes, extraInfoRes] = await Promise.allSettled([
+      getCachedAnimeDetails(id),
+      getAniListExtraInfo(numId)
+    ]);
+    
+    const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
+    const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
+
+    if (!jikanAnime && !extraInfo) {
+      return {
+        title: 'Anime Not Found - Anime Nation India',
+        description: 'The requested anime series could not be found.',
+      };
     }
-  };
+
+    const title = jikanAnime?.title_english || jikanAnime?.title || extraInfo?.title?.english || extraInfo?.title?.romaji || 'Anime Details';
+    const rawDesc = jikanAnime?.synopsis || extraInfo?.description || 'View full anime details, episodes, and trailers on Anime Nation India.';
+    const cleanDesc = sanitizeDescription(rawDesc).replace(/\s+/g, ' ').slice(0, 160);
+    const cover = jikanAnime?.images?.jpg?.large_image_url || extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || '/ani-logo.png';
+
+    return {
+      title: `${title} - Details | Anime Nation India`,
+      description: cleanDesc,
+      openGraph: {
+        title: `${title} - Watch & Full Details | Anime Nation India`,
+        description: cleanDesc,
+        images: [{ url: cover, alt: title }],
+        type: 'video.other',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${title} - Anime Nation India`,
+        description: cleanDesc,
+        images: [cover],
+      },
+    };
+  } catch {
+    return {
+      title: 'Anime Details - Anime Nation India',
+      description: 'Explore full anime details, episodes, reviews, and release schedules on Anime Nation India.',
+    };
+  }
 }
 
 interface CharacterVoiceActor {
@@ -61,25 +99,51 @@ interface CharacterVoiceActor {
 }
 
 export default async function AnimeDetails({ params }: { params: Promise<Params> }) {
-  
-  // ১. params-কে await করে id বের করা
   const { id } = await params;
+  const numId = Number(id);
 
-  // ২. সব ডেটা প্যারালাল ফেচ করা (Parallel Fetching for speed)
-  const [anime, characters, extraInfo, recommendations] = await Promise.all([
-    getAnimeFullDetails(id),
+  // Use Promise.allSettled so secondary failures never throw or crash the page
+  const [jikanRes, charactersRes, extraInfoRes, recommendationsRes] = await Promise.allSettled([
+    getCachedAnimeDetails(id),
     getAnimeCharacters(id),
-    getAniListExtraInfo(Number(id)),
+    getAniListExtraInfo(numId),
     getAnimeRecommendations(id)
   ]);
 
+  const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
+  const characters = charactersRes.status === 'fulfilled' ? charactersRes.value : [];
+  const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
+  const recommendations = recommendationsRes.status === 'fulfilled' ? recommendationsRes.value : [];
+
+  // Primary data resolution: Prefer Jikan, fallback to AniList extraInfo
+  let anime = jikanAnime;
+
+  if (!anime && extraInfo) {
+    // Construct robust fallback anime object from AniList extraInfo
+    anime = {
+      mal_id: numId,
+      title: extraInfo.title?.romaji || 'Unknown Title',
+      title_english: extraInfo.title?.english || extraInfo.title?.romaji || 'Unknown Title',
+      title_japanese: extraInfo.title?.native || '',
+      synopsis: extraInfo.description || 'No synopsis available for this title.',
+      images: {
+        webp: { large_image_url: extraInfo.coverImage?.extraLarge || extraInfo.coverImage?.large || '' },
+        jpg: { large_image_url: extraInfo.coverImage?.large || '' }
+      },
+      genres: extraInfo.genres ? extraInfo.genres.map((g, idx) => ({ mal_id: idx, name: g })) : [],
+      score: extraInfo.averageScore ? extraInfo.averageScore / 10 : null,
+      type: extraInfo.format || 'TV',
+      season: extraInfo.seasonYear ? String(extraInfo.seasonYear) : '',
+      year: extraInfo.seasonYear || null,
+      trailer: extraInfo.trailer?.id && extraInfo.trailer?.site === 'youtube'
+        ? { embed_url: `https://www.youtube.com/embed/${extraInfo.trailer.id}` }
+        : null
+    };
+  }
+
+  // Call notFound ONLY when neither Jikan nor AniList provides anime data
   if (!anime) {
-    return (
-      <div className="container mx-auto px-4 py-20 text-center text-[#a0a0a0] bg-[#000000] min-h-screen">
-        <h1 className="text-3xl font-semibold text-white mb-4">Anime Not Found</h1>
-        <Link href="/" className="text-[#f47521] hover:underline transition-all">Go back home</Link>
-      </div>
-    );
+    notFound();
   }
 
   const displayTitle = anime.title_english || anime.title;
@@ -106,7 +170,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
           if (!node.startDate) return 0;
           return (node.startDate.year || 0) * 10000 + (node.startDate.month || 0) * 100 + (node.startDate.day || 0);
         };
-        return getScore(b.node) - getScore(a.node); // Descending (New to Old)
+        return getScore(b.node) - getScore(a.node);
       })
     : [];
 
@@ -142,10 +206,11 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
           <div className="w-full lg:w-[260px] flex-shrink-0">
             <div className="relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-[#141519] group mb-6">
               <Image 
-                src={anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url} 
+                src={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url} 
                 alt={anime.title} 
                 fill
                 className="object-cover"
+                priority
               />
             </div>
 
@@ -153,7 +218,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             <AnimeDetailActions 
               animeId={anime.mal_id}
               animeTitle={displayTitle}
-              animeImage={anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url}
+              animeImage={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url}
               trailerUrl={anime.trailer?.embed_url || anime.trailer?.url || null}
             />
           </div>
@@ -194,8 +259,12 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             )}
             
             <div className="flex flex-wrap items-center gap-3 text-sm mb-6 text-[#a0a0a0]">
-              <span>{anime.title_japanese}</span>
-              <span className="h-4 w-px bg-gray-700" />
+              {anime.title_japanese && (
+                <>
+                  <span>{anime.title_japanese}</span>
+                  <span className="h-4 w-px bg-gray-700" />
+                </>
+              )}
               <span>{anime.type}</span>
               <span className="h-4 w-px bg-gray-700" />
               <span>{anime.year || anime.season || 'Unknown'}</span>
@@ -213,107 +282,135 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
 
             {/* Synopsis Section */}
             <div className="mb-10 max-w-4xl">
-              <p className="text-[#a0a0a0] text-sm md:text-base leading-relaxed">
-                {anime.synopsis || "No synopsis available for this title."}
-              </p>
+              <ReadMoreText text={sanitizeDescription(anime.synopsis || "No synopsis available for this title.")} />
             </div>
 
-            {/* Data Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 p-4 md:p-6 bg-[#141519] rounded mb-12">
-              <div className="space-y-1">
-                <span className="text-[#a0a0a0] text-xs font-semibold uppercase tracking-wider">Status</span>
-                <p className="text-gray-200 font-medium text-sm">{anime.status}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[#a0a0a0] text-xs font-semibold uppercase tracking-wider">Episodes</span>
-                <p className="text-gray-200 font-medium text-sm">{anime.episodes || '??'}</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[#a0a0a0] text-xs font-semibold uppercase tracking-wider">Studios</span>
-                <p className="text-neon-cyan font-medium text-sm">{anime.studios?.map((s: { name: string }) => s.name).join(', ') || 'N/A'}</p>
-              </div>
-            </div>
-
-            {/* 🎙️ Characters & Voice Actors */}
-            <div className="mb-12">
-              <h3 className="text-xl font-semibold text-white mb-6">
-                Cast & Characters
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {characters?.slice(0, 8).map((char: CharacterVoiceActor) => {
-                  const japaneseVA = char.voice_actors?.find(va => va.language === 'Japanese') || char.voice_actors?.[0]; // Fallback to first if Japanese not explicitly tagged, but usually it is.
-                  
-                  return (
-                  <div key={char.character.mal_id} className="flex justify-between bg-[#141519] rounded overflow-hidden p-3 items-center hover:bg-[#1a1b22] transition-colors">
-                    {/* 👤 Character Details */}
-                    <Link href={`/character/${char.character.mal_id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-[#2A2B30]">
-                        {(char.character.images?.webp?.image_url || char.character.images?.jpg?.image_url) ? (
-                          <Image src={char.character.images?.webp?.image_url || char.character.images?.jpg?.image_url || ''} alt={char.character.name} fill sizes="48px" className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-[#2A2B30] flex items-center justify-center text-xs">No Img</div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-200 line-clamp-1">{char.character.name}</p>
-                        <p className="text-xs text-[#ff4dd2] font-medium capitalize">{char.role}</p>
-                      </div>
-                    </Link>
+            {/* Relations Section */}
+            {sortedRelations.length > 0 && (
+              <div className="mb-10">
+                <h3 className="text-lg font-semibold text-white mb-4 border-l-2 border-neon-cyan pl-3">Related Media</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  {sortedRelations.map((edge: any, index: number) => {
+                    const node = edge.node;
+                    const isMangaNode = node.type === 'MANGA';
+                    const linkUrl = isMangaNode ? `/manga/${node.idMal || node.id}` : `/series/${node.idMal || node.id}`;
                     
-                    {/* 🎙️ Voice Actor Details (Conditional Rendering) */}
-                    {japaneseVA ? (
-                      <Link href={`/staff/${japaneseVA.person.mal_id}`} className="flex items-center gap-3 text-right hover:opacity-80 transition-opacity">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-200 line-clamp-1">{japaneseVA.person.name}</p>
-                          <p className="text-[10px] uppercase tracking-wider text-[#a0a0a0]">Japanese VA</p>
-                        </div>
-                        <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-[#2A2B30]">
-                          {japaneseVA.person.images?.jpg?.image_url ? (
-                            <Image src={japaneseVA.person.images.jpg.image_url || ''} alt={japaneseVA.person.name} fill sizes="48px" className="object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-[#2A2B30] flex items-center justify-center text-xs">No Img</div>
+                    return (
+                      <Link 
+                        key={index} 
+                        href={linkUrl}
+                        className="bg-[#141519] border border-[#2A2B30]/40 rounded p-2 flex flex-col gap-2 hover:border-neon-cyan transition group"
+                      >
+                        <div className="relative aspect-[2/3] w-full rounded overflow-hidden">
+                          {node.coverImage?.large && (
+                            <Image 
+                              src={node.coverImage.large} 
+                              alt={node.title?.english || node.title?.romaji || ''} 
+                              fill 
+                              className="object-cover group-hover:scale-105 transition"
+                            />
                           )}
+                          <span className="absolute top-1 left-1 bg-black/80 text-[10px] font-bold px-1.5 py-0.5 rounded text-neon-cyan uppercase">
+                            {edge.relationType ? edge.relationType.replace('_', ' ') : 'RELATION'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-semibold text-white line-clamp-1 group-hover:text-neon-cyan transition">
+                            {node.title?.english || node.title?.romaji}
+                          </span>
+                          <span className="text-[10px] text-[#a0a0a0] capitalize">
+                            {node.format ? node.format.replace('_', ' ') : ''} {node.startDate?.year ? `• ${node.startDate.year}` : ''}
+                          </span>
                         </div>
                       </Link>
-                    ) : (
-                      <div className="text-[10px] text-[#555] uppercase tracking-wider pr-2">
-                        No VA Data
-                      </div>
-                    )}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Characters Section with ErrorBoundary & Suspense */}
+            <ErrorBoundary sectionName="Characters">
+              <Suspense fallback={<div className="py-6 text-gray-400 text-sm">Loading characters...</div>}>
+                {characters && characters.length > 0 ? (
+                  <div className="mb-10">
+                    <h3 className="text-lg font-semibold text-white mb-4 border-l-2 border-neon-cyan pl-3">Main Characters</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {characters.slice(0, 6).map((item: CharacterVoiceActor, index: number) => {
+                        const japaneseVA = item.voice_actors?.find(va => va.language === 'Japanese');
+                        
+                        return (
+                          <div key={index} className="bg-[#141519] border border-[#2A2B30]/40 rounded p-3 flex items-center justify-between">
+                            <Link href={`/character/${item.character.mal_id}`} className="flex items-center gap-3 group">
+                              <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-[#2A2B30]">
+                                {item.character.images?.jpg?.image_url && (
+                                  <Image 
+                                    src={item.character.images.jpg.image_url} 
+                                    alt={item.character.name} 
+                                    fill 
+                                    className="object-cover"
+                                  />
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-semibold text-white group-hover:text-neon-cyan transition line-clamp-1">{item.character.name}</p>
+                                <p className="text-[10px] text-[#a0a0a0] uppercase">{item.role}</p>
+                              </div>
+                            </Link>
+
+                            {japaneseVA && (
+                              <div className="flex items-center gap-3 text-right">
+                                <div>
+                                  <p className="text-xs font-semibold text-[#d0d0d0] line-clamp-1">{japaneseVA.person.name}</p>
+                                  <p className="text-[10px] text-[#a0a0a0]">Japanese</p>
+                                </div>
+                                <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-[#2A2B30]">
+                                  {japaneseVA.person.images?.jpg?.image_url && (
+                                    <Image 
+                                      src={japaneseVA.person.images.jpg.image_url} 
+                                      alt={japaneseVA.person.name} 
+                                      fill 
+                                      className="object-cover"
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                )})}
-              </div>
-            </div>
-
-            {/* 🔗 Relations & Franchise */}
-            {sortedRelations.length > 0 && (
-              <div className="mb-12">
-                <SectionSlider 
-                  title="Explore the Universe" 
-                  data={sortedRelations.map((edge: any) => ({
-                    ...edge.node,
-                    badgeText: edge.relationType.replace(/_/g, ' ')
-                  }))} 
-                  type="anime" 
-                  viewAllLink="" 
-                />
-              </div>
-            )}
-
-            {/* 💡 Recommendations */}
-            {recommendations && recommendations.length > 0 && (
-              <div className="mb-12">
-                <SectionSlider 
-                  title="Recommended Anime" 
-                  data={recommendations} 
-                  type="anime" 
-                  viewAllLink="" 
-                />
-              </div>
-            )}
-
+                ) : null}
+              </Suspense>
+            </ErrorBoundary>
+            
           </div>
         </div>
+
+        {/* Recommendations Section with ErrorBoundary & Suspense */}
+        <ErrorBoundary sectionName="Recommendations">
+          <Suspense fallback={<div className="py-6 text-gray-400 text-sm">Loading recommendations...</div>}>
+            {recommendations && recommendations.length > 0 && (
+              <div className="mt-16">
+                <SectionSlider 
+                  title="You Might Also Like" 
+                  data={recommendations.map((rec: any) => ({
+                    id: rec.entry.mal_id,
+                    idMal: rec.entry.mal_id,
+                    title: { english: rec.entry.title, romaji: rec.entry.title },
+                    coverImage: { large: rec.entry.images?.jpg?.large_image_url || '' },
+                    format: 'TV',
+                    averageScore: null
+                  })) as any} 
+                  type="anime" 
+                  viewAllLink="" 
+                />
+              </div>
+            )}
+          </Suspense>
+        </ErrorBoundary>
+
       </div>
     </main>
   );

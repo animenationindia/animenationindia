@@ -4,7 +4,7 @@ import { getNews } from '../lib/getNews';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // ওয়েবসাইটের সমস্ত পাবলিক পেজ (প্রাইভেট/লগইন পেজ বাদে) 
+  // All public website pages (excluding private/auth pages)
   const staticRoutes = [
     '',
     '/home',
@@ -38,28 +38,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/dubbed',
     '/simulcast',
     '/characters',
-    '/staff',
+    '/popular-characters',
+    '/top-characters',
+    '/people',
+    '/popular-staff',
+    '/top-staff',
+    '/voice-actors',
+    '/studios',
+    '/rankings',
+    '/top-rated',
+    '/most-popular',
+    '/seasons',
+    '/season/summer-2024',
+    '/season/spring-2024',
+    '/season/winter-2024',
+    '/season/fall-2023',
+    '/themes',
+    '/recommendations',
+    '/community',
+    '/forum',
     '/reviews',
-    '/forums',
-    '/forums/general',
-    '/forums/manga-novels',
-    '/forums/recommendations',
-    '/forums/trending',
-    '/faq',
-    '/help',
-    '/contact',
-    '/feedback',
+    '/recent-reviews',
+    '/user-reviews',
     '/privacy',
     '/terms',
-    '/guidelines',
-    '/cookies',
-    '/adchoices',
-    '/disclaimer',
-    '/do-not-sell',
-    '/report-violation',
-    '/settings',
-    '/watchlist',
-    '/auth'
+    '/dmca',
+    '/contact',
+    '/about',
+    '/faq'
   ].map((route) => ({
     url: `${SITE_URL}${route}`,
     lastModified: new Date(),
@@ -67,7 +73,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' || route === '/home' ? 1.0 : 0.8,
   }));
 
-  // এসইও-এর জন্য ডাইনামিকভাবে টপ ৫০টি অ্যানিমের লিংক
+  // Dynamically fetch top 50 anime links for SEO
   let dynamicAnimeRoutes: MetadataRoute.Sitemap = [];
   try {
     const query = `
@@ -84,7 +90,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      next: { revalidate: 86400 } // ২৪ ঘণ্টা পর পর আপডেট হবে
+      next: { revalidate: 86400 } // Revalidate every 24 hours
     });
     
     if (response.ok) {
@@ -101,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error fetching anime for sitemap:", error);
   }
 
-  // এসইও-এর জন্য ডাইনামিকভাবে টপ ৫০টি ম্যাঙ্গার লিংক
+  // Dynamically fetch top 50 manga links for SEO
   let dynamicMangaRoutes: MetadataRoute.Sitemap = [];
   try {
     const query = `
@@ -118,7 +124,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
-      next: { revalidate: 86400 } // ২৪ ঘণ্টা পর পর আপডেট হবে
+      next: { revalidate: 86400 } // Revalidate every 24 hours
     });
     
     if (response.ok) {
@@ -135,7 +141,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error fetching manga for sitemap:", error);
   }
 
-  // ডাইনামিকভাবে লেটেস্ট নিউজ আর্টিকেলগুলোর লিংক
+  // Dynamically fetch latest news article links for SEO
   let dynamicNewsRoutes: MetadataRoute.Sitemap = [];
   try {
     const newsList = await getNews();
@@ -153,4 +159,3 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [...staticRoutes, ...dynamicAnimeRoutes, ...dynamicMangaRoutes, ...dynamicNewsRoutes];
 }
-

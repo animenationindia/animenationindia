@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Play, Info } from 'lucide-react';
+import { sanitizeHTML } from '../lib/sanitize';
 import { motion } from 'framer-motion';
 
 interface TrendingBannerProps {
@@ -70,7 +71,7 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
           </h2>
           <p
             className="text-gray-400 text-xs md:text-sm line-clamp-3 leading-relaxed mb-6 max-w-xl"
-            dangerouslySetInnerHTML={{ __html: anime.description || 'Watch the latest episodes of this season\'s most popular trending series.' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHTML(anime.description) || 'Watch the latest episodes of this season\'s most popular trending series.' }}
           />
 
           {/* Action Buttons (pointer-events-auto overrides container setting to make buttons clickable) */}
@@ -93,10 +94,10 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
         </div>
 
         {/* Right Side: Floating Character Artwork Cover Card */}
-        {anime.coverImage?.large && (
+        {(anime.coverImage?.extraLarge || anime.coverImage?.large) && (
           <div className="hidden lg:block relative w-[180px] h-[260px] flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.6)] transform rotate-2 hover:rotate-0 transition-transform duration-500">
             <Image
-              src={anime.coverImage.large}
+              src={anime.coverImage.extraLarge || anime.coverImage.large}
               alt={title}
               fill
               className="object-cover"

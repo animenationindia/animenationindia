@@ -1,5 +1,6 @@
 import { getFilteredAnimeAniList } from '../../lib/api';
 import CategoryLayout from '../../components/CategoryLayout';
+import type { Metadata } from 'next';
 
 interface SearchParams {
   page?: string;
@@ -7,6 +8,32 @@ interface SearchParams {
   seasonYear?: string;
   format?: string;
   genres?: string;
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SearchParams> }): Promise<Metadata> {
+  const resolvedParams = await searchParams;
+  const genreList = resolvedParams.genres ? resolvedParams.genres.split(',') : [];
+  const genreName = genreList.length > 0 ? genreList.join(', ') : 'All';
+
+  const title = `${genreName} Anime & Manga - Browse All | Anime Nation India`;
+  const description = `Explore top ${genreName} anime series, movies, and light novels database on Anime Nation India.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: '/ani-logo.png', alt: title }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/ani-logo.png'],
+    },
+  };
 }
 
 export default async function GenrePage({ searchParams }: { searchParams: Promise<SearchParams> }) {

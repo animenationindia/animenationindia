@@ -79,18 +79,19 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
         })}
       </Swiper>
 
-      <div className="trailer-prev absolute top-[55%] -left-4 md:-left-6 z-10 w-10 h-10 bg-black/80 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center text-white cursor-pointer opacity-0 group-hover/trailer-section:opacity-100 transition-opacity hover:bg-[#ff4dd2] hover:border-[#ff4dd2] shadow-lg">
+      <button aria-label="Previous trailer" className="trailer-prev absolute top-[55%] -left-4 md:-left-6 z-10 w-10 h-10 bg-black/80 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center text-white cursor-pointer opacity-0 group-hover/trailer-section:opacity-100 transition-opacity hover:bg-[#ff4dd2] hover:border-[#ff4dd2] shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-      </div>
-      <div className="trailer-next absolute top-[55%] -right-4 md:-right-6 z-10 w-10 h-10 bg-black/80 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center text-white cursor-pointer opacity-0 group-hover/trailer-section:opacity-100 transition-opacity hover:bg-[#ff4dd2] hover:border-[#ff4dd2] shadow-lg">
+      </button>
+      <button aria-label="Next trailer" className="trailer-next absolute top-[55%] -right-4 md:-right-6 z-10 w-10 h-10 bg-black/80 backdrop-blur-sm border border-white/10 rounded-full flex items-center justify-center text-white cursor-pointer opacity-0 group-hover/trailer-section:opacity-100 transition-opacity hover:bg-[#ff4dd2] hover:border-[#ff4dd2] shadow-lg">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-      </div>
+      </button>
 
       {/* Trailer Modal */}
       {selectedTrailerId && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 md:p-8 backdrop-blur-sm" onClick={() => setSelectedTrailerId(null)}>
           <div className="relative w-full max-w-5xl aspect-video bg-black rounded-lg overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] border border-[#2A2B30]" onClick={e => e.stopPropagation()}>
             <button 
+              aria-label="Close trailer"
               onClick={() => setSelectedTrailerId(null)}
               className="absolute top-4 right-4 z-10 bg-black/60 p-2 rounded-full text-white hover:bg-[#f47521] transition-all"
             >

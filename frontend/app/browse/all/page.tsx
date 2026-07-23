@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Filter, ArrowUpDown, Loader2 } from 'lucide-react';
 import AnimeCard from '../../../components/AnimeCard';
+import ErrorState from '../../../components/ErrorState';
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 
@@ -13,6 +14,7 @@ function BrowseAllAnimeContent() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   const searchParams = useSearchParams();
   
@@ -45,6 +47,7 @@ function BrowseAllAnimeContent() {
 
   const fetchAnime = async (pageNum: number, currentSort: string, currentFormat: string) => {
     try {
+      setHasError(false);
       if (pageNum === 1) setLoading(true);
       else setLoadingMore(true);
 
@@ -88,6 +91,8 @@ function BrowseAllAnimeContent() {
         body: JSON.stringify({ query, variables }),
       });
 
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
       
       if (data?.data?.Page?.media) {
@@ -97,9 +102,12 @@ function BrowseAllAnimeContent() {
           setAnimeList((prev) => [...prev, ...data.data.Page.media]);
         }
         setHasNextPage(data.data.Page.pageInfo.hasNextPage);
+      } else {
+        throw new Error('No media returned');
       }
     } catch (error) {
       console.error('Error fetching anime:', error);
+      if (pageNum === 1) setHasError(true);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -124,10 +132,9 @@ function BrowseAllAnimeContent() {
   }, [page]);
 
   return (
-    <div className="w-full pb-20">
-      
-      {/* Filters & Sort Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-[#12131A] p-4 rounded-xl border border-[#2A2B30]">
+    <div className="w-full pb-12">
+      {/* Header and Filter Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-[#121326]/40 backdrop-blur-md p-4 rounded-xl border border-white/5">
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Filter className="text-[#ff4dd2] size-5" />
@@ -164,6 +171,13 @@ function BrowseAllAnimeContent() {
       {loading && page === 1 ? (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="w-10 h-10 text-[#ff4dd2] animate-spin" />
+        </div>
+      ) : hasError ? (
+        <div className="max-w-3xl mx-auto">
+          <ErrorState 
+            message="Failed to fetch anime list. Please check your internet connection and try again."
+            onRetry={() => fetchAnime(1, sort, format)}
+          />
         </div>
       ) : (
         <>

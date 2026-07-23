@@ -52,3 +52,16 @@ export function PageLoader({ type = 'anime' }: { type?: 'anime' | 'news' | 'gene
     </div>
   );
 }
+
+export function SliderSkeleton({ title }: { title?: string }) {
+  return (
+    <div className="w-full my-6 animate-pulse">
+      {title && <div className="h-6 w-48 bg-[#2A2B30]/40 rounded-lg mb-4" />}
+      <div className="flex gap-4 overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="flex-shrink-0 w-36 sm:w-44 aspect-[2/3] bg-[#2A2B30]/30 rounded-xl border border-white/5" />
+        ))}
+      </div>
+    </div>
+  );
+}

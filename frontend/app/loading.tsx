@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Orbitron } from 'next/font/google';
 import { motion } from 'framer-motion';
 
@@ -44,7 +45,7 @@ export default function Loading() {
           
           {/* Pulsing Logo inside */}
           <div className="absolute inset-0 flex items-center justify-center">
-             <img src="/ani-logo.png" alt="Logo" className="w-8 h-8 object-contain animate-pulse" style={{ animationDuration: '2s' }} />
+             <Image src="/ani-logo.png" alt="Logo" width={32} height={32} priority className="object-contain animate-pulse" style={{ animationDuration: '2s' }} />
           </div>
         </div>
 

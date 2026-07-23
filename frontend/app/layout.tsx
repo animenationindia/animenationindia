@@ -46,35 +46,63 @@ export const metadata: Metadata = {
   },
 };
 
+import { WatchlistProvider } from "../context/WatchlistContext";
+import SmoothScrollProvider from "../components/SmoothScrollProvider";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="overflow-x-hidden">
-      <body className="bg-[#050716] text-[#ffffff] min-h-screen flex flex-col font-sans selection:bg-[#ff4dd2] selection:text-white overflow-x-hidden w-full max-w-[100vw] pb-[60px] md:pb-0">
-        <Script 
-          src="https://news.google.com/swg/js/v1/swg-basic.js" 
-          strategy="afterInteractive" 
+    <html lang="en" className="overflow-x-hidden dark">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var savedTheme = localStorage.getItem('theme');
+                  var theme = savedTheme ? savedTheme : 'dark';
+                  if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                  } else {
+                    document.documentElement.classList.add('light');
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
         />
-        <Script id="swg-basic-init" strategy="afterInteractive">
-          {`
-            (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
-              basicSubscriptions.init({
-                type: "NewsArticle",
-                isPartOfType: ["Product"],
-                isPartOfProductId: "CAows4THDA:openaccess",
-                clientOptions: { theme: "light", lang: "en-GB" },
-              });
-            });
-          `}
-        </Script>
-        <Navbar />
-        <BackButton />
-        {/* Main Content */}
-        <div className="flex-grow w-full overflow-x-hidden relative">
-          {children}
-        </div>
-        <Footer />
-        <MobileBottomNav />
-        <BackToTop />
+      </head>
+      <body className="bg-[#050716] text-[#ffffff] min-h-screen flex flex-col font-sans selection:bg-[#ff4dd2] selection:text-white overflow-x-hidden w-full max-w-[100vw] pb-[60px] md:pb-0">
+        <SmoothScrollProvider>
+          <WatchlistProvider>
+            <Script 
+              src="https://news.google.com/swg/js/v1/swg-basic.js" 
+              strategy="afterInteractive" 
+            />
+            <Script id="swg-basic-init" strategy="afterInteractive">
+              {`
+                (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
+                  basicSubscriptions.init({
+                    type: "NewsArticle",
+                    isPartOfType: ["Product"],
+                    isPartOfProductId: "CAows4THDA:openaccess",
+                    clientOptions: { theme: "light", lang: "en-GB" },
+                  });
+                });
+              `}
+            </Script>
+            <Navbar />
+            <BackButton />
+            {/* Main Content */}
+            <div className="flex-grow w-full overflow-x-hidden relative">
+              {children}
+            </div>
+            <Footer />
+            <MobileBottomNav />
+            <BackToTop />
+          </WatchlistProvider>
+        </SmoothScrollProvider>
       </body>
     </html>
   );

@@ -7,6 +7,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
 import { Play, Bookmark } from 'lucide-react';
 import WatchlistDropdown from './WatchlistDropdown';
+import { sanitizeHTML } from '../lib/sanitize';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -113,7 +114,7 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
 
                     <div 
                       className="text-gray-400 text-[12px] md:text-[13px] mb-6 line-clamp-3 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: anime.description || 'No description available.' }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(anime.description) || 'No description available.' }}
                     ></div>
 
                     <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 md:gap-4">

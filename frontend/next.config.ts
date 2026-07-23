@@ -9,22 +9,33 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   images: {
-    unoptimized: true,
-    // 🌟 এখানে 90 কোয়ালিটি অ্যাড করা হলো ওয়ার্নিং ফিক্স করার জন্য
     qualities: [25, 50, 75, 90, 100], 
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'anilist.co',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.anilist.co',
+      },
       {
         protocol: 'https',
         hostname: 'myanimelist.net',
       },
       {
         protocol: 'https',
-        hostname: 'cdn.myanimelist.net',
+        hostname: '*.myanimelist.net',
       },
       {
         protocol: 'https',
-        hostname: 's4.anilist.co',
+        hostname: 'animecorner.me',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.animecorner.me',
       },
       {
         protocol: 'https',
@@ -33,6 +44,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'img.youtube.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
       },
     ],
   },
@@ -49,7 +64,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  turbopack: {},
 };
 
 export default withPWA(nextConfig);

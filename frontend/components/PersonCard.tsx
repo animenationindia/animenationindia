@@ -1,4 +1,5 @@
 // components/PersonCard.tsx
+import { memo } from 'react';
 import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';
@@ -14,12 +15,12 @@ interface PersonData {
   } | null;
 }
 
-export default function PersonCard({ person, linkType = 'character' }: { person: PersonData, linkType?: 'character' | 'staff' }) {
+function PersonCard({ person, linkType = 'character' }: { person: PersonData; linkType?: 'character' | 'staff' }) {
   const name = person.name.full;
   const likes = person.favourites > 1000 ? `${(person.favourites / 1000).toFixed(1)}k+` : person.favourites;
 
   return (
-    <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/5">
+    <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/5 cv-auto gpu-accelerate">
       {person.image?.large && (
         <Image src={person.image.large} alt={name} fill sizes="150px" className="object-cover transition-transform duration-500 group-hover:scale-110" />
       )}
@@ -38,3 +39,11 @@ export default function PersonCard({ person, linkType = 'character' }: { person:
     </Link>
   );
 }
+
+export default memo(PersonCard, (prevProps, nextProps) => {
+  return (
+    prevProps.person.id === nextProps.person.id &&
+    prevProps.person.favourites === nextProps.person.favourites &&
+    prevProps.linkType === nextProps.linkType
+  );
+});

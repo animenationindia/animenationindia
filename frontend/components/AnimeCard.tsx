@@ -1,23 +1,13 @@
 'use client';
 
+import { memo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Play, Bookmark, Check, BookOpen } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { BACKEND_URL } from '../lib/config';
-
-let watchlistCache: any[] | null = null;
-let watchlistCachePromise: Promise<any[]> | null = null;
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('auth-change', () => {
-    watchlistCache = null;
-    watchlistCachePromise = null;
-  });
-}
-
 import { motion } from 'framer-motion';
+import { sanitizeDescription } from '../lib/sanitize';
+import { useWatchlist } from '../hooks/useWatchlist';
 
 interface AnimeCardProps {
   anime: {
@@ -35,6 +25,7 @@ interface AnimeCardProps {
     type?: string | null;
     format?: string | null;
     coverImage?: {
+      extraLarge?: string | null;
       large?: string | null;
     } | null;
     description?: string | null;
@@ -46,53 +37,29 @@ interface AnimeCardProps {
   isManga?: boolean;
 }
 
-export default function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps) {
+function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const router = useRouter();
+  const { isInWatchlist, toggleWatchlist } = useWatchlist();
 
   const title = anime.title?.english || anime.title?.romaji || 'Unknown Title';
   const linkId = anime.idMal || anime.id;
   const year = anime.seasonYear || (anime.startDate ? anime.startDate.year : null);
   const format = anime.format ? anime.format.replace('_', ' ') : 'TV';
-  const coverImage = anime.coverImage?.large || '';
-  const description = anime.description?.replace(/<[^>]+>/g, '') || '';
+  const coverImage = anime.coverImage?.extraLarge || anime.coverImage?.large || '';
+  const description = sanitizeDescription(anime.description);
   
   const isActuallyManga = anime.type === 'MANGA' || anime.format === 'MANGA' || anime.format === 'NOVEL' || anime.format === 'ONE_SHOT' || isManga;
+  const isSaved = isInWatchlist(linkId);
 
-  // Hydration checks and Real-time saved status fetching
   useEffect(() => {
     const frame = requestAnimationFrame(() => setIsMounted(true));
-
-    const checkWatchlistStatus = async () => {
-      const token = localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id');
-      if (!token || !userId) return;
-
-      try {
-        if (!watchlistCache && !watchlistCachePromise) {
-          watchlistCachePromise = fetch(`${BACKEND_URL}/api/watchlist/${userId}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-          }).then(res => res.ok ? res.json() : []).then(data => {
-            watchlistCache = data;
-            return data;
-          }).catch(() => []);
-        }
-        
-        const list = (watchlistCache || await watchlistCachePromise) || [];
-        const exists = list.some((item: any) => Number(item.mal_id || item.anime_id) === Number(linkId));
-        if (exists) setIsSaved(true);
-      } catch {
-        // ignore silent fail
-      }
-    };
-    checkWatchlistStatus();
-
     return () => cancelAnimationFrame(frame);
-  }, [linkId]);
+  }, []);
 
   const toggleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
 
     const token = localStorage.getItem('user_token');
     const userId = localStorage.getItem('user_id');
@@ -103,59 +70,11 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
       return;
     }
 
-    const newState = !isSaved;
-    setIsSaved(newState);
-
-    try {
-      if (newState) {
-        const animePayload = {
-          mal_id: Number(linkId),
-          title: title,
-          title_english: title,
-          type: isActuallyManga ? 'Manga' : 'Anime',
-          images: {
-            webp: {
-              large_image_url: coverImage
-            }
-          },
-          score: anime.averageScore ? (anime.averageScore / 10) : null,
-          episodes: null,
-          anime_id: Number(linkId),
-          anime_title: title,
-          anime_image: coverImage,
-          status: 'PLAN_TO_WATCH'
-        };
-
-        const res = await fetch(`${BACKEND_URL}/api/watchlist`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({ anime: animePayload, userId })
-        });
-        
-        if (!res.ok) throw new Error('Failed to save');
-        
-        if (watchlistCache) {
-          watchlistCache.push(animePayload);
-        }
-      } else {
-        const res = await fetch(`${BACKEND_URL}/api/watchlist/${userId}/${linkId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        
-        if (!res.ok) throw new Error('Failed to delete');
-
-        if (watchlistCache) {
-          watchlistCache = watchlistCache.filter((item: any) => Number(item.mal_id || item.anime_id) !== Number(linkId));
-        }
-      }
-    } catch (error) {
-      console.error("Error updating watchlist:", error);
-      setIsSaved(!newState); // Rollback on failure
-    }
+    await toggleWatchlist({
+      animeId: linkId,
+      title,
+      image: coverImage,
+    });
   };
 
   if (!isMounted) return null;
@@ -164,7 +83,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
     <motion.div 
       whileHover={{ y: -8, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="group relative w-full mb-4 flex flex-col cursor-pointer bg-transparent"
+      className="group relative w-full mb-4 flex flex-col cursor-pointer bg-transparent cv-auto gpu-accelerate"
     >
       <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative">
         
@@ -224,7 +143,7 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
 
           </div>
 
-          {/* Top Right: Watchlist Button (Moved outside hover overlay to be permanent when saved) */}
+          {/* Top Right: Watchlist Button */}
           <div className={`absolute top-2 right-2 md:top-3 md:right-3 z-30 transition-opacity duration-300 ${isSaved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             <button 
               onClick={toggleSave}
@@ -253,3 +172,12 @@ export default function AnimeCard({ anime, priority = false, isManga = false }: 
     </motion.div>
   );
 }
+
+export default memo(AnimeCard, (prev, next) => {
+  return (
+    prev.anime.id === next.anime.id &&
+    prev.anime.averageScore === next.anime.averageScore &&
+    prev.priority === next.priority &&
+    prev.isManga === next.isManga
+  );
+});

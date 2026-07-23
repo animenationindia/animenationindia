@@ -12,24 +12,40 @@ export default function MockVideoPlayer({ title }: { title: string }) {
   const timeoutRef = useRef<NodeJS.Timeout>(null);
 
   useEffect(() => {
+    let animationFrameId: number | null = null;
+    let lastMoveTime = 0;
+
     const handleMouseMove = () => {
-      setShowControls(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        if (isPlaying) setShowControls(false);
-      }, 3000);
+      const now = Date.now();
+      if (now - lastMoveTime < 50) return;
+      lastMoveTime = now;
+
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+      animationFrameId = requestAnimationFrame(() => {
+        setShowControls(true);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          if (isPlaying) setShowControls(false);
+        }, 3000);
+      });
+    };
+
+    const handleMouseLeave = () => {
+      if (isPlaying) setShowControls(false);
     };
 
     const currentRef = containerRef.current;
     if (currentRef) {
-      currentRef.addEventListener('mousemove', handleMouseMove);
-      currentRef.addEventListener('mouseleave', () => { if (isPlaying) setShowControls(false); });
+      currentRef.addEventListener('mousemove', handleMouseMove, { passive: true });
+      currentRef.addEventListener('mouseleave', handleMouseLeave);
     }
     return () => {
       if (currentRef) {
         currentRef.removeEventListener('mousemove', handleMouseMove);
-        currentRef.removeEventListener('mouseleave', () => {});
+        currentRef.removeEventListener('mouseleave', handleMouseLeave);
       }
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [isPlaying]);

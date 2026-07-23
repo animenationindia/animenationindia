@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BACKEND_URL } from '../lib/config';
+import ErrorState from './ErrorState';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface AnimeMedia {
@@ -149,6 +150,8 @@ if (typeof window !== 'undefined') {
   window.addEventListener('auth-change', () => { wlCache = null; wlPromise = null; });
 }
 
+import { sanitizeDescription } from '../lib/sanitize';
+
 function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia; priority?: boolean; index?: number }) {
   const [saved, setSaved] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -158,7 +161,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
   const linkId = anime.idMal || anime.id;
   const isManga = anime.type === 'MANGA' || anime.format === 'MANGA' || anime.format === 'NOVEL';
   const cover = anime.coverImage?.extraLarge || anime.coverImage?.large || '';
-  const desc = (anime.description || '').replace(/<[^>]+>/g, '');
+  const desc = sanitizeDescription(anime.description);
   const year = anime.seasonYear || anime.startDate?.year;
 
   useEffect(() => {
@@ -301,6 +304,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
   const [loading, setLoading] = useState(true);
   const [softLoading, setSoftLoading] = useState(false); // Subtle loading bar instead of replacing grid
   const [isSuggestion, setIsSuggestion] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // ── Refs ──
   const containerRef = useRef<HTMLDivElement>(null);
@@ -329,6 +333,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
 
+    setHasError(false);
     if (isHardLoad) setLoading(true);
     else setSoftLoading(true);
 
@@ -358,6 +363,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
       if (err instanceof DOMException && err.name === 'AbortError') return; // Aborted, ignore
       setResults([]);
       setIsSuggestion(false);
+      setHasError(true);
     } finally {
       setLoading(false);
       setSoftLoading(false);
@@ -569,6 +575,20 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
               </button>
             </div>
 
+            {/* ── Backdrop overlay when suggestions visible ── */}
+            <AnimatePresence>
+              {showSugg && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                  onClick={() => { setShowSugg(false); setActiveSugg(-1); }}
+                />
+              )}
+            </AnimatePresence>
+
             {/* ── Live Suggestions ── */}
             <AnimatePresence>
               {showSugg && (
@@ -746,6 +766,11 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
         {/* ─────────────── RESULTS ─────────────── */}
         {loading ? (
           <SkeletonGrid />
+        ) : hasError ? (
+          <ErrorState 
+            message="Failed to fetch search results. Please check your internet connection or server status and try again."
+            onRetry={() => doSearch(query, genres, format, status, year, sort, pageInfo.currentPage, true)}
+          />
         ) : results.length > 0 ? (
           <>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 md:gap-5 mb-16">

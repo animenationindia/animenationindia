@@ -1,10 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/api.ts
+import { logError } from './logger';
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 
 export const GLOBAL_CACHE_TIME = 21600; // 6 hours in seconds
+
+export async function fetchInBatches<T>(
+  tasks: (() => Promise<T>)[],
+  batchSize = 3,
+  delayMs = 100
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < tasks.length; i += batchSize) {
+    const batch = tasks.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map((fn) =>
+        fn().catch((err) => {
+          logError('fetchInBatches', err);
+          return null as any;
+        })
+      )
+    );
+    results.push(...batchResults);
+    if (i + batchSize < tasks.length && delayMs > 0) {
+      await new Promise((res) => setTimeout(res, delayMs));
+    }
+  }
+  return results;
+}
 
 export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME) {
   let retries = 3;
@@ -70,8 +95,8 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
     try {
       const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
       
-      if (res.status === 429) {
-        console.warn(`Jikan API 429 Rate Limit hit on ${endpoint}. Retrying in ${delay}ms...`);
+      if (res.status === 429 || res.status === 504 || res.status === 503 || res.status === 502) {
+        console.warn(`Jikan API ${res.status} hit on ${endpoint}. Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
         retries--;
         delay *= 2;
@@ -170,7 +195,30 @@ export interface StaffItem {
 }
 
 export interface AniListExtra {
+  id?: number;
+  idMal?: number | null;
+  title?: {
+    english: string | null;
+    romaji: string;
+    native?: string | null;
+  };
+  coverImage?: {
+    extraLarge?: string;
+    large: string;
+  };
   bannerImage: string | null;
+  description?: string | null;
+  episodes?: number | null;
+  format?: string | null;
+  status?: string | null;
+  averageScore?: number | null;
+  genres?: string[] | null;
+  seasonYear?: number | null;
+  trailer?: {
+    id: string | null;
+    site: string | null;
+    thumbnail: string | null;
+  } | null;
   nextAiringEpisode?: {
     airingAt: number;
     timeUntilAiring: number;
@@ -187,6 +235,7 @@ export interface AniListExtra {
           romaji: string;
         };
         coverImage: {
+          extraLarge?: string;
           large: string;
         };
         format: string | null;
@@ -315,7 +364,7 @@ export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 10) {
         media(sort: SCORE_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } averageScore format status episodes seasonYear genres description
+          id idMal title { romaji english } coverImage { extraLarge large } averageScore format status episodes seasonYear genres description
         }
       }
     }
@@ -439,12 +488,24 @@ export async function getAniListExtraInfo(idMal: number): Promise<AniListExtra |
   const query = `
     query ($id: Int) {
       Media(idMal: $id, type: ANIME) {
+        id
+        idMal
+        title { english romaji native }
+        coverImage { extraLarge large }
         bannerImage
+        description
+        episodes
+        format
+        status
+        averageScore
+        genres
+        seasonYear
+        trailer { id site thumbnail }
         nextAiringEpisode { airingAt timeUntilAiring episode }
         relations {
           edges {
             relationType
-            node { id idMal title { english romaji } coverImage { large } format startDate { year month day } type }
+            node { id idMal title { english romaji } coverImage { extraLarge large } format startDate { year month day } type }
           }
         }
       }
@@ -464,7 +525,7 @@ export async function getNewReleasesAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 15) {
         media(seasonYear: 2026, status_in: [RELEASING, FINISHED], sort: START_DATE_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } bannerImage format status averageScore genres description episodes seasonYear
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage format status averageScore genres description episodes seasonYear
         }
       }
     }
@@ -483,7 +544,7 @@ export async function getCurrentSeasonAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 24) {
         media(season: SUMMER, seasonYear: 2026, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } format status episodes genres seasonYear description
+          id idMal title { romaji english } coverImage { extraLarge large } format status episodes genres seasonYear description
         }
       }
     }
@@ -502,7 +563,7 @@ export async function getUpcomingAnimeAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 24) {
         media(season: FALL, seasonYear: 2026, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } format status episodes genres seasonYear description
+          id idMal title { romaji english } coverImage { extraLarge large } format status episodes genres seasonYear description
         }
       }
     }
@@ -521,7 +582,7 @@ export async function getPopularDubbedAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 15) {
         media(sort: POPULARITY_DESC, format: TV, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } format status episodes genres seasonYear description
+          id idMal title { romaji english } coverImage { extraLarge large } format status episodes genres seasonYear description
         }
       }
     }
@@ -568,7 +629,7 @@ export async function searchAnimeAniList(queryText: string, page: number = 1) {
           hasNextPage
         }
         media(search: $search, type: ANIME, isAdult: false, sort: POPULARITY_DESC) {
-          id idMal title { romaji english } coverImage { large } averageScore format status episodes seasonYear startDate { year } genres description
+          id idMal title { romaji english } coverImage { extraLarge large } averageScore format status episodes seasonYear startDate { year } genres description
         }
       }
     }
@@ -625,7 +686,7 @@ export async function getFilteredAnimeAniList(params: {
           hasNextPage
         }
         media(${mediaArgs}) {
-          id idMal title { romaji english } coverImage { large extraLarge } bannerImage averageScore format status episodes seasonYear genres description startDate { year }
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage averageScore format status episodes seasonYear genres description startDate { year }
         }
       }
     }
@@ -704,6 +765,7 @@ export async function getAnimeRecommendations(id: string) {
         english: rec.entry.title,
       },
       coverImage: {
+        extraLarge: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url,
         large: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url,
       },
       format: 'TV', // Fallback, Jikan recommendation endpoint doesn't provide type
@@ -799,6 +861,7 @@ export async function getMangaRecommendations(id: string) {
         english: rec.entry.title,
       },
       coverImage: {
+        extraLarge: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url,
         large: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url,
       },
       format: 'MANGA',
@@ -817,7 +880,7 @@ export async function getAniListMangaExtraInfo(idMal: number): Promise<AniListEx
         relations {
           edges {
             relationType
-            node { id idMal title { english romaji } coverImage { large } format startDate { year month day } type }
+            node { id idMal title { english romaji } coverImage { extraLarge large } format startDate { year month day } type }
           }
         }
       }
@@ -898,7 +961,7 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 4) {
         media(sort: SCORE_DESC, type: ANIME, format: MOVIE, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } averageScore format status episodes seasonYear
+          id idMal title { romaji english } coverImage { extraLarge large } averageScore format status episodes seasonYear
         }
       }
     }
@@ -917,7 +980,7 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
     query {
       Page(page: 1, perPage: 4) {
         media(sort: SCORE_DESC, type: ANIME, format: TV, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } averageScore format status episodes seasonYear
+          id idMal title { romaji english } coverImage { extraLarge large } averageScore format status episodes seasonYear
         }
       }
     }
@@ -936,7 +999,7 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
     query ($year: Int) {
       Page(page: 1, perPage: 4) {
         media(seasonYear: $year, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { large } averageScore format status episodes seasonYear
+          id idMal title { romaji english } coverImage { extraLarge large } averageScore format status episodes seasonYear
         }
       }
     }
