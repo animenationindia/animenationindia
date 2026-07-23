@@ -207,7 +207,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             <div className="relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-[#141519] group mb-6">
               <Image 
                 src={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url} 
-                alt={anime.title} 
+                alt={displayTitle} 
                 fill
                 className="object-cover"
                 priority
@@ -395,14 +395,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
               <div className="mt-16">
                 <SectionSlider 
                   title="You Might Also Like" 
-                  data={recommendations.map((rec: any) => ({
-                    id: rec.entry.mal_id,
-                    idMal: rec.entry.mal_id,
-                    title: { english: rec.entry.title, romaji: rec.entry.title },
-                    coverImage: { large: rec.entry.images?.jpg?.large_image_url || '' },
-                    format: 'TV',
-                    averageScore: null
-                  })) as any} 
+                  data={recommendations as any} 
                   type="anime" 
                   viewAllLink="" 
                 />
