@@ -52,10 +52,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function WatchPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   
-  const [anime, episodesData] = await Promise.all([
+  const [animeRes, episodesRes] = await Promise.allSettled([
     getCachedAnime(id),
     getAnimeEpisodes(id)
   ]);
+
+  const anime = animeRes.status === 'fulfilled' ? animeRes.value : null;
+  const episodesData = episodesRes.status === 'fulfilled' ? episodesRes.value : [];
 
   if (!anime) {
     return (

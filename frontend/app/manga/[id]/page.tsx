@@ -73,12 +73,17 @@ export default async function MangaDetails({ params }: { params: Promise<Params>
   const { id } = await params;
 
   // Parallel Fetching for speed with cached main detail
-  const [manga, characters, extraInfo, recommendations] = await Promise.all([
+  const [mangaRes, charactersRes, extraInfoRes, recommendationsRes] = await Promise.allSettled([
     getCachedMangaDetails(id),
     getMangaCharacters(id),
     getAniListMangaExtraInfo(Number(id)),
     getMangaRecommendations(id)
   ]);
+
+  const manga = mangaRes.status === 'fulfilled' ? mangaRes.value : null;
+  const characters = charactersRes.status === 'fulfilled' ? charactersRes.value : [];
+  const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
+  const recommendations = recommendationsRes.status === 'fulfilled' ? recommendationsRes.value : [];
 
   if (!manga) {
     return (
