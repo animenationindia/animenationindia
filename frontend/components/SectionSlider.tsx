@@ -45,7 +45,6 @@ export default function SectionSlider({ title, data, type, viewAllLink, isManga 
           grabCursor={true}
           mousewheel={{
             forceToAxis: true,
-            releaseOnEdges: true,
           }}
           breakpoints={{
             640: { slidesPerView: 4 },
