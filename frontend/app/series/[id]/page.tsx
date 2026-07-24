@@ -165,13 +165,15 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
   const nextEp = formatNextEpisode();
 
   const sortedRelations = extraInfo?.relations?.edges 
-    ? [...extraInfo.relations.edges].sort((a, b) => {
-        const getScore = (node: any) => {
-          if (!node.startDate) return 0;
-          return (node.startDate.year || 0) * 10000 + (node.startDate.month || 0) * 100 + (node.startDate.day || 0);
-        };
-        return getScore(b.node) - getScore(a.node);
-      })
+    ? [...extraInfo.relations.edges]
+        .filter((edge: any) => edge && edge.node)
+        .sort((a: any, b: any) => {
+          const getScore = (node: any) => {
+            if (!node || !node.startDate) return 0;
+            return (node.startDate.year || 0) * 10000 + (node.startDate.month || 0) * 100 + (node.startDate.day || 0);
+          };
+          return getScore(b.node) - getScore(a.node);
+        })
     : [];
 
   return (
