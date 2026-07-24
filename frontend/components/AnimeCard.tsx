@@ -83,12 +83,13 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
     <motion.div 
       whileHover={{ y: -8, scale: 1.02 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="group relative w-full mb-4 flex flex-col cursor-pointer bg-transparent cv-auto gpu-accelerate"
+      className="group relative w-full mb-4 flex flex-col bg-transparent cv-auto gpu-accelerate"
     >
-      <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative">
+      {/* 🖼️ Image & Overlay Container */}
+      <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255,77,210,0.4)] transition-all duration-300">
         
-        {/* 🖼️ Image Container */}
-        <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255, 77, 210,0.4)] transition-all duration-300">
+        {/* Link wraps image and hover overlay */}
+        <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative z-10">
           {coverImage && (
             <Image 
               src={coverImage} 
@@ -115,14 +116,14 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
 
             {/* Center: Play / Read Button */}
             <div className="flex flex-col items-center justify-center flex-1 gap-2">
-              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ff4dd2] bg-[#050716]/60 text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-white transition-all duration-300 shadow-[0_0_15px_rgba(255, 77, 210,0.5)] group-hover:scale-110">
+              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ff4dd2] bg-[#050716]/60 text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-white transition-all duration-300 shadow-[0_0_15px_rgba(255,77,210,0.5)] group-hover:scale-110">
                 {isActuallyManga ? (
                   <BookOpen size={24} className="stroke-[2.5px]" />
                 ) : (
                   <Play size={24} fill="currentColor" className="ml-1" />
                 )}
               </div>
-              <span className="text-[11px] md:text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255, 77, 210,0.5)]">
+              <span className="text-[11px] md:text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255,77,210,0.5)]">
                 {isActuallyManga ? "READ NOW" : "WATCH NOW"}
               </span>
             </div>
@@ -134,7 +135,7 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
                   {description}
                 </p>
               ) : (
-                <p className="text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255, 77, 210,0.5)]">{isManga ? "Read Now" : "Watch Now"}</p>
+                <p className="text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255,77,210,0.5)]">{isManga ? "Read Now" : "Watch Now"}</p>
               )}
             </div>
             
@@ -142,32 +143,33 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
             <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#050716] to-transparent pointer-events-none"></div>
 
           </div>
+        </Link>
 
-          {/* Top Right: Watchlist Button */}
-          <div className={`absolute top-2 right-2 md:top-3 md:right-3 z-30 transition-opacity duration-300 ${isSaved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-            <button 
-              onClick={toggleSave}
-              className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full transition-colors backdrop-blur-md shadow-[0_0_10px_rgba(255, 77, 210,0.3)] hover:shadow-[0_0_15px_rgba(255, 77, 210,0.8)] ${
-                isSaved 
-                  ? 'bg-[#ff4dd2] text-white border border-transparent' 
-                  : 'bg-[#050716]/80 hover:bg-[#ff4dd2] text-white border border-[#ff4dd2]/50'
-              }`}
-            >
-              {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
-            </button>
-          </div>
+        {/* Top Right: Watchlist Button (Positioned above Link with z-30) */}
+        <div className={`absolute top-2 right-2 md:top-3 md:right-3 z-30 transition-opacity duration-300 ${isSaved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          <button 
+            type="button"
+            onClick={toggleSave}
+            className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full transition-colors backdrop-blur-md shadow-[0_0_10px_rgba(255,77,210,0.3)] hover:shadow-[0_0_15px_rgba(255,77,210,0.8)] cursor-pointer ${
+              isSaved 
+                ? 'bg-[#ff4dd2] text-white border border-transparent' 
+                : 'bg-[#050716]/80 hover:bg-[#ff4dd2] text-white border border-[#ff4dd2]/50'
+            }`}
+          >
+            {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
+          </button>
         </div>
 
-        {/* 📝 Text Information below card */}
-        <div className="mt-3 flex flex-col px-1">
-          <h3 className="text-white text-[14px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ff4dd2] transition-colors drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
-            {title}
-          </h3>
-          <div className="text-[12px] text-[#ff4dd2] mt-1 flex items-center gap-1 font-medium capitalize opacity-80">
-            {format.toLowerCase()} {year && <span className="text-[#a0a0a0]">• {year}</span>}
-          </div>
-        </div>
+      </div>
 
+      {/* 📝 Text Information below card */}
+      <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="mt-3 flex flex-col px-1 block">
+        <h3 className="text-white text-[14px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ff4dd2] transition-colors drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+          {title}
+        </h3>
+        <div className="text-[12px] text-[#ff4dd2] mt-1 flex items-center gap-1 font-medium capitalize opacity-80">
+          {format.toLowerCase()} {year && <span className="text-[#a0a0a0]">• {year}</span>}
+        </div>
       </Link>
     </motion.div>
   );
