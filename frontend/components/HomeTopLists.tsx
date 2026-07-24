@@ -61,6 +61,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                       src={anime.coverImage.large}
                       alt={title}
                       fill
+                      sizes="48px"
                       className="object-cover"
                     />
                   </Link>
@@ -103,6 +104,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                       src={anime.coverImage.large}
                       alt={title}
                       fill
+                      sizes="48px"
                       className="object-cover"
                     />
                   </Link>
@@ -141,6 +143,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                         src={anime.coverImage.large}
                         alt={title}
                         fill
+                        sizes="48px"
                         className="object-cover"
                       />
                     </Link>

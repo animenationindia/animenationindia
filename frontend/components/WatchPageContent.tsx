@@ -186,6 +186,7 @@ export default function WatchPageContent({ anime, episodes }: WatchPageContentPr
                             src={coverImage} 
                             alt={ep.title || `Episode ${realIndex + 1}`} 
                             fill
+                            sizes="96px"
                             className="object-cover opacity-50 group-hover:opacity-85 transition-opacity"
                           />
                           <div className="absolute inset-0 flex items-center justify-center">
@@ -234,6 +235,7 @@ export default function WatchPageContent({ anime, episodes }: WatchPageContentPr
                 src={bannerImage}
                 alt={displayTitle}
                 fill
+                sizes="(max-width: 1280px) 100vw, 420px"
                 className="object-cover opacity-60 filter blur-[1px]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c20] via-[#0b0c20]/30 to-black/25 z-10" />
@@ -245,6 +247,7 @@ export default function WatchPageContent({ anime, episodes }: WatchPageContentPr
                     src={coverImage}
                     alt={displayTitle}
                     fill
+                    sizes="64px"
                     className="object-cover"
                   />
                 </div>

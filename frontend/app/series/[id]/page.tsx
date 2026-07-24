@@ -184,6 +184,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             src={bannerImage} 
             alt={displayTitle} 
             fill 
+            sizes="100vw"
             className="object-cover opacity-40 blur-sm"
             priority
           />
@@ -209,6 +210,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                 src={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url} 
                 alt={anime.title} 
                 fill
+                sizes="(max-width: 1024px) 100vw, 260px"
                 className="object-cover"
                 priority
               />
@@ -259,17 +261,18 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             )}
             
             <div className="flex flex-wrap items-center gap-3 text-sm mb-6 text-[#a0a0a0]">
-              {anime.title_japanese && (
+              <span className="text-white font-semibold flex items-center gap-1">
+                <Star size={16} className="text-amber-400 fill-amber-400" /> 
+                {anime.score ? anime.score.toFixed(1) : 'N/A'}
+              </span>
+              <span>•</span>
+              <span className="text-[#d0d0d0]">{anime.type || 'TV'}</span>
+              {anime.year && (
                 <>
-                  <span>{anime.title_japanese}</span>
-                  <span className="h-4 w-px bg-gray-700" />
+                  <span>•</span>
+                  <span>{anime.year}</span>
                 </>
               )}
-              <span>{anime.type}</span>
-              <span className="h-4 w-px bg-gray-700" />
-              <span>{anime.year || anime.season || 'Unknown'}</span>
-              <span className="h-4 w-px bg-gray-700" />
-              <span className="flex items-center gap-1 text-[#ff4dd2]"><Star size={14} /> {anime.score || 'N/A'}</span>
             </div>
 
             {/* Actions Row */}
@@ -281,15 +284,16 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             </div>
 
             {/* Synopsis Section */}
-            <div className="mb-10 max-w-4xl">
+            <div className="mb-8 max-w-4xl">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-2">Synopsis</h3>
               <ReadMoreText text={sanitizeDescription(anime.synopsis || "No synopsis available for this title.")} />
             </div>
 
             {/* Relations Section */}
             {sortedRelations.length > 0 && (
               <div className="mb-10">
-                <h3 className="text-lg font-semibold text-white mb-4 border-l-2 border-neon-cyan pl-3">Related Media</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <h3 className="text-lg font-semibold text-white mb-4 border-l-2 border-neon-cyan pl-3">Franchise & Related Seasons</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {sortedRelations.map((edge: any, index: number) => {
                     const node = edge.node;
                     const isMangaNode = node.type === 'MANGA';
@@ -307,6 +311,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                               src={node.coverImage.large} 
                               alt={node.title?.english || node.title?.romaji || ''} 
                               fill 
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 150px"
                               className="object-cover group-hover:scale-105 transition"
                             />
                           )}
@@ -348,6 +353,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                                     src={item.character.images.jpg.image_url} 
                                     alt={item.character.name} 
                                     fill 
+                                    sizes="48px"
                                     className="object-cover"
                                   />
                                 )}
@@ -370,6 +376,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                                       src={japaneseVA.person.images.jpg.image_url} 
                                       alt={japaneseVA.person.name} 
                                       fill 
+                                      sizes="48px"
                                       className="object-cover"
                                     />
                                   )}

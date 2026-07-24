@@ -134,6 +134,7 @@ async function ThemeZonesSection({
             src={romanceSeasonalAnime.bannerImage || romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large}
             alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
             fill
+            sizes="100vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-[#050716] via-[#050716]/80 to-transparent flex flex-col justify-center px-6 md:px-12">

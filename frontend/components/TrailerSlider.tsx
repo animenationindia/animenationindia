@@ -30,6 +30,7 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
         grabCursor={true}
         mousewheel={{
           forceToAxis: true,
+          releaseOnEdges: true,
         }}
         navigation={{
           prevEl: '.trailer-prev',

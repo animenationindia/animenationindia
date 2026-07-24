@@ -51,6 +51,7 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
             src={backgroundImage}
             alt={title}
             fill
+            sizes="100vw"
             className="object-cover object-center opacity-40 group-hover:scale-105 transition-transform duration-700 ease-out"
           />
         )}
@@ -100,6 +101,7 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
               src={anime.coverImage.extraLarge || anime.coverImage.large}
               alt={title}
               fill
+              sizes="180px"
               className="object-cover"
             />
           </div>

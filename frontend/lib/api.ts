@@ -80,25 +80,30 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
   throw new Error("AniList request failed after maximum retries due to rate limit.");
 }
 
-export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME) {
-  let retries = 3;
-  let delay = 1000;
-  
-  const fetchOptions: any = {};
-  if (revalidate === 0) {
-    fetchOptions.cache = 'no-store';
-  } else {
-    fetchOptions.next = { revalidate };
-  }
+export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 3500) {
+  let retries = 2;
+  let delay = 400;
 
   while (retries > 0) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const fetchOptions: any = { signal: controller.signal };
+    if (revalidate === 0) {
+      fetchOptions.cache = 'no-store';
+    } else {
+      fetchOptions.next = { revalidate };
+    }
+
     try {
       const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
+      clearTimeout(timer);
       
       if (res.status === 429 || res.status === 504 || res.status === 503 || res.status === 502) {
         console.warn(`Jikan API ${res.status} hit on ${endpoint}. Retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
         retries--;
+        if (retries === 0) return null;
+        await new Promise(resolve => setTimeout(resolve, delay));
         delay *= 2;
         continue;
       }
@@ -112,7 +117,12 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
       
       const data = await res.json();
       return data;
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timer);
+      if (error.name === 'AbortError') {
+        console.warn(`Jikan API fetch timed out after ${timeoutMs}ms for ${endpoint}`);
+        return null;
+      }
       console.error(`Error in fetchJikan for ${endpoint}:`, error);
       retries--;
       if (retries === 0) return null;
