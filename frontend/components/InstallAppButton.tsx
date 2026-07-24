@@ -196,11 +196,11 @@ export default function InstallAppButton() {
                       </div>
                       <div className="flex gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] flex items-center justify-center font-bold text-xs shrink-0">2</span>
-                        <p>Look at your browser's address bar for an <strong>Install icon</strong> (monitor with down arrow) and click it.</p>
+                        <p>Look at your browser&apos;s address bar for an <strong>Install icon</strong> (monitor with down arrow) and click it.</p>
                       </div>
                       <div className="flex gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] flex items-center justify-center font-bold text-xs shrink-0">3</span>
-                        <p>Alternatively, click your browser menu (three dots or share button) and select <strong>"Save Page as App"</strong> or <strong>"Add to Home Screen"</strong>.</p>
+                        <p>Alternatively, click your browser menu (three dots or share button) and select <strong>&quot;Save Page as App&quot;</strong> or <strong>&quot;Add to Home Screen&quot;</strong>.</p>
                       </div>
                     </div>
 

@@ -298,7 +298,7 @@ export default function Footer() {
       <div className="bg-[#000000] py-6 border-t border-white/5 relative z-20">
         <div className="container mx-auto px-4 md:px-8 lg:px-12 max-w-[1400px] flex flex-col lg:flex-row justify-between items-center gap-6">
           <p className="text-gray-500 text-xs font-bold uppercase tracking-widest flex items-center gap-2 shrink-0">
-            © {new Date().getFullYear()} <a href="/" className="text-[#ff4dd2] hover:text-[#ff4dd2] transition-colors cursor-pointer drop-shadow-[0_0_8px_rgba(255, 77, 210,0.5)]">Anime Nation India</a> <span className="text-gray-700">|</span> ALL RIGHTS RESERVED
+            © {new Date().getFullYear()} <Link href="/" className="text-[#ff4dd2] hover:text-[#ff4dd2] transition-colors cursor-pointer drop-shadow-[0_0_8px_rgba(255, 77, 210,0.5)]">Anime Nation India</Link> <span className="text-gray-700">|</span> ALL RIGHTS RESERVED
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-6">

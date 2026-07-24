@@ -75,7 +75,7 @@ export default function ContactPage() {
             Get in <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Touch</span>
           </h1>
           <p className="text-[#a0a0a0] max-w-2xl mx-auto text-sm md:text-base">
-            Connect with the community. Whether you have a question, feedback, or a feature suggestion, we'd love to hear from you.
+            Connect with the community. Whether you have a question, feedback, or a feature suggestion, we&apos;d love to hear from you.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export default function ContactPage() {
                     className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/30 flex items-center gap-3 text-green-400"
                   >
                     <CheckCircle2 size={20} className="shrink-0" />
-                    <p className="text-sm font-medium">Your message has been sent successfully. We'll get back to you soon!</p>
+                    <p className="text-sm font-medium">Your message has been sent successfully. We&apos;ll get back to you soon!</p>
                   </motion.div>
                 )}
 

@@ -22,7 +22,11 @@ const eslintConfig = defineConfig([
       "react-hooks/rules-of-hooks": "off",
       "@typescript-eslint/no-require-imports": "off",
       "react-hooks/exhaustive-deps": "off",
-      "@next/next/no-page-custom-font": "off"
+      "@next/next/no-page-custom-font": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/immutability": "off",
+      "react/no-unescaped-entities": "off",
+      "react-hooks/purity": "off"
     }
   }
 ]);

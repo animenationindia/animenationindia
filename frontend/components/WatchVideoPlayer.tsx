@@ -95,6 +95,13 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
     };
   }, [isPlaying]);
 
+  const skipIntro = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 40;
+      setCurrentTime(40);
+    }
+  };
+
   // Sync Playback Speed
   useEffect(() => {
     if (videoRef.current) {
@@ -204,13 +211,6 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
     setIsPlaying(false);
     if (autoNext) {
       onEnded();
-    }
-  };
-
-  const skipIntro = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 40;
-      setCurrentTime(40);
     }
   };
 
