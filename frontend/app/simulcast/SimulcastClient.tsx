@@ -205,7 +205,7 @@ export default function SimulcastClient() {
               <span className="text-6xl mb-4 opacity-50">🍂</span>
               <h3 className="text-2xl text-white font-bold mb-2">No Anime Found</h3>
               <p className="text-gray-400 max-w-md">
-                We couldn't find any anime for the {season} {year} season. Try selecting a different time period.
+                We couldn&apos;t find any anime for the {season} {year} season. Try selecting a different time period.
               </p>
             </div>
           ) : (

@@ -27,6 +27,32 @@ export default function MangaSearchFilters({ initialQuery = '', initialType = ''
   const [selectedType, setSelectedType] = useState(initialType);
   const [isAdult, setIsAdult] = useState(initialAdult);
 
+  const updateQueryParams = (q: string, type: string, adult: boolean) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (q.trim()) {
+      params.set('q', q.trim());
+    } else {
+      params.delete('q');
+    }
+
+    if (type) {
+      params.set('type', type);
+    } else {
+      params.delete('type');
+    }
+
+    if (adult) {
+      params.set('adult', 'true');
+    } else {
+      params.delete('adult');
+    }
+
+    params.set('page', '1'); // Reset to page 1 on new search or filter change
+
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   // Synchronize state if URL params change externally (e.g. back navigation)
   useEffect(() => {
     setQuery(searchParams.get('q') || '');
@@ -65,32 +91,6 @@ export default function MangaSearchFilters({ initialQuery = '', initialType = ''
     const newState = !isAdult;
     setIsAdult(newState);
     updateQueryParams(query, selectedType, newState);
-  };
-
-  const updateQueryParams = (q: string, type: string, adult: boolean) => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    if (q.trim()) {
-      params.set('q', q.trim());
-    } else {
-      params.delete('q');
-    }
-    
-    if (type) {
-      params.set('type', type);
-    } else {
-      params.delete('type');
-    }
-    
-    if (adult) {
-      params.set('adult', 'true');
-    } else {
-      params.delete('adult');
-    }
-    
-    params.set('page', '1'); // Reset to page 1 on new search or filter change
-    
-    router.push(`${pathname}?${params.toString()}`);
   };
 
   return (

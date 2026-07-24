@@ -201,8 +201,6 @@ async function NewsAndReviewsSection({ news }: { news: any[] }) {
 
 // ─── Main Home Server Component ──────────────────────────────────────────────
 export default async function Home() {
-  const startTime = Date.now();
-
   const allNews = await getNews();
   const announcements = getNewsByCategory(allNews, 'Announcements');
   const latestAnnouncement = announcements[0] || allNews[0] || null;
@@ -265,11 +263,10 @@ export default async function Home() {
   const yearAwards = results[8] || [];
   const trailersRes = results[9];
 
-  const duration = Date.now() - startTime;
   const succeededCount = results.filter(Boolean).length;
 
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Home Server Fetch] Initial Above-the-fold loaded in ${duration}ms | Succeeded: ${succeededCount}/${results.length} calls | Rate limit safe!`);
+    console.log(`[Home Server Fetch] Initial Above-the-fold loaded | Succeeded: ${succeededCount}/${results.length} calls | Rate limit safe!`);
   }
 
   // Deduplicate initial lists
