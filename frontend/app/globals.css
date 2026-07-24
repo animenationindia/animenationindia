@@ -88,7 +88,7 @@ body {
 /* 🚀 GPU Hardware Acceleration & Off-screen Content Visibility Optimization */
 .cv-auto {
   content-visibility: auto;
-  contain-intrinsic-size: 1px 320px;
+  contain-intrinsic-size: 1px 420px;
 }
 
 .gpu-accelerate,
