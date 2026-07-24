@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/api.ts
 import { logError } from './logger';
+import { fetchKitsuCharacters } from './kitsu-api';
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 const JIKAN_API_URL = 'https://api.jikan.moe/v4';
@@ -128,6 +129,152 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
       return null;
     }
     console.error(`Error in fetchJikan for ${endpoint}:`, error);
+    return null;
+  }
+}
+
+// ─── Multi-Tier Fallback Engine ────────────────────────────────────────────────
+export async function fetchWithFallback<T>(
+  providers: Array<{ name: string; fn: () => Promise<T | null> }>
+): Promise<T | null> {
+  for (const provider of providers) {
+    const startTime = Date.now();
+    try {
+      console.log(`[FallbackChain] Trying ${provider.name}...`);
+      const result = await provider.fn();
+      
+      const isArray = Array.isArray(result);
+      const hasValue = isArray ? result.length > 0 : result !== null && result !== undefined;
+
+      if (hasValue) {
+        console.log(`[FallbackChain SUCCESS] ${provider.name} succeeded in ${Date.now() - startTime}ms!`);
+        return result;
+      }
+      console.warn(`[FallbackChain EMPTY] ${provider.name} returned empty/null in ${Date.now() - startTime}ms. Trying next...`);
+    } catch (error: any) {
+      logError(`FallbackChain:${provider.name}`, error);
+      console.warn(`[FallbackChain FAIL] ${provider.name} failed in ${Date.now() - startTime}ms. Trying next...`);
+    }
+  }
+  console.warn(`[FallbackChain EXHAUSTED] All providers failed or returned empty.`);
+  return null;
+}
+
+// AniList Character Fallback
+export async function fetchAniListCharactersFallback(anilistId: number): Promise<any[] | null> {
+  if (!anilistId || isNaN(anilistId)) return null;
+
+  const queryChar = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        id
+        characters(perPage: 12) {
+          edges {
+            role
+            node {
+              id
+              name { full userPreferred native }
+              image { large medium }
+            }
+            voiceActors(language: JAPANESE) {
+              id
+              name { full userPreferred }
+              image { large medium }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchAniList(queryChar, { id: anilistId }, GLOBAL_CACHE_TIME, 2500);
+    const edges = data?.data?.Media?.characters?.edges;
+    if (!edges || !Array.isArray(edges) || edges.length === 0) return null;
+
+    return edges.map((edge: any) => {
+      const japaneseVA = edge.voiceActors?.[0];
+      return {
+        role: edge.role === 'MAIN' ? 'Main' : 'Supporting',
+        character: {
+          mal_id: edge.node?.id || 0,
+          name: edge.node?.name?.full || edge.node?.name?.userPreferred || 'Unknown Character',
+          images: {
+            jpg: {
+              image_url: edge.node?.image?.large || edge.node?.image?.medium || '/placeholder.png'
+            }
+          }
+        },
+        voice_actors: japaneseVA ? [
+          {
+            language: 'Japanese',
+            person: {
+              mal_id: japaneseVA.id || 0,
+              name: japaneseVA.name?.full || japaneseVA.name?.userPreferred || 'Unknown VA',
+              images: {
+                jpg: {
+                  image_url: japaneseVA.image?.large || japaneseVA.image?.medium || '/placeholder.png'
+                }
+              }
+            }
+          }
+        ] : []
+      };
+    });
+  } catch (error) {
+    logError('fetchAniListCharactersFallback', error);
+    return null;
+  }
+}
+
+// AniList Recommendation Fallback
+export async function fetchAniListRecommendationsFallback(anilistId: number): Promise<any[] | null> {
+  if (!anilistId || isNaN(anilistId)) return null;
+
+  const queryRec = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        id
+        recommendations(perPage: 12, sort: [RATING_DESC]) {
+          nodes {
+            mediaRecommendation {
+              id
+              idMal
+              title { english romaji }
+              coverImage { extraLarge large }
+              format
+              averageScore
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchAniList(queryRec, { id: anilistId }, GLOBAL_CACHE_TIME, 2500);
+    const nodes = data?.data?.Media?.recommendations?.nodes;
+    if (!nodes || !Array.isArray(nodes) || nodes.length === 0) return null;
+
+    const validRecs = nodes
+      .map((n: any) => n.mediaRecommendation)
+      .filter((rec: any) => rec && (rec.idMal || rec.id));
+
+    if (validRecs.length === 0) return null;
+
+    return validRecs.map((rec: any) => ({
+      entry: {
+        mal_id: rec.idMal || rec.id,
+        title: rec.title?.english || rec.title?.romaji || 'Unknown Anime',
+        images: {
+          jpg: {
+            large_image_url: rec.coverImage?.extraLarge || rec.coverImage?.large || '/placeholder.png'
+          }
+        }
+      }
+    }));
+  } catch (error) {
+    logError('fetchAniListRecommendationsFallback', error);
     return null;
   }
 }
@@ -472,14 +619,31 @@ export async function getAnimeFullDetails(id: string) {
   }
 }
 
-// ৫. ক্যারেক্টার ও ভয়েস অ্যাক্টর (Jikan)
-export async function getAnimeCharacters(id: string) {
-  try {
-    const res = await fetchJikan(`/anime/${id}/characters`);
-    return res?.data || []; 
-  } catch { 
-    return []; 
-  }
+// ৫. ক্যারেক্টার ও ভয়েস অ্যাক্টর (Multi-Tier Fallback: Jikan -> Kitsu -> AniList)
+export async function getAnimeCharacters(id: string | number, anilistId?: number): Promise<any[]> {
+  const numMalId = Number(id);
+  const resolvedAniListId = anilistId || numMalId;
+
+  const providers = [
+    {
+      name: 'Jikan Characters (Primary)',
+      fn: async () => {
+        const res = await fetchJikan(`/anime/${id}/characters`, GLOBAL_CACHE_TIME, 2000);
+        return res?.data && Array.isArray(res.data) && res.data.length > 0 ? res.data : null;
+      }
+    },
+    {
+      name: 'Kitsu Characters (Secondary)',
+      fn: async () => fetchKitsuCharacters(numMalId)
+    },
+    {
+      name: 'AniList Characters (Tertiary Fallback)',
+      fn: async () => fetchAniListCharactersFallback(resolvedAniListId)
+    }
+  ];
+
+  const result = await fetchWithFallback(providers);
+  return result || [];
 }
 
 // ৫.১ Episodes (Jikan)
@@ -762,27 +926,39 @@ export async function getJikanAnimeByGenre(genreId: string, page = 1, orderBy = 
   }
 }
 
-// 15. Recommendations (Jikan)
-export async function getAnimeRecommendations(id: string) {
-  try {
-    const data = await fetchJikan(`/anime/${id}/recommendations`);
-    return (data?.data || []).map((rec: any) => ({
-      id: rec.entry.mal_id,
-      idMal: rec.entry.mal_id,
-      title: {
-        romaji: rec.entry.title,
-        english: rec.entry.title,
-      },
-      coverImage: {
-        extraLarge: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url,
-        large: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url,
-      },
-      format: 'TV', // Fallback, Jikan recommendation endpoint doesn't provide type
-    }));
-  } catch (error) {
-    console.error("Recommendations API Error:", error);
-    return [];
-  }
+// 15. Recommendations (Multi-Tier Fallback: Jikan -> AniList)
+export async function getAnimeRecommendations(id: string | number, anilistId?: number): Promise<any[]> {
+  const numMalId = Number(id);
+  const resolvedAniListId = anilistId || numMalId;
+
+  const providers = [
+    {
+      name: 'Jikan Recommendations (Primary)',
+      fn: async () => {
+        const data = await fetchJikan(`/anime/${id}/recommendations`, GLOBAL_CACHE_TIME, 2000);
+        return data?.data && Array.isArray(data.data) && data.data.length > 0
+          ? data.data.map((rec: any) => ({
+              entry: {
+                mal_id: rec.entry.mal_id,
+                title: rec.entry.title,
+                images: {
+                  jpg: {
+                    large_image_url: rec.entry.images?.webp?.large_image_url || rec.entry.images?.jpg?.large_image_url || rec.entry.images?.jpg?.image_url
+                  }
+                }
+              }
+            }))
+          : null;
+      }
+    },
+    {
+      name: 'AniList Recommendations (Secondary Fallback)',
+      fn: async () => fetchAniListRecommendationsFallback(resolvedAniListId)
+    }
+  ];
+
+  const result = await fetchWithFallback(providers);
+  return result || [];
 }
 
 // 16. Top Characters (Jikan)

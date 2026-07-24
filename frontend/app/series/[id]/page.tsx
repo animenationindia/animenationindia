@@ -102,17 +102,23 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
   const { id } = await params;
   const numId = Number(id);
 
-  // Use Promise.allSettled so secondary failures never throw or crash the page
-  const [jikanRes, charactersRes, extraInfoRes, recommendationsRes] = await Promise.allSettled([
+  // 1. Fetch primary anime details & AniList extra info in parallel (~250ms)
+  const [jikanRes, extraInfoRes] = await Promise.allSettled([
     getCachedAnimeDetails(id),
-    getAnimeCharacters(id),
-    getAniListExtraInfo(numId),
-    getAnimeRecommendations(id)
+    getAniListExtraInfo(numId)
   ]);
 
   const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
-  const characters = charactersRes.status === 'fulfilled' ? charactersRes.value : [];
   const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
+  const resolvedAniListId = extraInfo?.id || numId;
+
+  // 2. Fetch characters and recommendations using multi-tier fallback chain
+  const [charactersRes, recommendationsRes] = await Promise.allSettled([
+    getAnimeCharacters(numId, resolvedAniListId),
+    getAnimeRecommendations(numId, resolvedAniListId)
+  ]);
+
+  const characters = charactersRes.status === 'fulfilled' ? charactersRes.value : [];
   const recommendations = recommendationsRes.status === 'fulfilled' ? recommendationsRes.value : [];
 
   // Primary data resolution: Prefer Jikan, fallback to AniList extraInfo
