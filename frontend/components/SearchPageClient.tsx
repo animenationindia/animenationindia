@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -220,7 +219,8 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
       <Link href={isManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block relative">
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#0d0e1f] rounded-xl border border-white/10 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_8px_30px_rgba(255,77,210,0.2)] transition-all duration-300">
           {cover && (
-            <Image src={cover} alt={title} fill priority={priority} sizes="(max-width:640px)33vw,(max-width:1024px)20vw,14vw" className="object-cover transition-transform duration-500 group-hover:scale-110" unoptimized />
+            /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"cover"} alt={"title"} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           )}
 
           {/* Score */}
@@ -617,7 +617,8 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all duration-100 cursor-pointer ${activeSugg === idx ? 'bg-[#ff6400]/10' : 'hover:bg-white/[0.03]'}`}
                       >
                         <div className="w-9 h-13 rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1b2e] border border-white/5">
-                          {a.coverImage?.large && <Image src={a.coverImage.large} alt={t} width={36} height={52} className="object-cover w-full h-full" unoptimized />}
+                          {a.coverImage?.large && /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"a.coverImage.large"} alt={"t"} loading="lazy" width={36} height={52} className="object-cover w-full h-full" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-semibold truncate">{t}</p>

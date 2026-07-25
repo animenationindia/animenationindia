@@ -91,6 +91,14 @@ body {
   contain-intrinsic-size: 1px 420px;
 }
 
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.35s ease;
+}
+.card-3d:hover {
+  transform: perspective(900px) rotateX(4deg) rotateY(-6deg) translateY(-6px) scale(1.03);
+}
+
 .gpu-accelerate,
 .glass-card,
 [class*="blur-["],

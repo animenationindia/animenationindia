@@ -37,6 +37,9 @@ export default class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       const sectionName = this.props.sectionName || 'section';
+      const isRateLimit = this.state.error?.message?.toLowerCase().includes('rate') || 
+        this.state.error?.message?.toLowerCase().includes('429');
+
       return (
         <div className="w-full my-6 p-6 rounded-2xl bg-[#121326]/70 border border-rose-500/30 backdrop-blur-md text-center flex flex-col items-center justify-center gap-3 shadow-lg transition-all">
           <div className="p-3 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
@@ -44,10 +47,12 @@ export default class ErrorBoundary extends Component<Props, State> {
           </div>
           <div>
             <h4 className="text-white font-bold text-base sm:text-lg mb-1">
-              {this.props.fallbackTitle || `This ${sectionName} could not be loaded.`}
+              {isRateLimit ? "Data Provider Busy (Rate Limit)" : (this.props.fallbackTitle || `This ${sectionName} could not be loaded.`)}
             </h4>
             <p className="text-gray-400 text-xs sm:text-sm">
-              An unexpected error occurred while fetching content. Please try again.
+              {isRateLimit 
+                ? "Our data provider is busy right now, please try again in a moment."
+                : "An unexpected error occurred while fetching content. Please try again."}
             </p>
           </div>
           <button

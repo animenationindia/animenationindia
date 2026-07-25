@@ -1,6 +1,5 @@
 // components/PersonCard.tsx
 import { memo } from 'react';
-import Image from 'next/image';
 import { Heart } from 'lucide-react';
 import Link from 'next/link';
 
@@ -22,7 +21,8 @@ function PersonCard({ person, linkType = 'character' }: { person: PersonData; li
   return (
     <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/5 cv-auto gpu-accelerate">
       {person.image?.large && (
-        <Image src={person.image.large} alt={name} fill sizes="150px" className="object-cover transition-transform duration-500 group-hover:scale-110" />
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={person.image.large} alt={name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
       )}
       
       {/* Top Likes Badge */}

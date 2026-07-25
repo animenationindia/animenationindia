@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { type AiringSchedule } from '../../lib/api';
 import { Clock, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -56,13 +55,8 @@ function ScheduleAnimeCard({ item }: { item: AiringSchedule }) {
       <Link href={`/series/${linkId}`} className="block w-full h-full relative">
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-xl border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_25px_rgba(255, 77, 210,0.4)] transition-all duration-300">
           {coverImage && (
-            <Image 
-              src={coverImage} 
-              alt={title} 
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
-            />
+            /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"coverImage"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           )}
 
           {/* Badges container */}

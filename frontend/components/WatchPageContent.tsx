@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ChevronLeft, Info, ListVideo, Search, ExternalLink, Play } from 'lucide-react';
 import WatchVideoPlayer from './WatchVideoPlayer';
 
@@ -182,13 +181,8 @@ export default function WatchPageContent({ anime, episodes }: WatchPageContentPr
                         <div className={`w-24 h-14 bg-[#1c1c1f] rounded-xl overflow-hidden relative ${
                           isActive ? 'ring-2 ring-black' : 'group-hover:ring-2 group-hover:ring-[#ff4dd2]'
                         } transition-all`}>
-                          <Image 
-                            src={coverImage} 
-                            alt={ep.title || `Episode ${realIndex + 1}`} 
-                            fill
-                            sizes="96px"
-                            className="object-cover opacity-50 group-hover:opacity-85 transition-opacity"
-                          />
+                          /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"coverImage"} alt={"ep.title || `Episode ${realIndex + 1"} loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-85 transition-opacity" />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Play 
                               size={16} 
@@ -231,25 +225,15 @@ export default function WatchPageContent({ anime, episodes }: WatchPageContentPr
             
             {/* Banner & Cover Art overlay section */}
             <div className="relative w-full rounded-2xl overflow-hidden h-44 border border-white/10 shadow-lg select-none">
-              <Image 
-                src={bannerImage}
-                alt={displayTitle}
-                fill
-                sizes="(max-width: 1280px) 100vw, 420px"
-                className="object-cover opacity-60 filter blur-[1px]"
-              />
+              /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"bannerImage"} alt={"displayTitle"} loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-60 filter blur-[1px]" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c20] via-[#0b0c20]/30 to-black/25 z-10" />
               
               {/* Floating Info inside Banner */}
               <div className="absolute bottom-4 left-4 right-4 z-20 flex gap-4 items-end">
                 <div className="relative w-16 h-24 rounded-lg overflow-hidden border border-white/20 shadow-md shrink-0">
-                  <Image 
-                    src={coverImage}
-                    alt={displayTitle}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
+                  /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"coverImage"} alt={"displayTitle"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                 </div>
                 <div className="flex flex-col gap-1 min-w-0 pb-1">
                   <h2 className="text-white font-bold text-base md:text-lg line-clamp-1 uppercase tracking-tight drop-shadow-md">

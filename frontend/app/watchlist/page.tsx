@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, BookmarkX } from 'lucide-react';
 import { BACKEND_URL } from '../../lib/config';
@@ -286,13 +285,8 @@ export default function WatchlistPage() {
                         </button>
 
                         <Link href={getDetailsLink(item)} className="block relative w-full aspect-[2/3] overflow-hidden cursor-pointer">
-                          <Image 
-                            src={item.anime_image} 
-                            alt={item.anime_title} 
-                            fill 
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 15vw"
-                            className="object-cover group-hover:scale-110 transition-transform duration-500" 
-                          />
+                          /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"item.anime_image"} alt={"item.anime_title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-[#050716]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </Link>
                         

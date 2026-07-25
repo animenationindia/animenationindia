@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Play, Info } from 'lucide-react';
 import { sanitizeHTML } from '../lib/sanitize';
 import { motion } from 'framer-motion';
@@ -47,12 +46,12 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full z-0">
         {backgroundImage && (
-          <Image
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
             src={backgroundImage}
             alt={title}
-            fill
-            sizes="100vw"
-            className="object-cover object-center opacity-40 group-hover:scale-105 transition-transform duration-700 ease-out"
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-40 group-hover:scale-105 transition-transform duration-700 ease-out"
           />
         )}
         {/* Dark overlays to ensure text readability */}
@@ -97,12 +96,12 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
         {/* Right Side: Floating Character Artwork Cover Card */}
         {(anime.coverImage?.extraLarge || anime.coverImage?.large) && (
           <div className="hidden lg:block relative w-[180px] h-[260px] flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.6)] transform rotate-2 hover:rotate-0 transition-transform duration-500">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={anime.coverImage.extraLarge || anime.coverImage.large}
               alt={title}
-              fill
-              sizes="180px"
-              className="object-cover"
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         )}

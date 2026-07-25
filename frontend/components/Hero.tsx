@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
@@ -86,14 +85,13 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
                 {/* Full Width Background Image */}
                 <div className="absolute inset-0 w-full h-full">
                   {backgroundImage && (
-                    <Image 
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img 
                       src={backgroundImage} 
                       alt={title} 
-                      fill 
-                      priority 
-                      quality={100}
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw" 
-                      className="object-cover object-center md:object-[center_20%]" 
+                      loading={index === 0 ? "eager" : "lazy"}
+                      fetchPriority={index === 0 ? "high" : "auto"}
+                      className="absolute inset-0 w-full h-full object-cover object-center md:object-[center_20%]" 
                     />
                   )}
                   {/* Deep Space Dark Gradient overlay */}

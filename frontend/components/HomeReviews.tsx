@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Star, MessageCircle, ThumbsUp } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -72,13 +71,8 @@ export default function HomeReviews() {
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 shrink-0">
-                    <Image 
-                      src={review.user.images.jpg.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user.username}`} 
-                      alt={review.user.username} 
-                      fill
-                      sizes="40px"
-                      className="object-cover"
-                    />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"review.user.images.jpg.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user.username"} alt={"review.user.username"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </div>
                   <div>
                     <h4 className="text-white font-bold text-sm">{review.user.username}</h4>
@@ -94,13 +88,8 @@ export default function HomeReviews() {
               {/* Anime Info */}
               <div className="flex items-center gap-3 mb-4 bg-white/5 p-2 rounded-lg">
                 <div className="relative w-10 h-14 rounded overflow-hidden shadow-md shrink-0">
-                  <Image 
-                    src={review.entry.images.jpg.image_url} 
-                    alt={review.entry.title} 
-                    fill
-                    sizes="40px"
-                    className="object-cover"
-                  />
+                  /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"review.entry.images.jpg.image_url"} alt={"review.entry.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Reviewed</p>

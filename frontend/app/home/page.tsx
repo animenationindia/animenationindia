@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import Hero from '../../components/Hero';
 import InstallAppButton from '../../components/InstallAppButton';
 import SectionSlider from '../../components/SectionSlider'; 
@@ -130,13 +129,8 @@ async function ThemeZonesSection({
 
       {romanceSeasonalAnime && (
         <div className="relative w-full h-[250px] md:h-[350px] rounded-3xl overflow-hidden my-4 border border-white/10 group shadow-2xl">
-          <Image
-            src={romanceSeasonalAnime.bannerImage || romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large}
-            alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
-            fill
-            sizes="100vw"
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-          />
+          /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"romanceSeasonalAnime.bannerImage || romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large"} alt={"romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#050716] via-[#050716]/80 to-transparent flex flex-col justify-center px-6 md:px-12">
             <span className="text-[#ff4dd2] text-xs font-bold uppercase tracking-widest mb-2">Featured Seasonal Romance</span>
             <h3 className="text-2xl md:text-4xl font-extrabold text-white max-w-xl line-clamp-2">

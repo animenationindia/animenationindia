@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Play, X, Search, ArrowRight, Loader2 } from 'lucide-react';
 
@@ -264,7 +263,8 @@ export default function TrailersPage() {
                           }}
                         >
                           <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 bg-[#2d2a3d]">
-                            <Image src={imageUrl} alt={title} fill sizes="56px" className="object-cover" />
+                            /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"imageUrl"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <Play size={20} className="text-white fill-current" />
                             </div>
@@ -309,13 +309,8 @@ export default function TrailersPage() {
                 className="relative aspect-video rounded-xl overflow-hidden cursor-pointer group bg-[#121214] border border-white/5"
                 onClick={() => setSelectedTrailerId(anime.trailer.id)}
               >
-                <Image 
-                  src={thumbnailUrl} 
-                  alt={title} 
-                  fill 
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105" 
-                />
+                /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"thumbnailUrl"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white group-hover:text-[#f47521] group-hover:scale-110 transition-all border border-white/10 group-hover:border-[#f47521]/50">
                     <Play size={24} className="ml-1 fill-current" />

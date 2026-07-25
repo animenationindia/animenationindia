@@ -15,6 +15,9 @@ export default function GlobalError({ error, reset }: ErrorProps) {
     logError('GlobalErrorBoundary', error);
   }, [error]);
 
+  const isRateLimit = error.message?.toLowerCase().includes('rate') || 
+    error.message?.toLowerCase().includes('429');
+
   return (
     <main className="min-h-screen bg-[#050716] text-white flex items-center justify-center p-6 relative overflow-hidden selection:bg-[#ff4dd2] selection:text-white">
       {/* Background Glow */}
@@ -27,11 +30,13 @@ export default function GlobalError({ error, reset }: ErrorProps) {
         </div>
 
         <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-3">
-          Something Went Wrong!
+          {isRateLimit ? "Provider Busy (Rate Limit)" : "Something Went Wrong!"}
         </h1>
 
         <p className="text-sm text-gray-300 leading-relaxed mb-8">
-          An unexpected error occurred while loading the page. Please click below to try again.
+          {isRateLimit 
+            ? "Our data provider is busy right now, please try again in a moment."
+            : "An unexpected error occurred while loading the page. Please click below to try again."}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

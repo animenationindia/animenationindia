@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Flame } from 'lucide-react';
 
 interface HomeTopListsProps {
@@ -57,13 +56,8 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
               return (
                 <div key={anime.id} className="flex items-center gap-4 group/item">
                   <Link href={`/series/${linkId}`} className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
-                    <Image
-                      src={anime.coverImage.large}
-                      alt={title}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"anime.coverImage.large"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </Link>
                   <div className="flex flex-col gap-1 min-w-0">
                     <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
@@ -100,13 +94,8 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
               return (
                 <div key={anime.id} className="flex items-center gap-4 group/item">
                   <Link href={`/series/${linkId}`} className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
-                    <Image
-                      src={anime.coverImage.large}
-                      alt={title}
-                      fill
-                      sizes="48px"
-                      className="object-cover"
-                    />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"anime.coverImage.large"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </Link>
                   <div className="flex flex-col gap-1 min-w-0">
                     <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
@@ -139,13 +128,8 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                   <div className="relative flex-shrink-0">
                     {renderRankBadge(index + 1)}
                     <Link href={`/series/${linkId}`} className="relative block w-12 h-16 rounded-xl overflow-hidden border border-white/10 hover:scale-105 transition-transform duration-300">
-                      <Image
-                        src={anime.coverImage.large}
-                        alt={title}
-                        fill
-                        sizes="48px"
-                        className="object-cover"
-                      />
+                      /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"anime.coverImage.large"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                     </Link>
                   </div>
                   <div className="flex flex-col gap-1 min-w-0">

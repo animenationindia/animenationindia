@@ -1,5 +1,4 @@
 import { getNews, getNewsById } from '../../../lib/getNews';
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Clock, ExternalLink, User, Newspaper } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -86,15 +85,8 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
 
           {/* Hero Image */}
           <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden mb-8 border border-[#2A2B30]/30">
-            <Image
-              src={article.image}
-              alt={article.title}
-              fill
-              sizes="(max-width: 1200px) 100vw, 1200px"
-              className="object-cover"
-              priority
-              unoptimized
-            />
+            /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"article.image"} alt={"article.title"} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover" />
           </div>
 
           {/* Article Body */}
@@ -147,14 +139,8 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
                   className="group block rounded-xl overflow-hidden border border-[#2A2B30]/30 hover:border-[#ff4dd2]/50 transition-all bg-[#121326]/30"
                 >
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      unoptimized
-                    />
+                    /* eslint-disable-next-line @next/next/no-img-element */
+<img src={"item.image"} alt={"item.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <div className="p-4">
                     <div className="flex flex-wrap gap-1.5 mb-2">

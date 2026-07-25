@@ -2,10 +2,8 @@
 
 import { memo, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Play, Bookmark, Check, BookOpen } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { sanitizeDescription } from '../lib/sanitize';
 import { useWatchlist } from '../hooks/useWatchlist';
 
@@ -78,10 +76,8 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
   };
 
   return (
-    <motion.div 
-      whileHover={{ y: -8, scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="group relative w-full mb-4 flex flex-col bg-transparent cv-auto gpu-accelerate"
+    <div 
+      className="card-3d group relative w-full mb-4 flex flex-col bg-transparent cv-auto gpu-accelerate"
     >
       {/* 🖼️ Image & Overlay Container */}
       <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255,77,210,0.4)] transition-all duration-300">
@@ -89,14 +85,12 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
         {/* Link wraps image and hover overlay */}
         <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative z-10">
           {coverImage && (
-            <Image 
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img 
               src={coverImage} 
               alt={title} 
-              fill
-              priority={priority}
-              quality={90}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 15vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              loading={priority ? "eager" : "lazy"}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
             />
           )}
 
@@ -169,7 +163,7 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
           {format.toLowerCase()} {year && <span className="text-[#a0a0a0]">• {year}</span>}
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 

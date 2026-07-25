@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay, Mousewheel } from 'swiper/modules';
@@ -59,12 +58,12 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
                 className="relative aspect-video rounded-xl overflow-hidden cursor-pointer group bg-[#121214] border border-white/5"
                 onClick={() => setSelectedTrailerId(anime.trailer.id)}
               >
-                <Image 
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img 
                   src={thumbnailUrl} 
                   alt={title} 
-                  fill 
-                  sizes="(max-width: 768px) 80vw, (max-width: 1200px) 40vw, 20vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                 />
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <div className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white group-hover:text-[#f47521] group-hover:scale-110 transition-all border border-white/10 group-hover:border-[#f47521]/50">
