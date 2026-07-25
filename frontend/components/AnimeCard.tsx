@@ -50,7 +50,7 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
   const description = sanitizeDescription(anime.description);
   
   const isActuallyManga = anime.type === 'MANGA' || anime.format === 'MANGA' || anime.format === 'NOVEL' || anime.format === 'ONE_SHOT' || isManga;
-  const isSaved = isInWatchlist(linkId);
+  const isSaved = isMounted ? isInWatchlist(linkId) : false;
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setIsMounted(true));
@@ -76,8 +76,6 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
       image: coverImage,
     });
   };
-
-  if (!isMounted) return null;
 
   return (
     <motion.div 

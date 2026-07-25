@@ -325,8 +325,8 @@ export default async function Home() {
           {/* Dynamic Trending/Seasonal Banner */}
           {safeHeroAnimeList.length > 0 && <HomeTrendingBanner anime={safeHeroAnimeList[0]} />}
 
-          {/* 6. Trending Anime */}
-          <SectionSlider title="Trending Anime" data={safeTopAnime as any} type="anime" viewAllLink="/popular" />
+          {/* 6. All-Time Popular Anime */}
+          <SectionSlider title="All-Time Popular Anime" data={safeTopAnime as any} type="anime" viewAllLink="/popular" />
 
           {/* Top Movies, TV Series, and Year Awards */}
           <HomeTopLists topMovies={safeTopMovies} topTV={safeTopTVSeries} awards={safeYearAwards} year={currentYear} />
