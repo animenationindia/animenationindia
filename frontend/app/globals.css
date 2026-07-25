@@ -206,6 +206,42 @@ body {
   .animate-shimmer {
     animation: shimmer 1.5s infinite;
   }
+
+  /* Sci-fi Futuristic Skeleton Loader Animations */
+  @keyframes shimmer-sweep {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg, 
+      rgba(255,255,255,0.03) 0%, 
+      rgba(255,77,210,0.08) 50%, 
+      rgba(255,255,255,0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 2s ease-in-out infinite;
+  }
+
+  @keyframes scan-line {
+    0% { top: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .hud-scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ff4dd2, transparent);
+    box-shadow: 0 0 10px #ff4dd2, 0 0 20px #ff4dd2;
+    animation: scan-line 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 30;
+  }
 }
 
 /* Google Translate UI Hacks */
