@@ -224,7 +224,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
           )}
 
           {/* Score */}
-          {anime.averageScore && (
+          {typeof anime.averageScore === 'number' && !isNaN(anime.averageScore) && (
             <div className="absolute top-2 left-2 z-20 flex items-center gap-1 bg-black/80 backdrop-blur-sm rounded-lg px-2 py-0.5 pointer-events-none border border-white/5">
               <Star size={10} className="text-yellow-400 fill-yellow-400" />
               <span className="text-[11px] font-bold text-white leading-none">{(anime.averageScore / 10).toFixed(1)}</span>
@@ -624,7 +624,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                           <div className="flex items-center gap-2 mt-0.5">
                             {a.format && <span className="text-[10px] text-[#ff6400] uppercase font-bold tracking-wide">{a.format.replace('_', ' ')}</span>}
                             {a.seasonYear && <span className="text-[10px] text-gray-600">{a.seasonYear}</span>}
-                            {a.averageScore && (
+                            {typeof a.averageScore === 'number' && !isNaN(a.averageScore) && (
                               <span className="text-[10px] text-yellow-500/80 flex items-center gap-0.5">
                                 <Star size={8} className="fill-yellow-500" />{(a.averageScore / 10).toFixed(1)}
                               </span>

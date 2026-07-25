@@ -16,9 +16,13 @@ interface Params {
   id: string;
 }
 
-// React cache() wrapper to deduplicate fetch between generateMetadata and AnimeDetails page component
+// React cache() wrappers to deduplicate fetches between generateMetadata and AnimeDetails page component
 const getCachedAnimeDetails = cache(async (id: string) => {
   return getAnimeFullDetails(id);
+});
+
+const getCachedAniListExtraInfo = cache(async (numId: number) => {
+  return getAniListExtraInfo(numId);
 });
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
@@ -28,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   try {
     const [jikanRes, extraInfoRes] = await Promise.allSettled([
       getCachedAnimeDetails(id),
-      getAniListExtraInfo(numId)
+      getCachedAniListExtraInfo(numId)
     ]);
     
     const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
@@ -44,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const title = jikanAnime?.title_english || jikanAnime?.title || extraInfo?.title?.english || extraInfo?.title?.romaji || 'Anime Details';
     const rawDesc = jikanAnime?.synopsis || extraInfo?.description || 'View full anime details, episodes, and trailers on Anime Nation India.';
     const cleanDesc = sanitizeDescription(rawDesc).replace(/\s+/g, ' ').slice(0, 160);
-    const cover = jikanAnime?.images?.jpg?.large_image_url || extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || '/ani-logo.png';
+    const cover = jikanAnime?.images?.jpg?.large_image_url || extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || '/placeholder-poster.png';
 
     return {
       title: `${title} - Details | Anime Nation India`,
@@ -102,10 +106,10 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
   const { id } = await params;
   const numId = Number(id);
 
-  // 1. Fetch primary anime details & AniList extra info in parallel (~250ms)
+  // 1. Fetch primary anime details & AniList extra info in parallel (~250ms) using deduplicated cache wrappers
   const [jikanRes, extraInfoRes] = await Promise.allSettled([
     getCachedAnimeDetails(id),
-    getAniListExtraInfo(numId)
+    getCachedAniListExtraInfo(numId)
   ]);
 
   const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
@@ -137,7 +141,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
         jpg: { large_image_url: extraInfo.coverImage?.large || '' }
       },
       genres: extraInfo.genres ? extraInfo.genres.map((g, idx) => ({ mal_id: idx, name: g })) : [],
-      score: extraInfo.averageScore ? extraInfo.averageScore / 10 : null,
+      score: typeof extraInfo.averageScore === 'number' && !isNaN(extraInfo.averageScore) ? extraInfo.averageScore / 10 : null,
       type: extraInfo.format || 'TV',
       season: extraInfo.seasonYear ? String(extraInfo.seasonYear) : '',
       year: extraInfo.seasonYear || null,
@@ -215,7 +219,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
           <div className="w-full lg:w-[260px] flex-shrink-0">
             <div className="relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-[#141519] group mb-6">
               <Image 
-                src={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url} 
+                src={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '/placeholder-poster.png'} 
                 alt={anime.title} 
                 fill
                 sizes="(max-width: 1024px) 100vw, 260px"
@@ -228,7 +232,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             <AnimeDetailActions 
               animeId={anime.mal_id}
               animeTitle={displayTitle}
-              animeImage={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url}
+              animeImage={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '/placeholder-poster.png'}
               trailerUrl={anime.trailer?.embed_url || anime.trailer?.url || null}
             />
           </div>
@@ -271,7 +275,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
             <div className="flex flex-wrap items-center gap-3 text-sm mb-6 text-[#a0a0a0]">
               <span className="text-white font-semibold flex items-center gap-1">
                 <Star size={16} className="text-amber-400 fill-amber-400" /> 
-                {anime.score ? anime.score.toFixed(1) : 'N/A'}
+                {typeof anime.score === 'number' && !isNaN(anime.score) ? anime.score.toFixed(1) : 'N/A'}
               </span>
               <span>•</span>
               <span className="text-[#d0d0d0]">{anime.type || 'TV'}</span>
@@ -309,14 +313,14 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                     
                     return (
                       <Link 
-                        key={index} 
+                        key={node.idMal || node.id || `rel-${index}`} 
                         href={linkUrl}
                         className="bg-[#141519] border border-[#2A2B30]/40 rounded p-2 flex flex-col gap-2 hover:border-neon-cyan transition group"
                       >
                         <div className="relative aspect-[2/3] w-full rounded overflow-hidden">
                           {node.coverImage?.large && (
                             <Image 
-                              src={node.coverImage.large} 
+                              src={node.coverImage.large || '/placeholder-poster.png'} 
                               alt={node.title?.english || node.title?.romaji || ''} 
                               fill 
                               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 150px"
@@ -353,7 +357,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                         const japaneseVA = item.voice_actors?.find(va => va.language === 'Japanese');
                         
                         return (
-                          <div key={index} className="bg-[#141519] border border-[#2A2B30]/40 rounded p-3 flex items-center justify-between">
+                          <div key={item.character.mal_id || `char-${index}`} className="bg-[#141519] border border-[#2A2B30]/40 rounded p-3 flex items-center justify-between">
                             <Link href={`/character/${item.character.mal_id}`} className="flex items-center gap-3 group">
                               <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-[#2A2B30]">
                                 {item.character.images?.jpg?.image_url && (
@@ -414,7 +418,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                     id: rec.entry.mal_id,
                     idMal: rec.entry.mal_id,
                     title: { english: rec.entry.title, romaji: rec.entry.title },
-                    coverImage: { large: rec.entry.images?.jpg?.large_image_url || '' },
+                    coverImage: { large: rec.entry.images?.jpg?.large_image_url || '/placeholder-poster.png' },
                     format: 'TV',
                     averageScore: null
                   })) as any} 

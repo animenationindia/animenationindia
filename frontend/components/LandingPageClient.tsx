@@ -367,7 +367,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
 
                     {/* Score Badge */}
-                    {anime.averageScore && (
+                    {typeof anime.averageScore === 'number' && !isNaN(anime.averageScore) && (
                       <div className={`absolute top-2 left-2 ${scoreTheme.badgeBg} px-2 py-0.5 rounded-md flex items-center gap-1 border ${scoreTheme.border} shadow-md`}>
                         <Star size={11} className={scoreTheme.starColor} />
                         <span className={`text-[10px] sm:text-xs ${scoreTheme.badgeText}`}>
