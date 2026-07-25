@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 // app/manga/[id]/page.tsx
 import { cache } from 'react';
 import { getMangaFullDetails, getMangaCharacters, getAniListMangaExtraInfo, getMangaRecommendations } from '../../../lib/api';
@@ -114,8 +115,7 @@ export default async function MangaDetails({ params }: { params: Promise<Params>
         <div className="flex flex-col md:flex-row gap-8 bg-[#121326]/60 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-white/10 shadow-2xl mb-12">
           <div className="relative w-full md:w-[260px] aspect-[2/3] shrink-0 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
             {coverImage && (
-              /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"coverImage"} alt={"title"} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover" />
+              <img src={coverImage} alt={title} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover" />
             )}
           </div>
 
@@ -170,8 +170,7 @@ export default async function MangaDetails({ params }: { params: Promise<Params>
               {characters.slice(0, 12).map((item: MangaCharacter, index: number) => (
                 <Link key={index} href={`/character/${item.character.mal_id}`} className="bg-[#121326]/40 border border-white/5 p-3 rounded-2xl flex flex-col items-center text-center group hover:border-[#ff4dd2]/30 transition-all">
                   <div className="relative w-20 h-20 rounded-full overflow-hidden mb-3 border border-white/10">
-                    /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"item.character.images.jpg?.image_url || ''"} alt={"item.character.name"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                    <img src={item.character.images.jpg?.image_url || ''} alt={item.character.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform" />
                   </div>
                   <h4 className="text-xs font-bold text-white line-clamp-1 group-hover:text-[#ff4dd2]">{item.character.name}</h4>
                   <p className="text-[10px] text-gray-400 uppercase font-semibold mt-0.5">{item.role}</p>

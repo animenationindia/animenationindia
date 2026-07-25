@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { getNews, getNewsById } from '../../../lib/getNews';
 import Link from 'next/link';
 import { ArrowLeft, Clock, ExternalLink, User, Newspaper } from 'lucide-react';
@@ -85,8 +86,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
 
           {/* Hero Image */}
           <div className="relative w-full aspect-[16/9] rounded-xl overflow-hidden mb-8 border border-[#2A2B30]/30">
-            /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"article.image"} alt={"article.title"} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={article.image} alt={article.title} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover" />
           </div>
 
           {/* Article Body */}
@@ -139,8 +139,7 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
                   className="group block rounded-xl overflow-hidden border border-[#2A2B30]/30 hover:border-[#ff4dd2]/50 transition-all bg-[#121326]/30"
                 >
                   <div className="relative w-full aspect-[16/9] overflow-hidden">
-                    /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"item.image"} alt={"item.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    <img src={item.image} alt={item.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <div className="p-4">
                     <div className="flex flex-wrap gap-1.5 mb-2">

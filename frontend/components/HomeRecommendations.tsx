@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -64,8 +65,7 @@ export default function HomeRecommendations() {
                 {rec.entry.length === 2 && (
                   <>
                     <div className="relative w-1/2 h-full overflow-hidden">
-                      /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"rec.entry[0].images.jpg.image_url"} alt={"rec.entry[0].title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={rec.entry[0].images.jpg.image_url} alt={"rec.entry[0].title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                       <div className="w-8 h-8 rounded-full bg-[#050716] border border-[#ff4dd2]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
@@ -73,8 +73,7 @@ export default function HomeRecommendations() {
                       </div>
                     </div>
                     <div className="relative w-1/2 h-full overflow-hidden">
-                      /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"rec.entry[1].images.jpg.image_url"} alt={"rec.entry[1].title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={rec.entry[1].images.jpg.image_url} alt={"rec.entry[1].title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     </div>
                   </>
                 )}

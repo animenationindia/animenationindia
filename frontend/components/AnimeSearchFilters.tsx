@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
@@ -366,8 +367,7 @@ export default function AnimeSearchFilters({
                     {/* Thumbnail */}
                     <div className="w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1b2e]">
                       {anime.coverImage?.large && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"anime.coverImage.large"} alt={"title"} loading="lazy" width={40} height={56} className="object-cover w-full h-full" />
+                        <img src={anime.coverImage.large} alt={title} loading="lazy" width={40} height={56} className="object-cover w-full h-full" />
                       )}
                     </div>
                     {/* Info */}

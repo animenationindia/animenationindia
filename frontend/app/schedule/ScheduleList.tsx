@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -55,8 +56,7 @@ function ScheduleAnimeCard({ item }: { item: AiringSchedule }) {
       <Link href={`/series/${linkId}`} className="block w-full h-full relative">
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-xl border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_25px_rgba(255, 77, 210,0.4)] transition-all duration-300">
           {coverImage && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"coverImage"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+            <img src={coverImage} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           )}
 
           {/* Badges container */}

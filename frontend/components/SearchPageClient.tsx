@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -219,7 +220,6 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
       <Link href={isManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block relative">
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#0d0e1f] rounded-xl border border-white/10 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_8px_30px_rgba(255,77,210,0.2)] transition-all duration-300">
           {cover && (
-            /* eslint-disable-next-line @next/next/no-img-element */
             <img src={cover} alt={title} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           )}
 
@@ -721,7 +721,6 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                             {/* Poster Thumbnail */}
                             <div className="w-12 h-16 md:w-14 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1b2e] border border-white/10 relative">
                               {a.coverImage?.large && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img
                                   src={a.coverImage.large}
                                   alt={displayTitle}

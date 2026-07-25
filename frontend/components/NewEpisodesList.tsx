@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState } from 'react';
@@ -73,8 +74,7 @@ export default function NewEpisodesList({ episodes }: { episodes: EpisodeData[] 
             >
               {/* Thumbnail */}
               <div className="relative w-32 h-20 md:w-36 md:h-20 shrink-0 rounded overflow-hidden shadow-lg border border-gray-800">
-                /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"ep.coverImage?.large || '/placeholder.png'"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={ep.coverImage?.large || '/placeholder.png'} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full bg-orange-500/80 flex items-center justify-center pl-1">
                     <PlaySquare size={16} className="text-white" />

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 // app/series/[id]/page.tsx
 import { cache, Suspense } from 'react';
 import { notFound } from 'next/navigation';
@@ -191,7 +192,6 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
       {/* 🎬 1. Cinematic Banner Section */}
       <div className="relative w-full h-[400px] overflow-hidden">
         {bannerImage && (
-          /* eslint-disable-next-line @next/next/no-img-element */
           <img 
             src={bannerImage} 
             alt={displayTitle} 
@@ -217,7 +217,6 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
           {/* Left Column: Poster & Quick Action */}
           <div className="w-full lg:w-[260px] flex-shrink-0">
             <div className="relative aspect-[2/3] rounded overflow-hidden shadow-lg border border-[#141519] group mb-6">
-              /* eslint-disable-next-line @next/next/no-img-element */
               <img 
                 src={extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '/placeholder-poster.png'} 
                 alt={anime.title} 
@@ -318,7 +317,6 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                       >
                         <div className="relative aspect-[2/3] w-full rounded overflow-hidden">
                           {node.coverImage?.large && (
-                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img 
                               src={node.coverImage.large || '/placeholder-poster.png'} 
                               alt={node.title?.english || node.title?.romaji || ''} 
@@ -360,7 +358,6 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                             <Link href={`/character/${item.character.mal_id}`} className="flex items-center gap-3 group">
                               <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-[#2A2B30]">
                                 {item.character.images?.jpg?.image_url && (
-                                  /* eslint-disable-next-line @next/next/no-img-element */
                                   <img 
                                     src={item.character.images.jpg.image_url} 
                                     alt={item.character.name} 
@@ -383,7 +380,6 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
                                 </div>
                                 <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-[#2A2B30]">
                                   {japaneseVA.person.images?.jpg?.image_url && (
-                                    /* eslint-disable-next-line @next/next/no-img-element */
                                     <img 
                                       src={japaneseVA.person.images.jpg.image_url} 
                                       alt={japaneseVA.person.name} 

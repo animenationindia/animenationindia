@@ -1,51 +1,82 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, MessageCircle, ThumbsUp } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { BACKEND_URL } from '../lib/config';
 
-interface Review {
+interface HomeReview {
   mal_id: number;
-  user: {
-    username: string;
-    images: { jpg: { image_url: string; } };
+  url: string;
+  type: string;
+  reactions: {
+    overall: number;
+    nice: number;
+    love_it: number;
+    funny: number;
+    confused: number;
+    informative: number;
+    well_written: number;
+    creative: number;
   };
-  entry: {
-    mal_id: number;
-    title: string;
-    images: { jpg: { image_url: string; } };
-  };
+  date: string;
   review: string;
   score: number;
-  date: string;
+  tags: string[];
+  is_spoiler: boolean;
+  is_premature: boolean;
+  episodes_watched: number | null;
+  entry: {
+    mal_id: number;
+    url: string;
+    images: {
+      jpg: {
+        image_url: string;
+        small_image_url: string;
+        large_image_url: string;
+      };
+    };
+    title: string;
+  };
+  user: {
+    url: string;
+    username: string;
+    images: {
+      jpg: {
+        image_url: string;
+      };
+    };
+  };
 }
 
 export default function HomeReviews() {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<HomeReview[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchReviews = async () => {
+    async function fetchReviews() {
       try {
-        const res = await fetch('https://api.jikan.moe/v4/reviews/anime');
+        const res = await fetch(`${BACKEND_URL}/api/reviews?limit=3`);
+        if (!res.ok) throw new Error('Failed to fetch reviews');
         const data = await res.json();
-        setReviews(data.data ? data.data.slice(0, 9) : []);
-      } catch (error) {
-        console.error('Failed to fetch reviews:', error);
+        setReviews(data.data || []);
+      } catch (err) {
+        console.error('HomeReviews fetch error:', err);
       } finally {
         setLoading(false);
       }
-    };
+    }
     fetchReviews();
   }, []);
 
   if (!loading && reviews.length === 0) return null;
 
   return (
-    <div className="w-full mb-10 group/section relative mt-14">
-      <div className="flex items-end gap-4 mb-4">
-        <h2 className="text-xl md:text-2xl font-semibold text-white tracking-wide flex items-center gap-2 drop-shadow-[0_0_5px_rgba(255,255,255,0.2)]">
+    <div className="w-full my-12">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl md:text-2xl font-semibold text-white tracking-wide flex items-center gap-2">
           <MessageCircle className="text-[#ff4dd2]" /> Community Reviews
         </h2>
         <Link href="/reviews" className="text-xs md:text-sm font-bold text-[#a0a0a0] hover:text-[#ff4dd2] transition-colors mb-1 uppercase tracking-wider drop-shadow-md">
@@ -71,11 +102,10 @@ export default function HomeReviews() {
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded-full overflow-hidden border border-white/10 shrink-0">
-                    /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"review.user.images.jpg.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user.username"} alt={"review.user.username"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={review.user?.images?.jpg?.image_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review.user?.username}`} alt={review.user?.username || 'User'} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </div>
                   <div>
-                    <h4 className="text-white font-bold text-sm">{review.user.username}</h4>
+                    <h4 className="text-white font-bold text-sm">{review.user?.username}</h4>
                     <p className="text-gray-500 text-xs">{new Date(review.date).toLocaleDateString()}</p>
                   </div>
                 </div>
@@ -88,12 +118,11 @@ export default function HomeReviews() {
               {/* Anime Info */}
               <div className="flex items-center gap-3 mb-4 bg-white/5 p-2 rounded-lg">
                 <div className="relative w-10 h-14 rounded overflow-hidden shadow-md shrink-0">
-                  /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"review.entry.images.jpg.image_url"} alt={"review.entry.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={review.entry?.images?.jpg?.image_url} alt={review.entry?.title || 'Anime'} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="text-gray-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">Reviewed</p>
-                  <h3 className="text-white font-bold text-sm line-clamp-1">{review.entry.title}</h3>
+                  <h3 className="text-white font-bold text-sm line-clamp-1">{review.entry?.title}</h3>
                 </div>
               </div>
 

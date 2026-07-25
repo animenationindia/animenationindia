@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -110,8 +111,7 @@ function SafeCardImage({ src, alt, sizes }: { src: string; alt: string; sizes: s
   }
 
   return (
-    /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"src"} alt={"alt"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+    <img src={src} alt={alt} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
   );
 }
 

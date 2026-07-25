@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
@@ -78,8 +79,7 @@ export default function HomeNewsSection({ news, onRetry, isError = false }: Home
             {topNews.map((item) => (
               <div key={item.id} className="group relative flex flex-col gap-3">
                 <Link href={`/news/${item.id}`} className="block relative aspect-video w-full overflow-hidden rounded-xl border border-white/5 bg-white/5">
-                  /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"item.image"} alt={"item.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+                  <img src={item.image} alt={item.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
                 </Link>
                 <div className="flex flex-col gap-1">
                   <Link href={`/news/${item.id}`}>
@@ -112,8 +112,7 @@ export default function HomeNewsSection({ news, onRetry, isError = false }: Home
               <div key={item.id} className="group flex gap-4 py-4 first:pt-0 last:pb-0 items-start">
                 {/* Thumbnail */}
                 <Link href={`/news/${item.id}`} className="block relative w-[100px] h-[56px] md:w-[130px] md:h-[73px] flex-shrink-0 overflow-hidden rounded-lg border border-white/5 bg-white/5">
-                  /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"item.image"} alt={"item.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <img src={item.image} alt={item.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                 </Link>
 
                 {/* Text Content */}

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
@@ -85,7 +86,6 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
                 {/* Full Width Background Image */}
                 <div className="absolute inset-0 w-full h-full">
                   {backgroundImage && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img 
                       src={backgroundImage} 
                       alt={title} 

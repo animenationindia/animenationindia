@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { motion } from 'framer-motion';
@@ -62,8 +63,7 @@ export function SpotlightCard({ id, title, date, snippet, image, source, categor
       <Link href={`/news/${id}`} className="block w-full h-full">
         {/* Background Image */}
         <div className="absolute inset-0">
-          /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"image"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-[#050716]/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#050716]/50 to-transparent" />
         </div>
@@ -95,8 +95,7 @@ export function SidebarCard({ id, title, date, image, source, categories }: News
     <Link href={`/news/${id}`} className="group flex gap-4 py-3.5 border-b border-[#2A2B30]/30 last:border-0 hover:bg-[#121326]/40 px-2 -mx-2 rounded-lg transition-colors">
       {/* Thumbnail */}
       <div className="relative w-[100px] h-[70px] md:w-[110px] md:h-[75px] rounded-lg overflow-hidden flex-shrink-0 border border-[#2A2B30]/40">
-        /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"image"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
       </div>
       {/* Text */}
       <div className="flex flex-col justify-center min-w-0 flex-1">
@@ -126,8 +125,7 @@ export function SectionHeroCard({ id, title, date, snippet, image, categories, a
     >
       <Link href={`/news/${id}`} className="block">
         <div className="relative w-full aspect-[16/10] overflow-hidden">
-          /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"image"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-transparent to-transparent opacity-80" />
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 md:p-5">
@@ -150,8 +148,7 @@ export function SectionSmallCard({ id, title, date, image, categories, author }:
   return (
     <Link href={`/news/${id}`} className="group block">
       <div className="relative w-full aspect-[16/10] rounded-lg overflow-hidden mb-2 border border-[#2A2B30]/30">
-        /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"image"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
       </div>
       <CategoryBadges categories={categories} variant="light" />
       <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug mt-1.5 group-hover:text-[#ff4dd2] transition-colors">
@@ -180,8 +177,7 @@ export function GridCard({ id, title, date, snippet, image, source, categories, 
     >
       <Link href={`/news/${id}`} className="block">
         <div className="relative w-full aspect-[16/9] overflow-hidden">
-          /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"image"} alt={"title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+          <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#121326] to-transparent opacity-50" />
           <div className="absolute top-3 left-3">
             <CategoryBadges categories={categories} variant="light" />

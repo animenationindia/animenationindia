@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
@@ -46,7 +47,6 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full z-0">
         {backgroundImage && (
-          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={backgroundImage}
             alt={title}
@@ -96,7 +96,6 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
         {/* Right Side: Floating Character Artwork Cover Card */}
         {(anime.coverImage?.extraLarge || anime.coverImage?.large) && (
           <div className="hidden lg:block relative w-[180px] h-[260px] flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.6)] transform rotate-2 hover:rotate-0 transition-transform duration-500">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={anime.coverImage.extraLarge || anime.coverImage.large}
               alt={title}

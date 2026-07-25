@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { cache } from 'react';
 import { getCharacterDetailsJikan } from '../../../lib/api';
 import { sanitizeDescription } from '../../../lib/sanitize';
@@ -74,8 +75,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
           <div className="w-full lg:w-[300px] shrink-0">
             <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border border-[#2A2B30]/50 shadow-[0_0_30px_rgba(0,0,0,0.8)] bg-[#121214] group">
               {image && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"image"} alt={"name"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src={image} alt={name} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
             </div>
@@ -115,8 +115,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
                   {animeography.slice(0, 10).map((item: any, idx: number) => (
                     <Link key={idx} href={`/series/${item.anime.mal_id}`} className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3 hover:border-[#ff4dd2]/30 transition-all group">
                       <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                        /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"item.anime.images?.jpg?.image_url || ''"} alt={"item.anime.title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                        <img src={item.anime.images?.jpg?.image_url || ''} alt={item.anime.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-white group-hover:text-[#ff4dd2] line-clamp-1">{item.anime.title}</span>
@@ -138,8 +137,7 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
                   {voices.slice(0, 8).map((v: any, idx: number) => (
                     <div key={idx} className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3">
                       <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-white/10">
-                        /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"v.person.images?.jpg?.image_url || ''"} alt={"v.person.name"} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                        <img src={v.person.images?.jpg?.image_url || ''} alt={v.person.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-white">{v.person.name}</span>

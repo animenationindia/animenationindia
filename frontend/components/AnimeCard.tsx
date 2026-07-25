@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { memo, useState, useEffect } from 'react';
@@ -85,7 +86,6 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
         {/* Link wraps image and hover overlay */}
         <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative z-10">
           {coverImage && (
-            /* eslint-disable-next-line @next/next/no-img-element */
             <img 
               src={coverImage} 
               alt={title} 

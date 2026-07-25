@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState } from 'react';
@@ -58,7 +59,6 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
                 className="relative aspect-video rounded-xl overflow-hidden cursor-pointer group bg-[#121214] border border-white/5"
                 onClick={() => setSelectedTrailerId(anime.trailer.id)}
               >
-                /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
                   src={thumbnailUrl} 
                   alt={title} 

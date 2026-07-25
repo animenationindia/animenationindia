@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -285,8 +286,7 @@ export default function WatchlistPage() {
                         </button>
 
                         <Link href={getDetailsLink(item)} className="block relative w-full aspect-[2/3] overflow-hidden cursor-pointer">
-                          /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"item.anime_image"} alt={"item.anime_title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <img src={item.anime_image} alt={item.anime_title} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-[#050716]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </Link>
                         
