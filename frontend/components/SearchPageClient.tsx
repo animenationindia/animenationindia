@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, X, SlidersHorizontal, ChevronDown, ChevronUp,
   ChevronLeft, ChevronRight, Star, SearchX, Tv2, Bookmark, Check, Play, BookOpen,
-  Sparkles, TrendingUp,
+  Sparkles, TrendingUp, Clock,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BACKEND_URL } from '../lib/config';
@@ -220,7 +220,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#0d0e1f] rounded-xl border border-white/10 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_8px_30px_rgba(255,77,210,0.2)] transition-all duration-300">
           {cover && (
             /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"cover"} alt={"title"} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+            <img src={cover} alt={title} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
           )}
 
           {/* Score */}
@@ -291,6 +291,45 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
   const [suggLoading, setSuggLoading] = useState(false);
   const [activeSugg, setActiveSugg] = useState(-1);
   const [inputFocused, setInputFocused] = useState(false);
+
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('user_token');
+      const userId = localStorage.getItem('user_id');
+      setIsLoggedIn(!!(token || userId));
+
+      const saved = localStorage.getItem('anime_recent_searches');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setRecentSearches(parsed);
+        } catch {
+          setRecentSearches([]);
+        }
+      }
+    }
+  }, []);
+
+  const addRecentSearch = useCallback((searchTerm: string) => {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) return;
+    setRecentSearches(prev => {
+      const filtered = prev.filter(s => s.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [trimmed, ...filtered].slice(0, 7);
+      localStorage.setItem('anime_recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const clearRecentSearches = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setRecentSearches([]);
+    localStorage.removeItem('anime_recent_searches');
+  }, []);
 
   const [showFilters, setShowFilters] = useState(!!(initialGenres || initialFormat || initialStatus || initialYear));
   const [genres, setGenres] = useState<string[]>(initialGenres ? initialGenres.split(',') : []);
@@ -417,7 +456,11 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
     setQuery(val);
     setActiveSugg(-1);
     fetchSugg(val);
-    debouncedSearch(val, genres, format, status, year, sort);
+    if (val.trim()) {
+      debouncedSearch(val, genres, format, status, year, sort);
+    } else {
+      setShowSugg(true);
+    }
   };
 
   const onClear = () => {
@@ -433,12 +476,14 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
     e.preventDefault();
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setShowSugg(false);
+    if (query.trim() && isLoggedIn) addRecentSearch(query.trim());
     doSearch(query, genres, format, status, year, sort, 1, false);
     syncURL(query, genres, format, status, year, sort, 1);
   };
 
   const onSuggClick = (a: AnimeMedia) => {
     const t = a.title?.english || a.title?.romaji || '';
+    if (t && isLoggedIn) addRecentSearch(t);
     setQuery(t);
     setShowSugg(false); setActiveSugg(-1);
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -575,73 +620,168 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
               </button>
             </div>
 
-            {/* ── Backdrop overlay when suggestions visible ── */}
+            {/* ── Backdrop overlay when suggestions or recent history visible ── */}
             <AnimatePresence>
-              {showSugg && (
+              {(showSugg || (inputFocused && !query.trim() && isLoggedIn && recentSearches.length > 0)) && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
                   className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-                  onClick={() => { setShowSugg(false); setActiveSugg(-1); }}
+                  onClick={() => { setShowSugg(false); setActiveSugg(-1); setInputFocused(false); }}
                 />
               )}
             </AnimatePresence>
 
-            {/* ── Live Suggestions ── */}
+            {/* ── Redesigned Search Dropdown Panel (Recent History + Detailed Results List) ── */}
             <AnimatePresence>
-              {showSugg && (
+              {(showSugg || (inputFocused && !query.trim() && isLoggedIn && recentSearches.length > 0)) && (
                 <motion.div
                   initial={{ opacity: 0, y: -6, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.98 }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="absolute top-full left-0 right-0 mt-2 bg-[#0c0d1e]/98 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.9)] z-50"
+                  className="absolute top-full left-0 right-0 mt-3 bg-[#0c0d1e]/98 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.9)] z-50 divide-y divide-white/5"
                 >
-                  {/* Header */}
-                  <div className="px-4 pt-3 pb-2 flex items-center gap-2 border-b border-white/5">
-                    <Sparkles size={12} className="text-[#ff6400]" />
-                    <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Quick Results</span>
-                    {suggLoading && <div className="w-3 h-3 border-2 border-[#ff6400]/30 border-t-[#ff6400] rounded-full animate-spin ml-auto" />}
-                  </div>
+                  {/* 🕒 1. RECENT SEARCHES SECTION (Logged-in Users Only, When Input Empty) */}
+                  {!query.trim() && isLoggedIn && recentSearches.length > 0 && (
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-3 px-1">
+                        <div className="flex items-center gap-2">
+                          <Clock size={14} className="text-[#ff4dd2]" />
+                          <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">RECENT</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearRecentSearches}
+                          className="text-[11px] font-semibold text-gray-400 hover:text-[#ff4dd2] transition-colors cursor-pointer"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {recentSearches.map((term, idx) => (
+                          <button
+                            key={`recent-${idx}`}
+                            type="button"
+                            onClick={() => {
+                              setQuery(term);
+                              setShowSugg(false);
+                              doSearch(term, genres, format, status, year, sort, 1, false);
+                              syncURL(term, genres, format, status, year, sort, 1);
+                            }}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-white/5 transition-colors group cursor-pointer"
+                          >
+                            <Clock size={14} className="text-gray-500 group-hover:text-[#ff4dd2] transition-colors" />
+                            <span className="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors">{term}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                  {suggestions.map((a, idx) => {
-                    const t = a.title?.english || a.title?.romaji || 'Unknown';
-                    return (
+                  {/* 🔍 2. SEARCH RESULTS LIST SECTION (When Query Is Typed & Suggestions Available) */}
+                  {query.trim() !== '' && suggestions.length > 0 && (
+                    <div className="p-2 md:p-3 max-h-[480px] overflow-y-auto custom-scrollbar">
+                      {/* Header */}
+                      <div className="px-3 py-2 flex items-center justify-between border-b border-white/5 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={14} className="text-[#ff4dd2]" />
+                          <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">RESULTS</span>
+                        </div>
+                        {suggLoading && <div className="w-3.5 h-3.5 border-2 border-[#ff4dd2]/30 border-t-[#ff4dd2] rounded-full animate-spin" />}
+                      </div>
+
+                      {suggestions.map((a, idx) => {
+                        const englishTitle = a.title?.english;
+                        const romajiTitle = a.title?.romaji;
+                        const displayTitle = englishTitle || romajiTitle || 'Unknown';
+                        const showRomajiSubtitle = englishTitle && romajiTitle && englishTitle.toLowerCase() !== romajiTitle.toLowerCase();
+                        const linkId = a.idMal || a.id;
+                        const isHighlighted = idx === 0;
+
+                        return (
+                          <Link
+                            key={a.id}
+                            href={`/series/${linkId}`}
+                            onClick={() => {
+                              if (isLoggedIn) addRecentSearch(displayTitle);
+                              setShowSugg(false);
+                            }}
+                            onMouseEnter={() => setActiveSugg(idx)}
+                            className={`w-full flex items-center gap-3 md:gap-4 p-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer mb-1 border ${
+                              isHighlighted
+                                ? 'bg-[#ff4dd2]/10 border-[#ff4dd2]/30 shadow-[0_0_15px_rgba(255,77,210,0.15)]'
+                                : activeSugg === idx
+                                ? 'bg-white/10 border-white/10'
+                                : 'bg-transparent border-transparent hover:bg-white/5'
+                            }`}
+                          >
+                            {/* Poster Thumbnail */}
+                            <div className="w-12 h-16 md:w-14 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1b2e] border border-white/10 relative">
+                              {a.coverImage?.large && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={a.coverImage.large}
+                                  alt={displayTitle}
+                                  loading="lazy"
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                              )}
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                              <h4 className="text-white text-sm md:text-base font-bold truncate leading-tight group-hover:text-[#ff4dd2] transition-colors">
+                                {displayTitle}
+                              </h4>
+                              
+                              {showRomajiSubtitle && (
+                                <p className="text-[11px] text-gray-400 italic truncate -mt-0.5">
+                                  {romajiTitle}
+                                </p>
+                              )}
+
+                              {/* Badges Row */}
+                              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                {a.format && (
+                                  <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border ${formatBadgeColor(a.format)}`}>
+                                    {a.format.replace('_', ' ')}
+                                  </span>
+                                )}
+                                {a.seasonYear && (
+                                  <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold text-gray-300 bg-white/5 border border-white/10">
+                                    {a.seasonYear}
+                                  </span>
+                                )}
+                                {typeof a.averageScore === 'number' && !isNaN(a.averageScore) && (
+                                  <span className="px-1.5 py-0.5 rounded-md text-[10px] font-bold text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 flex items-center gap-1">
+                                    <Star size={10} className="fill-yellow-400" />
+                                    {(a.averageScore / 10).toFixed(1)}
+                                  </span>
+                                )}
+                                {a.genres && a.genres.slice(0, 3).map((g, gIdx) => (
+                                  <span key={gIdx} className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium text-gray-400 bg-white/5 border border-white/5">
+                                    {g}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            <ChevronRight size={16} className="text-gray-500 flex-shrink-0" />
+                          </Link>
+                        );
+                      })}
+
+                      {/* View all button */}
                       <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => onSuggClick(a)}
-                        onMouseEnter={() => setActiveSugg(idx)}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all duration-100 cursor-pointer ${activeSugg === idx ? 'bg-[#ff6400]/10' : 'hover:bg-white/[0.03]'}`}
+                        type="submit"
+                        className="w-full mt-2 px-4 py-3 text-center text-xs font-bold text-[#ff4dd2] hover:bg-[#ff4dd2]/10 transition-colors border-t border-white/5 rounded-b-xl cursor-pointer uppercase tracking-wider"
                       >
-                        <div className="w-9 h-13 rounded-lg overflow-hidden flex-shrink-0 bg-[#1a1b2e] border border-white/5">
-                          {a.coverImage?.large && /* eslint-disable-next-line @next/next/no-img-element */
-<img src={"a.coverImage.large"} alt={"t"} loading="lazy" width={36} height={52} className="object-cover w-full h-full" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-semibold truncate">{t}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {a.format && <span className="text-[10px] text-[#ff6400] uppercase font-bold tracking-wide">{a.format.replace('_', ' ')}</span>}
-                            {a.seasonYear && <span className="text-[10px] text-gray-600">{a.seasonYear}</span>}
-                            {typeof a.averageScore === 'number' && !isNaN(a.averageScore) && (
-                              <span className="text-[10px] text-yellow-500/80 flex items-center gap-0.5">
-                                <Star size={8} className="fill-yellow-500" />{(a.averageScore / 10).toFixed(1)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <ChevronRight size={14} className="text-gray-700 flex-shrink-0" />
+                        View all results for &quot;{query}&quot;
                       </button>
-                    );
-                  })}
-
-                  {/* View all */}
-                  {suggestions.length > 0 && (
-                    <button type="submit" className="w-full px-4 py-3 text-center text-xs font-bold text-[#ff6400] hover:bg-[#ff6400]/10 transition-colors border-t border-white/5 cursor-pointer uppercase tracking-wider">
-                      View all results for &quot;{query}&quot;
-                    </button>
+                    </div>
                   )}
                 </motion.div>
               )}
