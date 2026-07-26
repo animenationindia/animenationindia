@@ -7,11 +7,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, X, SlidersHorizontal, ChevronDown, ChevronUp,
   ChevronLeft, ChevronRight, Star, SearchX, Tv2, Bookmark, Check, Play, BookOpen,
-  Sparkles, TrendingUp, Clock,
+  Sparkles, TrendingUp, Clock, ArrowUpRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { BACKEND_URL } from '../lib/config';
 import ErrorState from './ErrorState';
+
+function highlightText(text: string, query: string) {
+  if (!query || !query.trim()) return text;
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return text;
+  const pattern = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  const parts = text.split(regex);
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <span key={i} className="text-[#ff4dd2] font-extrabold">
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface AnimeMedia {
@@ -620,29 +638,15 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
               </button>
             </div>
 
-            {/* ── Backdrop overlay when suggestions or recent history visible ── */}
-            <AnimatePresence>
-              {(showSugg || (inputFocused && !query.trim() && isLoggedIn && recentSearches.length > 0)) && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-                  onClick={() => { setShowSugg(false); setActiveSugg(-1); setInputFocused(false); }}
-                />
-              )}
-            </AnimatePresence>
-
             {/* ── Redesigned Search Dropdown Panel (Recent History + Detailed Results List) ── */}
             <AnimatePresence>
               {(showSugg || (inputFocused && !query.trim() && isLoggedIn && recentSearches.length > 0)) && (
                 <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                  initial={{ opacity: 0, y: -6, scale: 0.99 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                  exit={{ opacity: 0, y: -6, scale: 0.99 }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="absolute top-full left-0 right-0 mt-3 bg-[#0c0d1e]/98 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.9)] z-50 divide-y divide-white/5"
+                  className="absolute top-full left-0 right-0 mt-2 bg-[#0c0d1e]/98 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.85)] z-50 divide-y divide-white/5"
                 >
                   {/* 🕒 1. RECENT SEARCHES SECTION (Logged-in Users Only, When Input Empty) */}
                   {!query.trim() && isLoggedIn && recentSearches.length > 0 && (
@@ -699,7 +703,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                         const displayTitle = englishTitle || romajiTitle || 'Unknown';
                         const showRomajiSubtitle = englishTitle && romajiTitle && englishTitle.toLowerCase() !== romajiTitle.toLowerCase();
                         const linkId = a.idMal || a.id;
-                        const isHighlighted = idx === 0;
+                        const isHighlighted = activeSugg === idx;
 
                         return (
                           <Link
@@ -710,12 +714,10 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                               setShowSugg(false);
                             }}
                             onMouseEnter={() => setActiveSugg(idx)}
-                            className={`w-full flex items-center gap-3 md:gap-4 p-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer mb-1 border ${
+                            className={`w-full flex items-center gap-3 md:gap-4 p-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer mb-1 border group ${
                               isHighlighted
                                 ? 'bg-[#ff4dd2]/10 border-[#ff4dd2]/30 shadow-[0_0_15px_rgba(255,77,210,0.15)]'
-                                : activeSugg === idx
-                                ? 'bg-white/10 border-white/10'
-                                : 'bg-transparent border-transparent hover:bg-white/5'
+                                : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'
                             }`}
                           >
                             {/* Poster Thumbnail */}
@@ -733,7 +735,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                             {/* Info */}
                             <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
                               <h4 className="text-white text-sm md:text-base font-bold truncate leading-tight group-hover:text-[#ff4dd2] transition-colors">
-                                {displayTitle}
+                                {highlightText(displayTitle, query)}
                               </h4>
                               
                               {showRomajiSubtitle && (
@@ -768,7 +770,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                               </div>
                             </div>
 
-                            <ChevronRight size={16} className="text-gray-500 flex-shrink-0" />
+                            <ArrowUpRight size={18} className="text-gray-400 group-hover:text-[#ff4dd2] flex-shrink-0 transition-colors" />
                           </Link>
                         );
                       })}

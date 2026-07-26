@@ -182,7 +182,7 @@ export default function WatchPageContent({ anime, episodes }: WatchPageContentPr
                         <div className={`w-24 h-14 bg-[#1c1c1f] rounded-xl overflow-hidden relative ${
                           isActive ? 'ring-2 ring-black' : 'group-hover:ring-2 group-hover:ring-[#ff4dd2]'
                         } transition-all`}>
-                          <img src={coverImage} alt={"ep.title || `Episode ${realIndex + 1"} loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-85 transition-opacity" />
+                          <img src={coverImage} alt={ep.title || `Episode ${realIndex + 1}`} loading="lazy" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-85 transition-opacity" />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Play 
                               size={16} 
