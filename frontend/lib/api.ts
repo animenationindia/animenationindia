@@ -416,8 +416,8 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
           airingAt
           episode
           media {
-            id idMal title { english romaji } coverImage { extraLarge large }
-            episodes format status genres seasonYear
+            id idMal title { english romaji } coverImage { extraLarge large } bannerImage description averageScore
+            episodes format status genres seasonYear studios(isMain: true) { nodes { name } }
           }
         }
       }

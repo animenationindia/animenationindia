@@ -30,20 +30,15 @@ export default async function SchedulePage() {
   const schedule: AiringSchedule[] = rawSchedule || [];
 
   return (
-    <div className="bg-[#050716] min-h-screen pt-32 lg:pt-36 lg:pt-36 pb-12">
-      <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1200px]">
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bebas text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] mb-2">
-            Release <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Schedule</span>
-          </h1>
-          <p className="text-[#a0a0a0] max-w-2xl text-sm md:text-base">
-            Never miss a moment of your favorite stories. Track real-time episode releases, automatically synchronized to your local timezone.
-          </p>
-        </div>
+    <main className="bg-[#050716] min-h-screen pt-28 lg:pt-32 pb-24 relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#ff4dd2]/[0.03] blur-[160px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[5%] left-[-5%] w-[45%] h-[45%] bg-[#ff6400]/[0.03] blur-[150px] rounded-full pointer-events-none" />
 
+      <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1500px] relative z-10">
         <ScheduleList initialSchedule={schedule} />
       </div>
-    </div>
+    </main>
   );
 }
 
