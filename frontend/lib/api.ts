@@ -320,11 +320,17 @@ export interface AiringSchedule {
       extraLarge?: string;
       large: string;
     };
+    bannerImage?: string | null;
+    description?: string | null;
+    averageScore?: number | null;
     episodes?: number | null;
     format?: string | null;
     status?: string | null;
     genres?: string[] | null;
     seasonYear?: number | null;
+    studios?: {
+      nodes: Array<{ name: string }>;
+    } | null;
   };
 }
 
