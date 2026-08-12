@@ -10,13 +10,6 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
-  experimental: {
-    optimizePackageImports: [
-      'lucide-react',
-      'framer-motion',
-      'swiper',
-    ],
-  },
   images: {
     qualities: [25, 50, 75, 90, 100], 
     remotePatterns: [
