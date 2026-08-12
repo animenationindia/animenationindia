@@ -1,5 +1,5 @@
+import dynamic from 'next/dynamic';
 import { fetchAniList } from '../lib/api';
-import LandingPageClient from '../components/LandingPageClient';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -18,6 +18,23 @@ export const metadata: Metadata = {
     images: ["/ani-logo.png"],
   },
 };
+
+// 🚀 Dynamic Import to split heavy motion bundles away from the initial critical HTML path
+const LandingPageClient = dynamic(() => import('../components/LandingPageClient'), {
+  loading: () => (
+    <div className="relative w-full min-h-screen bg-[#0a0510] flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto py-16 animate-pulse">
+        <div className="w-48 h-8 rounded-full bg-white/10 mb-6" />
+        <div className="w-full max-w-lg h-12 rounded-xl bg-white/10 mb-4" />
+        <div className="w-3/4 max-w-md h-6 rounded-lg bg-white/5 mb-8" />
+        <div className="flex gap-4">
+          <div className="w-36 h-12 rounded-2xl bg-[#ff007f]/40" />
+          <div className="w-32 h-12 rounded-2xl bg-white/10" />
+        </div>
+      </div>
+    </div>
+  ),
+});
 
 const TRENDING_QUERY = `
   query {

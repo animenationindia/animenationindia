@@ -2,12 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Orbitron } from 'next/font/google';
 import { Globe, ChevronDown, Send, Code, Mail, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import LanguageSelector from './LanguageSelector';
-
-const orbitron = Orbitron({ subsets: ['latin'], weight: ['800', '900'] });
 
 // Custom SVGs for Social Icons
 const FacebookIcon = ({ size = 24, className = "" }) => (

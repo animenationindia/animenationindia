@@ -5,11 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Eye, EyeOff, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { BACKEND_URL } from '../../lib/config';
-import { Orbitron } from 'next/font/google';
 import Image from 'next/image';
 import Link from 'next/link';
-
-const orbitron = Orbitron({ subsets: ['latin'], weight: ['800', '900'] });
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -114,7 +111,7 @@ export default function AuthPage() {
         
         <div className="relative z-10 p-12 w-full max-w-lg mt-auto mb-20 text-left">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <Link href="/" className={`${orbitron.className} text-5xl text-[#ff4dd2] tracking-widest drop-shadow-[0_0_15px_rgba(255, 77, 210,0.5)]`}>
+            <Link href="/" className="font-orbitron text-5xl text-[#ff4dd2] tracking-widest drop-shadow-[0_0_15px_rgba(255, 77, 210,0.5)]">
               ANI
             </Link>
             <p className="text-white text-3xl font-bold mt-4 leading-tight">

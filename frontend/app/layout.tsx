@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 };
 
 import { WatchlistProvider } from "../context/WatchlistContext";
-import SmoothScrollProvider from "../components/SmoothScrollProvider";
+import ScrollToTop from "../components/ScrollToTop";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -74,35 +74,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="bg-[#050716] text-[#ffffff] min-h-screen flex flex-col font-sans selection:bg-[#ff4dd2] selection:text-white overflow-x-hidden w-full max-w-[100vw] pb-[60px] md:pb-0">
-        <SmoothScrollProvider>
-          <WatchlistProvider>
-            <Script 
-              src="https://news.google.com/swg/js/v1/swg-basic.js" 
-              strategy="afterInteractive" 
-            />
-            <Script id="swg-basic-init" strategy="afterInteractive">
-              {`
-                (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
-                  basicSubscriptions.init({
-                    type: "NewsArticle",
-                    isPartOfType: ["Product"],
-                    isPartOfProductId: "CAows4THDA:openaccess",
-                    clientOptions: { theme: "light", lang: "en-GB" },
-                  });
+        <ScrollToTop />
+        <WatchlistProvider>
+          <Script 
+            src="https://news.google.com/swg/js/v1/swg-basic.js" 
+            strategy="afterInteractive" 
+          />
+          <Script id="swg-basic-init" strategy="afterInteractive">
+            {`
+              (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
+                basicSubscriptions.init({
+                  type: "NewsArticle",
+                  isPartOfType: ["Product"],
+                  isPartOfProductId: "CAows4THDA:openaccess",
+                  clientOptions: { theme: "light", lang: "en-GB" },
                 });
-              `}
-            </Script>
-            <Navbar />
-            <BackButton />
-            {/* Main Content */}
-            <div className="flex-grow w-full overflow-x-hidden relative">
-              {children}
-            </div>
-            <Footer />
-            <MobileBottomNav />
-            <BackToTop />
-          </WatchlistProvider>
-        </SmoothScrollProvider>
+              });
+            `}
+          </Script>
+          <Navbar />
+          <BackButton />
+          {/* Main Content */}
+          <div className="flex-grow w-full min-h-[calc(100dvh-72px)] overflow-x-hidden relative">
+            {children}
+          </div>
+          <Footer />
+          <MobileBottomNav />
+          <BackToTop />
+        </WatchlistProvider>
       </body>
     </html>
   );

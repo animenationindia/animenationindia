@@ -78,7 +78,7 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
 
   return (
     <div 
-      className="card-3d group relative w-full mb-4 flex flex-col bg-transparent cv-auto gpu-accelerate"
+      className="card-3d group relative w-full mb-4 flex flex-col bg-transparent gpu-accelerate"
     >
       {/* 🖼️ Image & Overlay Container */}
       <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255,77,210,0.4)] transition-all duration-300">

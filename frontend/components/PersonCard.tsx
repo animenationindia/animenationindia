@@ -20,7 +20,7 @@ function PersonCard({ person, linkType = 'character' }: { person: PersonData; li
   const likes = person.favourites > 1000 ? `${(person.favourites / 1000).toFixed(1)}k+` : person.favourites;
 
   return (
-    <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/5 cv-auto gpu-accelerate">
+    <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/5 gpu-accelerate">
       {person.image?.large && (
         <img src={person.image.large} alt={name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
       )}

@@ -4,11 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Bookmark, User, Search, X, Loader2, LogOut, Settings, Menu, Home, Flame, CalendarDays, Layers, MonitorPlay, Newspaper, Mail, Sparkles, Play, BookOpen } from 'lucide-react';
-import { Orbitron } from 'next/font/google';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-
-const orbitron = Orbitron({ subsets: ['latin'], weight: ['800', '900'] });
 
 interface LiveSearchResult {
   id: number;
@@ -70,7 +67,7 @@ export default function Navbar() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -146,7 +143,7 @@ export default function Navbar() {
             <div className="relative w-10 h-10 min-w-[40px] min-h-[40px] max-w-[40px] max-h-[40px] rounded-full overflow-hidden shadow-[0_0_15px_rgba(255, 77, 210,0.5),inset_0_2px_4px_rgba(255,255,255,0.3)] bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center text-xs text-center border border-[#ff4dd2]/30 group-hover:scale-105 transition-transform shrink-0">
               <Image src="/ani-logo.png" alt="Logo" fill sizes="40px" priority className="object-contain" />
             </div>
-            <span className={`${orbitron.className} hidden sm:block text-base lg:text-[20px] text-transparent bg-clip-text bg-gradient-to-b from-[#ffffff] to-[#ff4dd2] tracking-wide transition-all duration-300 drop-shadow-[0_4px_10px_rgba(255, 77, 210,0.6)] font-black`}>
+            <span className="font-orbitron hidden sm:block text-base lg:text-[20px] text-transparent bg-clip-text bg-gradient-to-b from-[#ffffff] to-[#ff4dd2] tracking-wide transition-all duration-300 drop-shadow-[0_4px_10px_rgba(255, 77, 210,0.6)] font-black">
               Anime Nation India
             </span>
           </Link>

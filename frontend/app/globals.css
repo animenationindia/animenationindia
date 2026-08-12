@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800;900&display=swap');
 @import "tailwindcss";
 
 /* 🌟 Tailwind v4 Custom Theme Variables: Anime Nation India */
 @theme {
   --font-bebas: 'Bebas Neue', sans-serif;
   --font-sans: 'Inter', 'Montserrat', sans-serif;
+  --font-orbitron: 'Orbitron', sans-serif;
   
   --color-neon-purple: #ff4dd2; /* ANI Pink */
   --color-neon-cyan: #ff4dd2; /* ANI Gold */
@@ -28,25 +30,10 @@ html {
   -webkit-overflow-scrolling: touch; /* Momentum scrolling for mobile devices */
 }
 
-/* Lenis smooth scroll helper rules */
-html.lenis, html.lenis body {
-  height: auto;
-}
-
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-.lenis.lenis-scrolling iframe {
-  pointer-events: none;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -54,7 +41,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   overflow-x: hidden;
-  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch; /* Momentum scrolling for mobile devices */
 }
 
