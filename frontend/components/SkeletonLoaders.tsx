@@ -35,7 +35,7 @@ export function NewsGridSkeleton() {
 
 export function PageLoader({ type = 'anime' }: { type?: 'anime' | 'news' | 'generic' }) {
   return (
-    <div className="min-h-screen bg-[#050716] pt-24 pb-20 w-full flex flex-col">
+    <div className="min-h-dvh bg-[#050716] pt-24 pb-20 w-full flex flex-col">
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] flex-1">
         {/* Header Skeleton */}
         <div className="mb-10 border-b border-white/5 pb-8 animate-pulse flex items-center gap-4">

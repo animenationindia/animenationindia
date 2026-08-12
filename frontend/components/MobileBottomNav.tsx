@@ -26,7 +26,7 @@ export default function MobileBottomNav() {
   };
 
   return (
-    <div className={`md:hidden fixed bottom-0 left-0 w-full bg-[#121326] border-t border-[#2A2B30] z-50 px-2 py-2 pb-safe-bottom safe-area-padding ${isRoot ? 'hidden' : ''}`}>
+    <div className={`md:hidden fixed bottom-0 left-0 w-full bg-[#121326] border-t border-[#2A2B30] z-50 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] ${isRoot ? 'hidden' : ''}`}>
       <div className="flex justify-between items-center w-full max-w-md mx-auto">
         {navItems.map((item, idx) => {
           const active = isActive(item);

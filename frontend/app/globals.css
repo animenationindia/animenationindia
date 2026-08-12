@@ -108,15 +108,25 @@ body {
   will-change: transform, filter, backdrop-filter;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ✨ Premium Utility Animations & Effects */
 @layer utilities {
   /* Scrollbar Hide */
   .scrollbar-hide::-webkit-scrollbar,
-  .hide-scrollbar::-webkit-scrollbar {
+  .hide-scrollbar::-webkit-scrollbar,
+  .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
   .scrollbar-hide,
-  .hide-scrollbar {
+  .hide-scrollbar,
+  .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }

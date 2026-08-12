@@ -56,7 +56,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
               const title = anime.title.english || anime.title.romaji;
               return (
                 <div key={anime.id} className="flex items-center gap-4 group/item">
-                  <Link href={`/series/${linkId}`} className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
+                  <Link href={`/series/${linkId}`} className="relative w-12 h-16 aspect-[3/4] rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
                     <img src={anime.coverImage.large} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </Link>
                   <div className="flex flex-col gap-1 min-w-0">
@@ -93,7 +93,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
               const title = anime.title.english || anime.title.romaji;
               return (
                 <div key={anime.id} className="flex items-center gap-4 group/item">
-                  <Link href={`/series/${linkId}`} className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
+                  <Link href={`/series/${linkId}`} className="relative w-12 h-16 aspect-[3/4] rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
                     <img src={anime.coverImage.large} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                   </Link>
                   <div className="flex flex-col gap-1 min-w-0">
@@ -126,7 +126,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
                 <div key={anime.id} className="flex items-center gap-4 group/item">
                   <div className="relative flex-shrink-0">
                     {renderRankBadge(index + 1)}
-                    <Link href={`/series/${linkId}`} className="relative block w-12 h-16 rounded-xl overflow-hidden border border-white/10 hover:scale-105 transition-transform duration-300">
+                    <Link href={`/series/${linkId}`} className="relative block w-12 h-16 aspect-[3/4] rounded-xl overflow-hidden border border-white/10 hover:scale-105 transition-transform duration-300">
                       <img src={anime.coverImage.large} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                     </Link>
                   </div>

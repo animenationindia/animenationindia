@@ -125,7 +125,7 @@ export default function HeroBackground3D() {
       mouse.current[1] = -((event.clientY / window.innerHeight) * 2 - 1);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
