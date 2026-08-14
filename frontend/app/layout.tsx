@@ -51,7 +51,7 @@ import ScrollToTop from "../components/ScrollToTop";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="overflow-x-hidden dark">
+    <html lang="en" data-scroll-behavior="smooth" className="overflow-x-hidden dark">
       <head>
         <script
           dangerouslySetInnerHTML={{

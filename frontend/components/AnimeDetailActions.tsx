@@ -22,7 +22,7 @@ export default function AnimeDetailActions({
 
   return (
     <>
-      <div className="mt-6 space-y-3 relative w-full">
+      <div className="mt-6 flex flex-col gap-3 w-full">
         {/* 1. Watchlist Selector Dropdown */}
         <WatchlistDropdown 
           animeId={animeId} 
@@ -30,12 +30,12 @@ export default function AnimeDetailActions({
           image={animeImage} 
         />
         
-        {/* 2. Flat "Watch Episode 1" button */}
+        {/* 2. Primary Watch Episode 1 Button */}
         <Link
           href={`/watch/${animeId}`}
-          className="w-full flex items-center justify-center gap-2 bg-neon-cyan hover:bg-neon-cyan/80 text-[#000000] py-3 rounded-sm font-bold cursor-pointer transition-colors uppercase tracking-wider"
+          className="w-full flex items-center justify-center gap-2.5 bg-[#ff0000] hover:bg-[#cc0000] text-white py-3.5 px-6 rounded-xl font-black text-sm uppercase tracking-wider shadow-[0_4px_20px_rgba(255,0,0,0.4)] hover:shadow-[0_4px_30px_rgba(255,0,0,0.6)] cursor-pointer transition-all duration-300"
         >
-          <Play size={20} fill="currentColor" className="text-[#000000]" />
+          <Play size={18} fill="currentColor" />
           Watch Episode 1
         </Link>
 
@@ -43,9 +43,9 @@ export default function AnimeDetailActions({
         {trailerUrl && (
           <button 
             onClick={() => setIsTrailerOpen(true)}
-            className="w-full flex items-center justify-center gap-2 bg-[#141519] hover:bg-gray-800 text-white py-3 rounded-sm font-semibold border border-gray-800 transition-colors uppercase tracking-wider"
+            className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white py-3.5 px-6 rounded-xl font-bold text-sm border border-white/10 hover:border-white/20 transition-all duration-300 uppercase tracking-wider backdrop-blur-md cursor-pointer"
           >
-            <Film size={18} />
+            <Film size={18} className="text-[#ff4dd2]" />
             Watch Trailer
           </button>
         )}

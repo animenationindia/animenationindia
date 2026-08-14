@@ -437,9 +437,9 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
     // Fetch up to 4 pages to ensure we get a good amount of the week's schedule
     while (hasNextPage && currentPage <= 4) {
       const data = await fetchAniList(query, { page: currentPage, start, end });
-      if (data.data?.Page?.airingSchedules) {
+      if (data?.data?.Page?.airingSchedules) {
         allSchedules = allSchedules.concat(data.data.Page.airingSchedules);
-        hasNextPage = data.data.Page.pageInfo.hasNextPage;
+        hasNextPage = data.data.Page.pageInfo?.hasNextPage || false;
       } else {
         hasNextPage = false;
       }

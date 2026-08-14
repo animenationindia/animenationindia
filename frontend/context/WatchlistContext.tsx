@@ -54,9 +54,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         setWatchlist(Array.isArray(data) ? data : []);
         setError(null);
       }
-    } catch (err) {
-      logError('WatchlistContext.fetchWatchlist', err);
-      setError('Failed to load watchlist');
+    } catch {
+      try {
+        const local = localStorage.getItem('guest_watchlist');
+        if (local) setWatchlist(JSON.parse(local));
+      } catch {}
     } finally {
       setIsLoading(false);
     }

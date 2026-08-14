@@ -58,12 +58,25 @@ export default function HomeReviews() {
   useEffect(() => {
     async function fetchReviews() {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/reviews?limit=3`);
-        if (!res.ok) throw new Error('Failed to fetch reviews');
-        const data = await res.json();
-        setReviews(data.data || []);
-      } catch (err) {
-        console.error('HomeReviews fetch error:', err);
+        const res = await fetch(`${BACKEND_URL}/api/reviews?limit=3`).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data.data && data.data.length > 0) {
+            setReviews(data.data);
+            return;
+          }
+        }
+
+        // Fallback to Jikan public anime reviews if local backend is offline
+        const jikanRes = await fetch('https://api.jikan.moe/v4/reviews/anime').catch(() => null);
+        if (jikanRes && jikanRes.ok) {
+          const jikanData = await jikanRes.json();
+          if (jikanData.data && jikanData.data.length > 0) {
+            setReviews(jikanData.data.slice(0, 3));
+          }
+        }
+      } catch {
+        // Graceful silent fallback
       } finally {
         setLoading(false);
       }
