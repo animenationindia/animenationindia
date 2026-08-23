@@ -52,17 +52,25 @@ export default async function PersonDetails({ params }: { params: Promise<{ id: 
 
   if (!person) {
     return (
-      <div className="container mx-auto px-4 py-32 text-center text-[#a0a0a0] bg-[#000000] min-h-screen">
-        <h1 className="text-3xl font-semibold text-white mb-4">Person Not Found</h1>
-        <Link href="/" className="text-[#ff4dd2] hover:underline transition-all">Go back home</Link>
+      <div className="container mx-auto px-4 py-36 text-center text-[#a0a0a0] min-h-[70vh] flex flex-col items-center justify-center">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Staff Member Not Found</h1>
+        <p className="text-gray-400 text-sm mb-6 max-w-md">The requested voice actor or staff details could not be retrieved. They might not exist in the database yet.</p>
+        <div className="flex items-center gap-4">
+          <Link href="/staff" className="bg-[#ff4dd2] hover:bg-[#e03cb7] text-black font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-[#ff4dd2]/20">
+            Browse Top Staff
+          </Link>
+          <Link href="/" className="bg-white/10 hover:bg-white/15 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all border border-white/10">
+            Go Home
+          </Link>
+        </div>
       </div>
     );
   }
 
   const name = person.name;
-  const image = person.images?.jpg?.image_url;
+  const image = person.images?.jpg?.image_url || person.images?.webp?.image_url || '/placeholder-poster.png';
   const about = sanitizeDescription(person.about || "No biography available.");
-  const likes = person.favorites > 1000 ? `${(person.favorites / 1000).toFixed(1)}k+` : person.favorites;
+  const likes = person.favorites > 1000 ? `${(person.favorites / 1000).toFixed(1)}k+` : (person.favorites || 0);
 
   const animeStaff = person.anime || [];
   const voiceRoles = person.voices || [];

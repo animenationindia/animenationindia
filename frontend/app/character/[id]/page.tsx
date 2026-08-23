@@ -4,6 +4,7 @@ import { getCharacterDetailsJikan } from '../../../lib/api';
 import { sanitizeDescription } from '../../../lib/sanitize';
 import Link from 'next/link';
 import { Heart, Mic, Tv } from 'lucide-react';
+import ReadMoreText from '../../../components/ReadMoreText';
 import type { Metadata } from 'next';
 
 const getCachedCharacterDetails = cache(async (id: string) => {
@@ -51,17 +52,25 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
 
   if (!character) {
     return (
-      <div className="container mx-auto px-4 py-32 text-center text-[#a0a0a0] bg-[#000000] min-h-screen">
-        <h1 className="text-3xl font-semibold text-white mb-4">Character Not Found</h1>
-        <Link href="/" className="text-[#ff4dd2] hover:underline transition-all">Go back home</Link>
+      <div className="container mx-auto px-4 py-36 text-center text-[#a0a0a0] min-h-[70vh] flex flex-col items-center justify-center">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">Character Not Found</h1>
+        <p className="text-gray-400 text-sm mb-6 max-w-md">The requested character details could not be retrieved. They might not exist in the database yet.</p>
+        <div className="flex items-center gap-4">
+          <Link href="/characters" className="bg-[#ff4dd2] hover:bg-[#e03cb7] text-black font-bold px-5 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-[#ff4dd2]/20">
+            Browse Top Characters
+          </Link>
+          <Link href="/" className="bg-white/10 hover:bg-white/15 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all border border-white/10">
+            Go Home
+          </Link>
+        </div>
       </div>
     );
   }
 
   const name = character.name;
-  const image = character.images?.jpg?.image_url;
+  const image = character.images?.jpg?.image_url || character.images?.webp?.image_url || '/placeholder-poster.png';
   const about = sanitizeDescription(character.about || "No details available.");
-  const likes = character.favorites > 1000 ? `${(character.favorites / 1000).toFixed(1)}k+` : character.favorites;
+  const likes = character.favorites > 1000 ? `${(character.favorites / 1000).toFixed(1)}k+` : (character.favorites || 0);
 
   const nicknames = character.nicknames || [];
   const animeography = character.anime || [];
@@ -87,6 +96,12 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
                   <Heart size={14} className="fill-[#ff4dd2]" /> {likes}
                 </span>
               </div>
+              {character.name_kanji && (
+                <div className="flex justify-between items-center text-sm border-t border-white/5 pt-3">
+                  <span className="text-gray-400 font-semibold text-xs">Japanese Name</span>
+                  <span className="text-gray-200 font-medium text-xs">{character.name_kanji}</span>
+                </div>
+              )}
               {nicknames.length > 0 && (
                 <div className="flex flex-col gap-1 text-sm border-t border-white/5 pt-3">
                   <span className="text-gray-400 font-semibold text-xs">Nicknames</span>
@@ -99,9 +114,9 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
           {/* Right Column - Details */}
           <div className="flex-1 flex flex-col gap-8">
             <div>
-              <h1 className="text-3xl lg:text-5xl font-extrabold text-white mb-4">{name}</h1>
-              <div className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl text-gray-300 text-sm leading-relaxed whitespace-pre-line">
-                {about}
+              <h1 className="text-3xl lg:text-5xl font-extrabold text-white mb-4 drop-shadow-md">{name}</h1>
+              <div className="bg-[#121326]/60 backdrop-blur-xl border border-white/10 p-6 rounded-2xl text-gray-300 text-sm leading-relaxed shadow-xl">
+                <ReadMoreText text={about} />
               </div>
             </div>
 
@@ -109,20 +124,27 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
             {animeography.length > 0 && (
               <div>
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Tv size={18} className="text-[#ff4dd2]" /> Anime Appearances
+                  <Tv size={18} className="text-[#ff4dd2]" /> Anime Appearances ({animeography.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {animeography.slice(0, 10).map((item: any, idx: number) => (
-                    <Link key={idx} href={`/series/${item.anime.mal_id}`} className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3 hover:border-[#ff4dd2]/30 transition-all group">
-                      <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                        <img src={item.anime.images?.jpg?.image_url || ''} alt={item.anime.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white group-hover:text-[#ff4dd2] line-clamp-1">{item.anime.title}</span>
-                        <span className="text-[10px] text-gray-400 uppercase font-semibold">{item.role} Role</span>
-                      </div>
-                    </Link>
-                  ))}
+                  {animeography.slice(0, 12).map((item: any, idx: number) => {
+                    const animeId = item.anime?.mal_id || item.anime?.id;
+                    return (
+                      <Link 
+                        key={idx} 
+                        href={animeId ? `/series/${animeId}` : '#'} 
+                        className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3 hover:border-[#ff4dd2]/30 hover:bg-[#121326]/80 transition-all group"
+                      >
+                        <div className="relative w-12 h-16 rounded-lg overflow-hidden shrink-0 bg-[#0a0b16]">
+                          <img src={item.anime?.images?.jpg?.image_url || '/placeholder-poster.png'} alt={item.anime?.title || ''} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-white group-hover:text-[#ff4dd2] line-clamp-1 transition-colors">{item.anime?.title || 'Unknown Anime'}</span>
+                          <span className="text-[10px] text-gray-400 uppercase font-semibold mt-0.5">{item.role || 'Main'} Role</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -131,20 +153,35 @@ export default async function CharacterDetails({ params }: { params: Promise<{ i
             {voices.length > 0 && (
               <div>
                 <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Mic size={18} className="text-[#ff4dd2]" /> Voice Actors (Seiyuu)
+                  <Mic size={18} className="text-[#ff4dd2]" /> Voice Actors ({voices.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {voices.slice(0, 8).map((v: any, idx: number) => (
-                    <div key={idx} className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3">
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-white/10">
-                        <img src={v.person.images?.jpg?.image_url || ''} alt={v.person.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  {voices.slice(0, 10).map((v: any, idx: number) => {
+                    const personId = v.person?.mal_id || v.person?.id;
+                    const vaLink = personId ? `/staff/${personId}` : null;
+                    
+                    const innerContent = (
+                      <>
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-white/10 bg-[#0a0b16]">
+                          <img src={v.person?.images?.jpg?.image_url || '/placeholder.png'} alt={v.person?.name || ''} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-white group-hover:text-[#ff4dd2] transition-colors line-clamp-1">{v.person?.name || 'Unknown VA'}</span>
+                          <span className="text-[10px] text-[#ff4dd2] uppercase font-semibold">{v.language || 'Japanese'}</span>
+                        </div>
+                      </>
+                    );
+
+                    return vaLink ? (
+                      <Link key={idx} href={vaLink} className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3 hover:border-[#ff4dd2]/30 hover:bg-[#121326]/80 transition-all group cursor-pointer">
+                        {innerContent}
+                      </Link>
+                    ) : (
+                      <div key={idx} className="bg-[#121326]/40 border border-white/5 p-3 rounded-xl flex items-center gap-3">
+                        {innerContent}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold text-white">{v.person.name}</span>
-                        <span className="text-[10px] text-gray-400 uppercase font-semibold">{v.language}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

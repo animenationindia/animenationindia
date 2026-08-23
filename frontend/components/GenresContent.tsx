@@ -7,7 +7,7 @@ import ScrollToResults from './ScrollToResults';
 import { MousePointer } from 'lucide-react';
 
 const ANILIST_GENRES = [
-  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Hentai', 
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 
   'Horror', 'Mahou Shoujo', 'Mecha', 'Music', 'Mystery', 'Psychological', 
   'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller'
 ];
@@ -148,12 +148,8 @@ export default async function GenresContent({
       page: currentPage,
       sort: aniListSort,
       perPage: 24,
+      isAdult: false,
     };
-
-    // Force isAdult to true for explicit adult categories (Hentai, Erotica)
-    if (activeGenreName === 'Hentai' || activeGenreName === 'Erotica') {
-      filterParams.isAdult = true;
-    }
 
     if (mapped) {
       if (mapped.type === 'genre') {

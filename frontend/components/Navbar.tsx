@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bookmark, User, Search, X, Loader2, LogOut, Settings, Menu, Home, Flame, CalendarDays, Layers, MonitorPlay, Newspaper, Mail, Sparkles, Play, BookOpen } from 'lucide-react';
+import { Bookmark, User, Search, X, Loader2, LogOut, Settings, Menu, Home, Flame, CalendarDays, Layers, MonitorPlay, Newspaper, Mail, Sparkles, Play, BookOpen, Heart, ListPlus, Music, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
@@ -76,13 +76,16 @@ export default function Navbar() {
   // Auth Listener: Updates state immediately when user logs in/out
   useEffect(() => {
     const checkUser = () => {
-      const token = localStorage.getItem('user_token');
-      if (token) {
+      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+      const userId = localStorage.getItem('user_id');
+      const userName = localStorage.getItem('user_name') || localStorage.getItem('username');
+      
+      if (token && userId) {
         setUser({
-          id: localStorage.getItem('user_id') || '',
+          id: userId,
           email: '',
           user_metadata: {
-            full_name: localStorage.getItem('user_name') || 'Otaku',
+            full_name: userName || 'Otaku',
             avatar_url: null
           }
         });
@@ -203,37 +206,86 @@ export default function Navbar() {
               </button>
               
               {/* 3D Dropdown Menu */}
-              <div className={`absolute right-0 top-full mt-4 w-48 bg-[#121326] border border-[#ff4dd2]/40 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,1)] transition-all duration-300 z-[100] rounded-xl transform origin-top ${isProfileOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}>
+              <div className={`absolute right-0 top-full mt-4 w-52 bg-[#121326] border border-[#ff4dd2]/40 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,1)] transition-all duration-300 z-[100] rounded-2xl transform origin-top ${isProfileOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}>
                 
-                <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-gradient-to-b from-white/5 to-transparent">
-                  <div className="w-10 h-10 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ff4dd2]/50 shadow-[0_0_10px_rgba(255, 77, 210,0.3)]">
+                {/* Clickable Profile Header */}
+                <Link 
+                  href="/profile" 
+                  onClick={() => setIsProfileOpen(false)} 
+                  className="p-4 border-b border-white/10 flex items-center gap-3 bg-gradient-to-b from-white/5 to-transparent hover:bg-white/10 transition-colors group cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ff4dd2]/50 shadow-[0_0_10px_rgba(255, 77, 210,0.3)] group-hover:scale-105 transition-transform">
                     {user.user_metadata?.avatar_url ? (
                       <Image src={user.user_metadata.avatar_url} alt="Avatar" width={40} height={40} />
                     ) : (
                       <User size={20} className="text-[#ff4dd2]" />
                     )}
                   </div>
-                  <div className="overflow-hidden">
-                    <p className="text-white font-bold text-sm truncate drop-shadow-md">{user.user_metadata?.full_name || 'Space Voyager'}</p>
+                  <div className="overflow-hidden min-w-0">
+                    <p className="text-white font-bold text-sm truncate group-hover:text-[#ff4dd2] transition-colors">{user.user_metadata?.full_name || 'Space Voyager'}</p>
+                    <p className="text-[11px] text-gray-400">View Profile →</p>
                   </div>
-                </div>
+                </Link>
 
                 <div className="py-2">
-                  <Link href="/settings" className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
-                    <Settings size={18} className="text-gray-400 group-hover:text-white" /> Settings
+                  <Link 
+                    href="/profile" 
+                    onClick={() => setIsProfileOpen(false)} 
+                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <User size={18} className="text-[#ff4dd2]" /> Profile
+                  </Link>
+
+                  <Link 
+                    href="/settings" 
+                    onClick={() => setIsProfileOpen(false)} 
+                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Settings size={18} className="text-gray-400" /> Settings
                   </Link>
                   
-                  <Link href="/watchlist" className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors">
-                    <Bookmark size={18} className="text-gray-400 group-hover:text-white" /> Watchlist
+                  <Link 
+                    href="/watchlist?tab=watchlist" 
+                    onClick={() => setIsProfileOpen(false)} 
+                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Bookmark size={18} className="text-indigo-400" /> Watchlist
+                  </Link>
+
+                  <Link 
+                    href="/watchlist?tab=favorites" 
+                    onClick={() => setIsProfileOpen(false)} 
+                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Heart size={18} className="text-rose-400" /> Favorites
+                  </Link>
+
+                  <Link 
+                    href="/watchlist?tab=custom-lists" 
+                    onClick={() => setIsProfileOpen(false)} 
+                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <ListPlus size={18} className="text-amber-400" /> My Lists
+                  </Link>
+
+                  <Link 
+                    href="/watchlist?tab=playlists" 
+                    onClick={() => setIsProfileOpen(false)} 
+                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Music size={18} className="text-[#ff4dd2]" /> My Playlists 🎵
                   </Link>
                   
                   <div className="h-px bg-white/10 w-full my-2" />
 
                   <button 
-                    onClick={handleLogout} 
-                    className="w-full flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-[#ef4444] hover:bg-white/10 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      handleLogout();
+                    }} 
+                    className="w-full flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-[#ef4444] hover:bg-white/10 transition-colors cursor-pointer text-left"
                   >
-                    <LogOut size={18} className="text-gray-400 group-hover:text-[#ef4444]" /> Log Out
+                    <LogOut size={18} className="text-gray-400 hover:text-[#ef4444]" /> Log Out
                   </button>
                 </div>
               </div>
@@ -278,56 +330,157 @@ export default function Navbar() {
             {/* Backdrop */}
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
               className="fixed inset-0 bg-[#050716]/90 backdrop-blur-md z-[80]"
             />
             {/* 3D Drawer */}
             <motion.div 
               ref={menuRef}
               initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-[100px] bottom-4 right-4 w-[calc(100%-32px)] sm:w-[350px] max-w-[85vw] bg-[#121326] border border-[#ff4dd2]/40 shadow-[0_0_60px_rgba(255, 77, 210,0.3)] z-[90] flex flex-col rounded-2xl overflow-hidden"
+              className="fixed top-[80px] sm:top-[90px] bottom-3 right-3 w-[calc(100%-24px)] sm:w-[360px] max-w-[90vw] bg-[#0c0d1e] border border-[#ff4dd2]/40 shadow-[0_0_60px_rgba(255, 77, 210,0.3)] z-[90] flex flex-col rounded-3xl overflow-hidden"
             >
-              <div className="p-6 pt-8 flex-1 flex flex-col gap-8 overflow-y-auto custom-scrollbar relative">
-                <button onClick={() => setIsMenuOpen(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5 cursor-pointer z-[100]">
-                  <X size={20} />
+              <div className="p-5 sm:p-6 flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar relative">
+                
+                {/* Close Button */}
+                <button 
+                  onClick={() => setIsMenuOpen(false)} 
+                  className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5 cursor-pointer z-[100]"
+                >
+                  <X size={18} />
                 </button>
-                
-                <h3 className="text-[#ff4dd2] text-xs font-black tracking-widest uppercase mb-4 drop-shadow-[0_0_10px_rgba(255, 77, 210,0.5)] flex items-center gap-3">
-                  <span className="w-6 h-[2px] bg-[#ff4dd2] inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.8)]"></span> NAVIGATION
-                </h3>
-                
-                <div className="flex flex-col gap-3">
-                  {navLinks.map((link) => {
-                    const isActive = pathname === link.path;
-                    const Icon = link.icon;
-                    return (
-                    <Link 
-                      key={link.name} 
-                      href={link.path} 
-                      onClick={() => setIsMenuOpen(false)}
-                      className={`text-[16px] md:text-[18px] font-bold p-4 rounded-xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden ${
-                        isActive ? 'text-white bg-[#ff4dd2]/10' : 'text-gray-300 hover:text-white hover:bg-[#ff4dd2]/5'
-                      }`}
-                    >
-                      {/* Active Indicator Line */}
-                      <span className={`absolute left-0 top-0 bottom-0 w-1 bg-[#ff4dd2] transition-transform duration-300 origin-top shadow-[0_0_15px_rgba(255, 77, 210,0.8)] ${isActive ? 'scale-y-100' : 'scale-y-0 group-hover:scale-y-50'}`}></span>
-                      
-                      <Icon size={24} className={`relative z-10 transition-colors ${isActive ? 'text-[#ff4dd2]' : 'text-gray-500 group-hover:text-[#ff4dd2]'}`} />
-                      <span className="relative z-10 drop-shadow-md tracking-wide group-hover:text-[#ff4dd2] transition-colors">{link.name}</span>
-                    </Link>
-                  )})}
-                </div>
-                
-                {/* Extra Links in Drawer */}
-                <div className="mt-auto pt-6 border-t border-white/10 flex flex-col gap-3 pb-6">
-                  <Link href="/watchlist" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] group">
-                    <Bookmark size={22} className="text-[#ff4dd2] group-hover:text-[#ff4dd2] transition-colors" /> My Watchlist
+
+                {/* 🌟 User Profile Card at Top of Drawer */}
+                {user ? (
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10 transition-all group mt-1"
+                  >
+                    <div className="w-11 h-11 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ff4dd2]/50 shadow-[0_0_10px_rgba(255, 77, 210,0.3)] group-hover:scale-105 transition-transform">
+                      {user.user_metadata?.avatar_url ? (
+                        <Image src={user.user_metadata.avatar_url} alt="Avatar" width={44} height={44} />
+                      ) : (
+                        <User size={22} className="text-[#ff4dd2]" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-extrabold text-sm truncate group-hover:text-[#ff4dd2] transition-colors">
+                        {user.user_metadata?.full_name || 'Space Voyager'}
+                      </p>
+                      <span className="text-[10px] text-gray-400 block font-semibold">
+                        View Profile & Library →
+                      </span>
+                    </div>
                   </Link>
-                  {!user && (
-                    <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0)] hover:shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] group">
-                      <User size={22} className="text-[#ff4dd2] group-hover:text-[#ff4dd2] transition-colors" /> Login / Register
-                    </Link>
+                ) : (
+                  <Link
+                    href="/auth"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#ff4dd2]/20 to-indigo-600/20 border border-[#ff4dd2]/40 hover:border-[#ff4dd2] transition-all group mt-1"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#ff4dd2] flex items-center justify-center text-black font-black">
+                        <User size={20} className="fill-black" />
+                      </div>
+                      <div>
+                        <p className="text-white font-extrabold text-xs">Join Anime Nation</p>
+                        <p className="text-[10px] text-gray-300">Login or Create Account</p>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-[#ff4dd2] group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
+
+                {/* Section: Main Navigation */}
+                <div>
+                  <h3 className="text-[#ff4dd2] text-[11px] font-black tracking-widest uppercase mb-3 flex items-center gap-2">
+                    <span className="w-4 h-[2px] bg-[#ff4dd2] inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.8)]"></span> NAVIGATION
+                  </h3>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    {navLinks.map((link) => {
+                      const isActive = pathname === link.path;
+                      const Icon = link.icon;
+                      return (
+                        <Link 
+                          key={link.name} 
+                          href={link.path} 
+                          onClick={() => setIsMenuOpen(false)}
+                          className={`text-[14px] font-bold px-3.5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-3.5 group relative overflow-hidden ${
+                            isActive ? 'text-white bg-[#ff4dd2]/15 border border-[#ff4dd2]/30' : 'text-gray-300 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <Icon size={18} className={`${isActive ? 'text-[#ff4dd2]' : 'text-gray-400 group-hover:text-[#ff4dd2]'}`} />
+                          <span className="tracking-wide group-hover:text-[#ff4dd2] transition-colors">{link.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Section: User Library & Lists */}
+                <div className="pt-4 border-t border-white/10 flex flex-col gap-1.5">
+                  <h3 className="text-indigo-400 text-[11px] font-black tracking-widest uppercase mb-2 flex items-center gap-2">
+                    <span className="w-4 h-[2px] bg-indigo-400 inline-block"></span> MY COLLECTIONS
+                  </h3>
+
+                  <Link 
+                    href="/watchlist?tab=watchlist" 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
+                  >
+                    <Bookmark size={17} className="text-indigo-400" /> Watchlist
+                  </Link>
+
+                  <Link 
+                    href="/watchlist?tab=favorites" 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
+                  >
+                    <Heart size={17} className="text-rose-400" /> Favorites
+                  </Link>
+
+                  <Link 
+                    href="/watchlist?tab=custom-lists" 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
+                  >
+                    <ListPlus size={17} className="text-amber-400" /> My Custom Lists
+                  </Link>
+
+                  <Link 
+                    href="/watchlist?tab=playlists" 
+                    onClick={() => setIsMenuOpen(false)} 
+                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
+                  >
+                    <Music size={17} className="text-[#ff4dd2]" /> My Playlists 🎵
+                  </Link>
+
+                  {user && (
+                    <>
+                      <Link 
+                        href="/settings" 
+                        onClick={() => setIsMenuOpen(false)} 
+                        className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
+                      >
+                        <Settings size={17} className="text-gray-400" /> Account Settings
+                      </Link>
+
+                      <div className="h-px bg-white/10 my-1" />
+
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-rose-400 hover:bg-rose-500/10 font-bold text-xs transition-all cursor-pointer text-left"
+                      >
+                        <LogOut size={17} /> Sign Out
+                      </button>
+                    </>
                   )}
                 </div>
+
               </div>
             </motion.div>
           </>
