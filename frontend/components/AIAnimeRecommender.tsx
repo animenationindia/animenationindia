@@ -100,7 +100,7 @@ export default function AIAnimeRecommender() {
         className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 bg-gradient-to-r from-[#ff4dd2] via-[#a855f7] to-[#6366f1] text-white font-extrabold px-5 py-3 rounded-full shadow-[0_10px_35px_rgba(255,77,210,0.45)] border border-white/20 backdrop-blur-md cursor-pointer group"
       >
         <Sparkles size={18} className="animate-spin-slow group-hover:rotate-45 transition-transform" />
-        <span className="text-xs uppercase tracking-wider">Ask Anime AI</span>
+        <span className="text-xs uppercase tracking-wider">Ask Ani AI</span>
       </motion.button>
 
       {/* 💬 AI Recommender Modal */}
@@ -129,10 +129,10 @@ export default function AIAnimeRecommender() {
                   </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                      AnimeNation AI Recommender
-                      <span className="text-[10px] bg-[#ff4dd2]/20 text-[#ff4dd2] px-2 py-0.5 rounded-full border border-[#ff4dd2]/30">GPT-Anime</span>
+                      Ask Ani AI
+                      <span className="text-[10px] bg-[#ff4dd2]/20 text-[#ff4dd2] px-2 py-0.5 rounded-full border border-[#ff4dd2]/30">Ani AI</span>
                     </h3>
-                    <p className="text-xs text-gray-400">Describe what you want to watch or pick a prompt below</p>
+                    <p className="text-xs text-gray-400">Ask Ani AI for personalized anime recommendations or pick a prompt below</p>
                   </div>
                 </div>
                 <button
@@ -163,7 +163,7 @@ export default function AIAnimeRecommender() {
               <div className="relative mb-5 flex-shrink-0">
                 <input
                   type="text"
-                  placeholder="e.g. Anime like Summer Time Rendering with mystery and time loops..."
+                  placeholder="Ask Ani AI... e.g. Anime like Summer Time Rendering with mystery and time loops"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAskAI(query)}

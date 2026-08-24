@@ -42,6 +42,10 @@ export default function SectionSlider({ title, data, type, viewAllLink, isManga 
           modules={[Navigation, Mousewheel]}
           spaceBetween={16}
           slidesPerView={3}
+          speed={350}
+          watchSlidesProgress={true}
+          touchEventsTarget="container"
+          resistanceRatio={0.7}
           grabCursor={true}
           mousewheel={{
             forceToAxis: true,

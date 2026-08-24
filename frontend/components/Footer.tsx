@@ -55,7 +55,8 @@ const footerLinks = [
       { name: "News", path: "/news" },
       { name: "Search", path: "/search" },
       { name: "Watchlist", path: "/watchlist" },
-      { name: "Login / Sign up", path: "/auth" },
+      { name: "Sign In", path: "/signin" },
+      { name: "Sign Up (Join Clan)", path: "/signup" },
       { name: "Contact", path: "/contact" },
     ]
   },

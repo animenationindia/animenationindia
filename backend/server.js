@@ -3,6 +3,7 @@ const dns = require('dns');
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 dns.setDefaultResultOrder('ipv4first');
 const express = require('express');
+const compression = require('compression');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
@@ -55,6 +56,7 @@ const jikanHeaders = {
 };
 
 const app = express();
+app.use(compression());
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
@@ -208,7 +210,7 @@ const Favorite = mongoose.model('Favorite', favoriteSchema);
 
 // Custom Animenation List Schema
 const customListSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   name: { type: String, required: true, trim: true },
   description: { type: String, default: '', trim: true },
   isPrivate: { type: Boolean, default: false },
@@ -1099,15 +1101,74 @@ app.get('/api/trending', async (req, res) => {
       }
     }
 
-    const response = await fetch('https://api.jikan.moe/v4/seasons/now?limit=15&type=tv', { headers: jikanHeaders });
-    if (!response.ok) {
-        if (savedTrending.length > 0) return res.json({ data: savedTrending });
-        return res.status(502).json({ message: "Jikan API Error" });
+    let list = null;
+
+    // 1. Try Jikan
+    try {
+      const response = await fetch('https://api.jikan.moe/v4/seasons/now?limit=15&type=tv', {
+        headers: jikanHeaders,
+        signal: AbortSignal.timeout(3500)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+          list = data.data;
+        }
+      }
+    } catch (e) {
+      console.warn('Jikan trending failed, trying AniList fallback:', e.message);
     }
-    
-    const data = await response.json();
-    if (data && data.data) {
-       const updatedData = data.data.map(item => ({...item, last_updated: now}));
+
+    // 2. Fallback to AniList GraphQL
+    if (!list) {
+      try {
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+              query {
+                Page(page: 1, perPage: 15) {
+                  media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+                    id
+                    idMal
+                    title { romaji english }
+                    coverImage { extraLarge large }
+                    description
+                    averageScore
+                    genres
+                    status
+                  }
+                }
+              }
+            `
+          }),
+          signal: AbortSignal.timeout(4000)
+        });
+        if (aniRes.ok) {
+          const aniData = await aniRes.json();
+          if (aniData?.data?.Page?.media && Array.isArray(aniData.data.Page.media)) {
+            list = aniData.data.Page.media.map(item => ({
+              mal_id: item.idMal || item.id,
+              title: item.title?.english || item.title?.romaji,
+              title_english: item.title?.english || item.title?.romaji,
+              images: {
+                jpg: { large_image_url: item.coverImage?.extraLarge || item.coverImage?.large },
+                webp: { large_image_url: item.coverImage?.extraLarge || item.coverImage?.large }
+              },
+              genres: (item.genres || []).map(g => ({ name: g })),
+              synopsis: item.description,
+              score: item.averageScore ? item.averageScore / 10 : null
+            }));
+          }
+        }
+      } catch (e) {
+        console.error('AniList fallback error:', e.message);
+      }
+    }
+
+    if (list && list.length > 0) {
+       const updatedData = list.map(item => ({...item, last_updated: now}));
        await TrendingAnime.deleteMany({}); 
        await TrendingAnime.insertMany(updatedData);
        return res.json({ data: updatedData });

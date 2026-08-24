@@ -292,7 +292,7 @@ export default function Navbar() {
             </div>
           ) : (
             <button 
-              onClick={() => router.push('/auth')} 
+              onClick={() => router.push('/signin')} 
               className="hidden md:flex items-center gap-2 text-gray-300 hover:text-white font-bold text-[14px] cursor-pointer transition-all px-4 py-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 hover:shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] ml-2"
             >
               <User size={18} />
@@ -374,7 +374,7 @@ export default function Navbar() {
                   </Link>
                 ) : (
                   <Link
-                    href="/auth"
+                    href="/signin"
                     onClick={() => setIsMenuOpen(false)}
                     className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#ff4dd2]/20 to-indigo-600/20 border border-[#ff4dd2]/40 hover:border-[#ff4dd2] transition-all group mt-1"
                   >

@@ -34,6 +34,11 @@ export interface TMDBAnimeData {
   episodes?: TMDBEpisode[];
 }
 
+// In-Memory Fast Cache for TMDB (24-Hour memory cache)
+const tmdbMemoryCache = new Map<string, { data: any; timestamp: number }>();
+const tmdbInFlight = new Map<string, Promise<any>>();
+const TMDB_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
 // Clean title for TMDB search (remove season brackets, formats, etc.)
 function cleanSearchQuery(title: string): string {
   return title
@@ -54,13 +59,19 @@ function cleanSearchQuery(title: string): string {
  */
 export async function getTMDBSeasonEpisodes(tmdbId: number, seasonNumber = 1): Promise<TMDBEpisode[]> {
   if (!tmdbId) return [];
+  const cacheKey = `tmdb_season:${tmdbId}:${seasonNumber}`;
+  const cached = tmdbMemoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < TMDB_CACHE_TTL) {
+    return cached.data;
+  }
+
   try {
     const res = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`, {
       next: { revalidate: 86400 }
     });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.episodes || []).map((ep: any) => ({
+    const episodes: TMDBEpisode[] = (data.episodes || []).map((ep: any) => ({
       episodeNumber: ep.episode_number,
       name: ep.name,
       overview: ep.overview,
@@ -68,6 +79,8 @@ export async function getTMDBSeasonEpisodes(tmdbId: number, seasonNumber = 1): P
       airDate: ep.air_date,
       runtime: ep.runtime
     }));
+    tmdbMemoryCache.set(cacheKey, { data: episodes, timestamp: Date.now() });
+    return episodes;
   } catch (err) {
     logError('getTMDBSeasonEpisodes', err);
     return [];
@@ -79,17 +92,30 @@ export async function getTMDBSeasonEpisodes(tmdbId: number, seasonNumber = 1): P
  */
 export async function getTMDBAnimeData(title: string, year?: number): Promise<TMDBAnimeData | null> {
   if (!title || !title.trim()) return null;
+  const cacheKey = `tmdb_anime:${title.toLowerCase().trim()}:${year || 'any'}`;
 
-  try {
-    const query = cleanSearchQuery(title);
-    let searchUrl = `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
-    if (year) {
-      searchUrl += `&first_air_date_year=${year}`;
-    }
+  // 1. Memory cache hit
+  const cached = tmdbMemoryCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < TMDB_CACHE_TTL) {
+    return cached.data;
+  }
 
-    const searchRes = await fetch(searchUrl, {
-      next: { revalidate: 86400 } // Cache 24 hours
-    });
+  // 2. In-flight promise deduplication
+  if (tmdbInFlight.has(cacheKey)) {
+    return tmdbInFlight.get(cacheKey);
+  }
+
+  const execute = async (): Promise<TMDBAnimeData | null> => {
+    try {
+      const query = cleanSearchQuery(title);
+      let searchUrl = `${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
+      if (year) {
+        searchUrl += `&first_air_date_year=${year}`;
+      }
+
+      const searchRes = await fetch(searchUrl, {
+        next: { revalidate: 86400 } // Cache 24 hours
+      });
 
     if (!searchRes.ok) return null;
     const searchData = await searchRes.json();
@@ -189,7 +215,7 @@ export async function getTMDBAnimeData(title: string, year?: number): Promise<TM
       logoUrl: `${IMAGE_BASE_URL}/w92${p.logo_path}`
     }));
 
-    return {
+    const result: TMDBAnimeData = {
       tmdbId,
       originalLanguage: details?.original_language || 'ja',
       spokenLanguages,
@@ -202,8 +228,18 @@ export async function getTMDBAnimeData(title: string, year?: number): Promise<TM
       overview: details?.overview,
       episodes: season1Episodes
     };
+    tmdbMemoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    return result;
   } catch (error) {
     logError('getTMDBAnimeData', error);
     return null;
   }
+};
+
+  const promise = execute().finally(() => {
+    tmdbInFlight.delete(cacheKey);
+  });
+
+  tmdbInFlight.set(cacheKey, promise);
+  return promise;
 }

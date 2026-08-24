@@ -8,6 +8,11 @@ const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 
 export const GLOBAL_CACHE_TIME = 21600; // 6 hours in seconds
 
+// 🚀 High-Speed In-Memory LRU/TTL Cache (5-Minute Memory Cache)
+const apiMemoryCache = new Map<string, { data: any; timestamp: number }>();
+const inFlightPromises = new Map<string, Promise<any>>();
+const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function fetchInBatches<T>(
   tasks: (() => Promise<T>)[],
   batchSize = 3,
@@ -33,20 +38,110 @@ export async function fetchInBatches<T>(
 }
 
 export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 3000) {
-  let retries = 2;
-  let delay = 500;
+  const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
-  while (retries > 0) {
+  // 1. Return from memory cache if fresh
+  const cached = apiMemoryCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < MEMORY_CACHE_TTL) && revalidate !== 0) {
+    return cached.data;
+  }
+
+  // 2. Return active in-flight Promise if identical request is pending
+  if (inFlightPromises.has(cacheKey)) {
+    return inFlightPromises.get(cacheKey);
+  }
+
+  const executeFetch = async () => {
+    let retries = 2;
+    let delay = 500;
+
+    while (retries > 0) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+      const fetchOptions: any = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+        signal: controller.signal
+      };
+
+      if (revalidate === 0) {
+        fetchOptions.cache = 'no-store';
+      } else {
+        fetchOptions.next = { revalidate };
+      }
+
+      try {
+        const res = await fetch(ANILIST_API_URL, fetchOptions);
+        clearTimeout(timer);
+        
+        if (res.status === 429) {
+          console.warn(`AniList API 429 Rate Limit hit. Retrying in ${delay}ms...`);
+          retries--;
+          if (retries === 0) return null;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+          continue;
+        }
+        
+        const data = await res.json();
+        if (data.errors && data.errors.some((err: any) => err.status === 429 || err.message === "Too Many Requests.")) {
+          console.warn(`AniList API returned 429 error in body. Retrying in ${delay}ms...`);
+          retries--;
+          if (retries === 0) return null;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+          continue;
+        }
+        
+        if (data && data.data && (!data.errors || data.errors.length === 0)) {
+          apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+        }
+        return data;
+      } catch (error: any) {
+        clearTimeout(timer);
+        if (error.name === 'AbortError') {
+          console.warn(`AniList API fetch timed out after ${timeoutMs}ms`);
+          return null;
+        }
+        console.error("Error in fetchAniList:", error);
+        retries--;
+        if (retries === 0) return null;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
+      }
+    }
+    return null;
+  };
+
+  const promise = executeFetch().finally(() => {
+    inFlightPromises.delete(cacheKey);
+  });
+
+  inFlightPromises.set(cacheKey, promise);
+  return promise;
+}
+
+export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 3500) {
+  const cacheKey = `jikan:${endpoint}`;
+
+  // 1. Return from memory cache if fresh
+  const cached = apiMemoryCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < MEMORY_CACHE_TTL) && revalidate !== 0) {
+    return cached.data;
+  }
+
+  // 2. Return active in-flight Promise if identical request is pending
+  if (inFlightPromises.has(cacheKey)) {
+    return inFlightPromises.get(cacheKey);
+  }
+
+  const executeFetch = async () => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    const fetchOptions: any = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, variables }),
-      signal: controller.signal
-    };
-
+    const fetchOptions: any = { signal: controller.signal };
     if (revalidate === 0) {
       fetchOptions.cache = 'no-store';
     } else {
@@ -54,83 +149,43 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
     }
 
     try {
-      const res = await fetch(ANILIST_API_URL, fetchOptions);
+      const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
       clearTimeout(timer);
       
-      if (res.status === 429) {
-        console.warn(`AniList API 429 Rate Limit hit. Retrying in ${delay}ms...`);
-        retries--;
-        if (retries === 0) return null;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
-        continue;
+      if (res.status === 429 || res.status === 504 || res.status === 503 || res.status === 502) {
+        console.warn(`Jikan API ${res.status} hit on ${endpoint}. Returning null to prevent timeout.`);
+        return null;
+      }
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          return null;
+        }
+        throw new Error(`Jikan API returned status ${res.status}`);
       }
       
       const data = await res.json();
-      if (data.errors && data.errors.some((err: any) => err.status === 429 || err.message === "Too Many Requests.")) {
-        console.warn(`AniList API returned 429 error in body. Retrying in ${delay}ms...`);
-        retries--;
-        if (retries === 0) return null;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
-        continue;
+      if (data && data.data) {
+        apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
       }
-      
       return data;
     } catch (error: any) {
       clearTimeout(timer);
       if (error.name === 'AbortError') {
-        console.warn(`AniList API fetch timed out after ${timeoutMs}ms`);
+        console.warn(`Jikan API fetch timed out after ${timeoutMs}ms for ${endpoint}`);
         return null;
       }
-      console.error("Error in fetchAniList:", error);
-      retries--;
-      if (retries === 0) return null;
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay *= 2;
-    }
-  }
-  return null;
-}
-
-export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 3500) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  const fetchOptions: any = { signal: controller.signal };
-  if (revalidate === 0) {
-    fetchOptions.cache = 'no-store';
-  } else {
-    fetchOptions.next = { revalidate };
-  }
-
-  try {
-    const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
-    clearTimeout(timer);
-    
-    if (res.status === 429 || res.status === 504 || res.status === 503 || res.status === 502) {
-      console.warn(`Jikan API ${res.status} hit on ${endpoint}. Returning null to prevent timeout.`);
+      console.error(`Error in fetchJikan for ${endpoint}:`, error);
       return null;
     }
-    
-    if (!res.ok) {
-      if (res.status === 404) {
-        return null;
-      }
-      throw new Error(`Jikan API returned status ${res.status}`);
-    }
-    
-    const data = await res.json();
-    return data;
-  } catch (error: any) {
-    clearTimeout(timer);
-    if (error.name === 'AbortError') {
-      console.warn(`Jikan API fetch timed out after ${timeoutMs}ms for ${endpoint}`);
-      return null;
-    }
-    console.error(`Error in fetchJikan for ${endpoint}:`, error);
-    return null;
-  }
+  };
+
+  const promise = executeFetch().finally(() => {
+    inFlightPromises.delete(cacheKey);
+  });
+
+  inFlightPromises.set(cacheKey, promise);
+  return promise;
 }
 
 // ─── Multi-Tier Fallback Engine ────────────────────────────────────────────────
