@@ -36,8 +36,8 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const fetchWatchlist = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('user_token');
-    const userId = localStorage.getItem('user_id');
+    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+    const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
 
     if (!token || !userId) {
       setWatchlist([]);
@@ -67,15 +67,26 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchWatchlist();
 
-    const handleAuthChange = () => fetchWatchlist();
-    window.addEventListener('auth-change', handleAuthChange);
-    return () => window.removeEventListener('auth-change', handleAuthChange);
+    const handleSync = () => fetchWatchlist();
+
+    // Listen to window focus, back-navigation, and authentication changes
+    window.addEventListener('auth-change', handleSync);
+    window.addEventListener('popstate', handleSync);
+    window.addEventListener('pageshow', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      window.removeEventListener('auth-change', handleSync);
+      window.removeEventListener('popstate', handleSync);
+      window.removeEventListener('pageshow', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
   }, [fetchWatchlist]);
 
   const isInWatchlist = useCallback(
     (animeId: number | string) => {
       const numId = Number(animeId);
-      return watchlist.some((item) => Number(item.mal_id || item.anime_id) === numId);
+      return watchlist.some((item) => Number(item.mal_id || item.anime_id || item.id) === numId);
     },
     [watchlist]
   );
@@ -83,7 +94,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const getItemStatus = useCallback(
     (animeId: number | string) => {
       const numId = Number(animeId);
-      const found = watchlist.find((item) => Number(item.mal_id || item.anime_id) === numId);
+      const found = watchlist.find((item) => Number(item.mal_id || item.anime_id || item.id) === numId);
       return found?.status || 'ADD';
     },
     [watchlist]
@@ -91,8 +102,8 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const addToWatchlist = useCallback(
     async ({ animeId, title, image, status = 'PLAN_TO_WATCH', type = 'Anime' }: { animeId: number | string; title: string; image: string; status?: string; type?: string }) => {
-      const token = localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id');
+      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
 
       if (!token || !userId) {
         return false;
@@ -101,7 +112,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const numId = Number(animeId);
       const previousWatchlist = [...watchlist];
 
-      // Optimistic update
+      // Optimistic update directly in state
       const newItem: WatchlistItem = {
         mal_id: numId,
         anime_id: numId,
@@ -113,7 +124,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       };
 
       setWatchlist((prev) => {
-        const filtered = prev.filter((item) => Number(item.mal_id || item.anime_id) !== numId);
+        const filtered = prev.filter((item) => Number(item.mal_id || item.anime_id || item.id) !== numId);
         return [...filtered, newItem];
       });
 
@@ -139,7 +150,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ anime: animePayload, userId }),
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to save watchlist item`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to save to watchlist`);
+
+        // Dispatch notification after successful backend persistence
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { animeId: numId, status } }));
+        }
+
         return true;
       } catch (err) {
         logError('WatchlistContext.addToWatchlist', err);
@@ -153,16 +170,16 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const removeFromWatchlist = useCallback(
     async (animeId: number | string) => {
-      const token = localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id');
+      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
 
       if (!token || !userId) return false;
 
       const numId = Number(animeId);
       const previousWatchlist = [...watchlist];
 
-      // Optimistic update
-      setWatchlist((prev) => prev.filter((item) => Number(item.mal_id || item.anime_id) !== numId));
+      // Optimistic update directly in state
+      setWatchlist((prev) => prev.filter((item) => Number(item.mal_id || item.anime_id || item.id) !== numId));
 
       try {
         const res = await fetch(`${BACKEND_URL}/api/watchlist/${userId}/${numId}`, {
@@ -171,6 +188,12 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to remove watchlist item`);
+
+        // Dispatch notification after successful backend persistence
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { animeId: numId, status: 'ADD' } }));
+        }
+
         return true;
       } catch (err) {
         logError('WatchlistContext.removeFromWatchlist', err);

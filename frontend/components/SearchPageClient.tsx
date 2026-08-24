@@ -243,7 +243,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
 
           {/* Score */}
           {typeof anime.averageScore === 'number' && !isNaN(anime.averageScore) && (
-            <div className="absolute top-2 left-2 z-20 flex items-center gap-1 bg-black/80 backdrop-blur-sm rounded-lg px-2 py-0.5 pointer-events-none border border-white/5">
+            <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-black/80 backdrop-blur-sm rounded-lg px-2 py-0.5 pointer-events-none border border-white/5">
               <Star size={10} className="text-yellow-400 fill-yellow-400" />
               <span className="text-[11px] font-bold text-white leading-none">{(anime.averageScore / 10).toFixed(1)}</span>
             </div>
@@ -251,7 +251,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
 
           {/* Format */}
           {anime.format && (
-            <div className={`absolute top-2 right-2 z-20 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none border ${formatBadgeColor(anime.format)}`}>
+            <div className={`absolute top-2 right-2 z-10 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider pointer-events-none border ${formatBadgeColor(anime.format)}`}>
               {anime.format.replace('_', ' ')}
             </div>
           )}
@@ -301,10 +301,12 @@ interface Props {
 }
 
 export default function SearchPageClient({ initialQuery, initialGenres, initialFormat, initialStatus, initialYear, initialSort, initialPage }: Props) {
+  const router = useRouter();
 
   // ── State ──
   const [query, setQuery] = useState(initialQuery);
   const [suggestions, setSuggestions] = useState<AnimeMedia[]>([]);
+  const [trendingFallback, setTrendingFallback] = useState<AnimeMedia[]>([]);
   const [showSugg, setShowSugg] = useState(false);
   const [suggLoading, setSuggLoading] = useState(false);
   const [activeSugg, setActiveSugg] = useState(-1);
@@ -328,6 +330,11 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
           setRecentSearches([]);
         }
       }
+
+      // Fetch trending anime as fallback for empty states
+      anilistFetch(TRENDING_Q, {}).then((d: any) => {
+        if (d?.Page?.media) setTrendingFallback(d.Page.media);
+      }).catch(() => {});
     }
   }, []);
 
@@ -494,6 +501,8 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
     e.preventDefault();
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setShowSugg(false);
+    setActiveSugg(-1);
+    inputRef.current?.blur();
     if (query.trim() && isLoggedIn) addRecentSearch(query.trim());
     doSearch(query, genres, format, status, year, sort, 1, false);
     syncURL(query, genres, format, status, year, sort, 1);
@@ -503,7 +512,9 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
     const t = a.title?.english || a.title?.romaji || '';
     if (t && isLoggedIn) addRecentSearch(t);
     setQuery(t);
-    setShowSugg(false); setActiveSugg(-1);
+    setShowSugg(false); 
+    setActiveSugg(-1);
+    inputRef.current?.blur();
     if (searchTimer.current) clearTimeout(searchTimer.current);
     doSearch(t, genres, format, status, year, sort, 1, false);
     syncURL(t, genres, format, status, year, sort, 1);
@@ -511,13 +522,41 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (!showSugg || !suggestions.length) {
-      if (e.key === 'Escape') { setShowSugg(false); inputRef.current?.blur(); }
+      if (e.key === 'Escape') { 
+        setShowSugg(false); 
+        setActiveSugg(-1); 
+        inputRef.current?.blur(); 
+      }
       return;
     }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveSugg(p => Math.min(p + 1, suggestions.length - 1)); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveSugg(p => Math.max(p - 1, -1)); }
-    else if (e.key === 'Enter' && activeSugg >= 0) { e.preventDefault(); onSuggClick(suggestions[activeSugg]); }
-    else if (e.key === 'Escape') { setShowSugg(false); setActiveSugg(-1); }
+    if (e.key === 'ArrowDown') { 
+      e.preventDefault(); 
+      setActiveSugg(p => Math.min(p + 1, suggestions.length - 1)); 
+    }
+    else if (e.key === 'ArrowUp') { 
+      e.preventDefault(); 
+      setActiveSugg(p => Math.max(p - 1, -1)); 
+    }
+    else if (e.key === 'Enter') { 
+      e.preventDefault(); 
+      if (activeSugg >= 0 && suggestions[activeSugg]) {
+        const selected = suggestions[activeSugg];
+        const linkId = selected.idMal || selected.id;
+        const t = selected.title?.english || selected.title?.romaji || '';
+        if (t && isLoggedIn) addRecentSearch(t);
+        setShowSugg(false);
+        setActiveSugg(-1);
+        inputRef.current?.blur();
+        router.push(`/series/${linkId}`);
+      } else {
+        onSubmit(e);
+      }
+    }
+    else if (e.key === 'Escape') { 
+      setShowSugg(false); 
+      setActiveSugg(-1); 
+      inputRef.current?.blur();
+    }
   };
 
   const applyFilter = (g: string[], f: string, s: string, y: string, so: string) => {
@@ -584,7 +623,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] relative z-10">
 
         {/* ─────────────── SEARCH BAR ─────────────── */}
-        <div className="w-full max-w-4xl mx-auto mb-6 relative z-20" ref={containerRef}>
+        <div className="w-full max-w-4xl mx-auto mb-6 relative z-50" ref={containerRef}>
 
           {/* Glow effect behind input */}
           <div className={`absolute inset-0 rounded-[20px] transition-opacity duration-500 pointer-events-none ${inputFocused ? 'opacity-100' : 'opacity-0'}`}>
@@ -611,7 +650,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                   onFocus={() => { setInputFocused(true); if (suggestions.length) setShowSugg(true); }}
                   onBlur={() => setInputFocused(false)}
                   onKeyDown={onKeyDown}
-                  className="w-full bg-[#0d0e1f]/90 backdrop-blur-xl border-2 border-white/[0.08] text-white placeholder-gray-600 rounded-2xl py-4 pl-12 pr-12 focus:outline-none focus:border-[#ff6400]/60 transition-all duration-300 text-sm md:text-base font-medium tracking-wide"
+                  className="w-full bg-[#0d0e1f] border-2 border-white/[0.12] text-white placeholder-gray-500 rounded-2xl py-4 pl-12 pr-12 focus:outline-none focus:border-[#ff6400]/80 transition-all duration-300 text-sm md:text-base font-medium tracking-wide shadow-2xl"
                 />
                 {query && (
                   <button type="button" onClick={onClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-[#ff6400] transition-colors p-1.5 cursor-pointer rounded-lg hover:bg-white/5" aria-label="Clear">
@@ -629,7 +668,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
               <button
                 type="button"
                 onClick={() => setShowFilters(p => !p)}
-                className={`relative flex items-center gap-1.5 px-4 py-4 rounded-2xl font-bold text-sm transition-all duration-300 cursor-pointer border-2 whitespace-nowrap ${showFilters || activeFilterCount > 0 ? 'bg-[#ff4dd2]/15 border-[#ff4dd2]/40 text-[#ff4dd2]' : 'bg-[#0d0e1f]/90 border-white/[0.08] text-gray-400 hover:border-[#ff4dd2]/30 hover:text-[#ff4dd2]'}`}
+                className={`relative flex items-center gap-1.5 px-4 py-4 rounded-2xl font-bold text-sm transition-all duration-300 cursor-pointer border-2 whitespace-nowrap ${showFilters || activeFilterCount > 0 ? 'bg-[#ff4dd2]/15 border-[#ff4dd2]/40 text-[#ff4dd2]' : 'bg-[#0d0e1f] border-white/[0.08] text-gray-400 hover:border-[#ff4dd2]/30 hover:text-[#ff4dd2]'}`}
               >
                 <SlidersHorizontal size={16} strokeWidth={2.5} />
                 <span className="hidden sm:inline">Filters</span>
@@ -646,7 +685,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.99 }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="absolute top-full left-0 right-0 mt-2 bg-[#0c0d1e]/98 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.85)] z-50 divide-y divide-white/5"
+                  className="absolute top-full left-0 right-0 mt-2 bg-[#0c0d1e] border border-white/20 rounded-2xl overflow-hidden shadow-[0_30px_90px_rgba(0,0,0,1)] z-[100] divide-y divide-white/5"
                 >
                   {/* 🕒 1. RECENT SEARCHES SECTION (Logged-in Users Only, When Input Empty) */}
                   {!query.trim() && isLoggedIn && recentSearches.length > 0 && (
@@ -953,27 +992,83 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
             )}
           </>
         ) : (
-          /* ── Empty State ── */
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-24 px-6 bg-white/[0.02] rounded-3xl border border-white/[0.06]"
-          >
-            <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
-                <SearchX size={36} className="text-gray-700" />
+          /* ── Smart Interactive Empty State ── */
+          <div className="space-y-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16 md:py-20 px-6 bg-gradient-to-b from-[#0e0f22]/90 to-[#070814]/90 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl relative overflow-hidden"
+            >
+              {/* Subtle background glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-[#ff4dd2]/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex justify-center mb-6 relative">
+                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#ff4dd2]/20 to-purple-600/20 border border-[#ff4dd2]/40 flex items-center justify-center shadow-lg shadow-[#ff4dd2]/20">
+                  <SearchX size={38} className="text-[#ff4dd2]" />
+                </div>
               </div>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bebas text-white tracking-widest uppercase mb-3">No Results Found</h2>
-            <p className="text-gray-600 text-sm max-w-md mx-auto mb-8">
-              {query ? <>No anime matched <span className="text-[#ff6400] font-semibold">&quot;{query}&quot;</span>. Try a different search or explore popular titles below.</> : 'Try adjusting your filters or search for something specific.'}
-            </p>
-            <div className="flex flex-wrap justify-center gap-2.5">
-              {QUICK_TAGS.slice(0, 6).map(s => (
-                <button key={s} onClick={() => onQuickTag(s)} className="px-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-sm text-gray-400 hover:border-[#ff6400]/40 hover:text-[#ff6400] hover:bg-[#ff6400]/5 transition-all cursor-pointer font-medium">{s}</button>
-              ))}
-            </div>
-          </motion.div>
+
+              <h2 className="text-3xl md:text-4xl font-bebas text-white tracking-widest uppercase mb-2">
+                No Anime Found
+              </h2>
+              <p className="text-gray-400 text-xs md:text-sm max-w-md mx-auto mb-6 leading-relaxed">
+                {query ? (
+                  <>We couldn&apos;t find any anime matching <span className="text-[#ff4dd2] font-bold">&quot;{query}&quot;</span>. Try checking spelling or click below to reset.</>
+                ) : (
+                  'No results match your active combination of filters.'
+                )}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery('');
+                    clearAllFilters();
+                  }}
+                  className="px-6 py-3 bg-[#ff4dd2] hover:bg-[#ff7be0] text-black font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#ff4dd2]/30 cursor-pointer"
+                >
+                  🔄 Reset All Filters
+                </button>
+              </div>
+
+              {/* Quick Tags Pills */}
+              <div className="border-t border-white/5 pt-6">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold block mb-3">
+                  Or Try Popular Searches:
+                </span>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {QUICK_TAGS.map(s => (
+                    <button 
+                      key={s} 
+                      onClick={() => onQuickTag(s)} 
+                      className="px-3.5 py-1.5 bg-white/5 border border-white/10 rounded-xl text-xs text-gray-300 hover:border-[#ff4dd2]/50 hover:text-[#ff4dd2] hover:bg-[#ff4dd2]/10 transition-all cursor-pointer font-bold"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* 🔥 Trending Suggestions Grid Underneath */}
+            {trendingFallback.length > 0 && (
+              <div className="mt-8">
+                <div className="flex items-center gap-2.5 mb-6">
+                  <TrendingUp size={20} className="text-[#ff4dd2]" />
+                  <h3 className="text-xl font-bold text-white tracking-wide">
+                    Trending Anime You Might Like
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {trendingFallback.slice(0, 12).map((sug: AnimeMedia, idx: number) => (
+                    <ResultCard key={sug.id} anime={sug} priority={idx < 4} index={idx} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </main>

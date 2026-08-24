@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import { getAnimeFullDetails, getAnimeEpisodes } from '@/lib/api';
+import { getTMDBAnimeData } from '@/lib/tmdb-api';
 import { sanitizeDescription } from '@/lib/sanitize';
 import Link from 'next/link';
 import WatchPageContent from '@/components/WatchPageContent';
@@ -61,7 +62,7 @@ export default async function WatchPage({ params }: { params: Promise<Params> })
     return (
       <div className="container mx-auto px-4 py-20 text-center text-gray-400 bg-[#070708]">
         <h1 className="text-3xl font-bebas text-white mb-4 tracking-widest">Video Not Found</h1>
-        <Link href="/" className="text-[#ff6400] hover:underline bg-[#ff6400]/10 px-6 py-2 rounded-full transition-all">Go back home</Link>
+        <Link href="/" className="text-[#ff4dd2] hover:underline bg-[#ff4dd2]/10 px-6 py-2 rounded-full transition-all">Go back home</Link>
       </div>
     );
   }
@@ -79,9 +80,14 @@ export default async function WatchPage({ params }: { params: Promise<Params> })
         score: null,
       }));
 
+  // Fetch TMDB data for real episode stills, logo, trailer & runtimes
+  const searchTitle = anime.title_english || anime.title?.english || anime.title?.romaji || anime.title || '';
+  const animeYear = anime.year || (anime.aired?.prop?.from?.year);
+  const tmdbData = await getTMDBAnimeData(searchTitle, animeYear);
+
   return (
-    <main className="min-h-screen bg-[#040405] pt-32 lg:pt-36 pb-16 selection:bg-[#ff4dd2] selection:text-white">
-      <WatchPageContent anime={anime} episodes={displayEpisodes} />
+    <main className="min-h-screen bg-[#040405] pt-28 lg:pt-32 pb-16 selection:bg-[#ff4dd2] selection:text-white">
+      <WatchPageContent anime={anime} episodes={displayEpisodes} tmdbData={tmdbData} />
     </main>
   );
 }

@@ -43,3 +43,49 @@ export function sanitizeHTML(html: string | null | undefined): string {
     disallowedTagsMode: 'discard',
   });
 }
+
+/**
+ * Intelligently cleans and beautifies anime synopsis strings:
+ * - Strips raw HTML tags and decodes entities
+ * - Removes metadata tags like [Written by MAL Rewrite] or (Source: ...) from main text
+ * - Normalizes paragraph spacing for beautiful typography
+ */
+export function cleanAnimeSynopsis(rawText: string | null | undefined): { text: string; sourceAttribution?: string } {
+  if (!rawText || typeof rawText !== 'string') {
+    return { text: 'No synopsis available for this title.' };
+  }
+
+  let text = rawText
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+  let sourceAttribution: string | undefined;
+
+  // Extract [Written by MAL Rewrite] or (Source: ...)
+  const malRewriteMatch = text.match(/\[Written by MAL Rewrite\]/i);
+  const sourceMatch = text.match(/\(Source:\s*([^\)]+)\)/i) || text.match(/\[Source:\s*([^\]]+)\]/i);
+
+  if (malRewriteMatch) {
+    sourceAttribution = 'Written by MyAnimeList';
+    text = text.replace(/\[Written by MAL Rewrite\]/gi, '').trim();
+  } else if (sourceMatch) {
+    sourceAttribution = `Source: ${sourceMatch[1].trim()}`;
+    text = text.replace(sourceMatch[0], '').trim();
+  }
+
+  // Clean double newlines
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  return {
+    text: text || 'No synopsis available for this title.',
+    sourceAttribution
+  };
+}

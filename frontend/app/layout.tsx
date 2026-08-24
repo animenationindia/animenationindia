@@ -48,6 +48,7 @@ export const metadata: Metadata = {
 
 import { WatchlistProvider } from "../context/WatchlistContext";
 import ScrollToTop from "../components/ScrollToTop";
+import AIAnimeRecommender from "../components/AIAnimeRecommender";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -101,6 +102,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <MobileBottomNav />
           <BackToTop />
+          <AIAnimeRecommender />
         </WatchlistProvider>
       </body>
     </html>

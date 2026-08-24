@@ -227,15 +227,16 @@ export async function fetchAniListCharactersFallback(anilistId: number): Promise
   }
 }
 
-// AniList Recommendation Fallback
-export async function fetchAniListRecommendationsFallback(anilistId: number): Promise<any[] | null> {
-  if (!anilistId || isNaN(anilistId)) return null;
+// AniList Recommendation Fallback (Queries both idMal and native ID)
+export async function fetchAniListRecommendationsFallback(animeId: number): Promise<any[] | null> {
+  if (!animeId || isNaN(animeId)) return null;
 
-  const queryRec = `
+  const queryMal = `
     query ($id: Int) {
-      Media(id: $id, type: ANIME) {
+      Media(idMal: $id, type: ANIME) {
         id
-        recommendations(perPage: 12, sort: [RATING_DESC]) {
+        idMal
+        recommendations(page: 1, perPage: 18, sort: [RATING_DESC]) {
           nodes {
             mediaRecommendation {
               id
@@ -244,6 +245,31 @@ export async function fetchAniListRecommendationsFallback(anilistId: number): Pr
               coverImage { extraLarge large }
               format
               averageScore
+              genres
+              isAdult
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const queryDirect = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        id
+        idMal
+        recommendations(page: 1, perPage: 18, sort: [RATING_DESC]) {
+          nodes {
+            mediaRecommendation {
+              id
+              idMal
+              title { english romaji }
+              coverImage { extraLarge large }
+              format
+              averageScore
+              genres
+              isAdult
             }
           }
         }
@@ -252,26 +278,37 @@ export async function fetchAniListRecommendationsFallback(anilistId: number): Pr
   `;
 
   try {
-    const data = await fetchAniList(queryRec, { id: anilistId }, GLOBAL_CACHE_TIME, 2500);
-    const nodes = data?.data?.Media?.recommendations?.nodes;
+    let data = await fetchAniList(queryMal, { id: animeId }, GLOBAL_CACHE_TIME, 2500);
+    let nodes = data?.data?.Media?.recommendations?.nodes;
+
+    if (!nodes || !Array.isArray(nodes) || nodes.length === 0) {
+      data = await fetchAniList(queryDirect, { id: animeId }, GLOBAL_CACHE_TIME, 2500);
+      nodes = data?.data?.Media?.recommendations?.nodes;
+    }
+
     if (!nodes || !Array.isArray(nodes) || nodes.length === 0) return null;
 
     const validRecs = nodes
       .map((n: any) => n.mediaRecommendation)
-      .filter((rec: any) => rec && (rec.idMal || rec.id));
+      .filter((rec: any) => rec && (rec.idMal || rec.id) && isSafeContent(rec));
 
     if (validRecs.length === 0) return null;
 
     return validRecs.map((rec: any) => ({
       entry: {
         mal_id: rec.idMal || rec.id,
-        title: rec.title?.english || rec.title?.romaji || 'Unknown Anime',
+        title: rec.title?.english || rec.title?.romaji || 'Recommended Anime',
         images: {
           jpg: {
             large_image_url: rec.coverImage?.extraLarge || rec.coverImage?.large || '/placeholder.png'
+          },
+          webp: {
+            large_image_url: rec.coverImage?.extraLarge || rec.coverImage?.large || '/placeholder.png'
           }
         }
-      }
+      },
+      format: rec.format || 'TV',
+      averageScore: rec.averageScore || null
     }));
   } catch (error) {
     logError('fetchAniListRecommendationsFallback', error);
@@ -723,7 +760,43 @@ export async function getAniListExtraInfo(idMal: number): Promise<AniListExtra |
         relations {
           edges {
             relationType
-            node { id idMal title { english romaji } coverImage { extraLarge large } format startDate { year month day } type }
+            node {
+              id
+              idMal
+              title { english romaji }
+              coverImage { extraLarge large }
+              format
+              startDate { year month day }
+              type
+              relations {
+                edges {
+                  relationType
+                  node {
+                    id
+                    idMal
+                    title { english romaji }
+                    coverImage { extraLarge large }
+                    format
+                    startDate { year month day }
+                    type
+                    relations {
+                      edges {
+                        relationType
+                        node {
+                          id
+                          idMal
+                          title { english romaji }
+                          coverImage { extraLarge large }
+                          format
+                          startDate { year month day }
+                          type
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -753,7 +826,43 @@ export async function getAniListExtraInfo(idMal: number): Promise<AniListExtra |
         relations {
           edges {
             relationType
-            node { id idMal title { english romaji } coverImage { extraLarge large } format startDate { year month day } type }
+            node {
+              id
+              idMal
+              title { english romaji }
+              coverImage { extraLarge large }
+              format
+              startDate { year month day }
+              type
+              relations {
+                edges {
+                  relationType
+                  node {
+                    id
+                    idMal
+                    title { english romaji }
+                    coverImage { extraLarge large }
+                    format
+                    startDate { year month day }
+                    type
+                    relations {
+                      edges {
+                        relationType
+                        node {
+                          id
+                          idMal
+                          title { english romaji }
+                          coverImage { extraLarge large }
+                          format
+                          startDate { year month day }
+                          type
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1018,14 +1127,18 @@ export async function getJikanAnimeByGenre(genreId: string, page = 1, orderBy = 
   }
 }
 
-// 15. Recommendations (Multi-Tier Fallback: Jikan -> AniList)
+// 15. Recommendations (Multi-Tier Fallback: AniList -> Jikan)
 export async function getAnimeRecommendations(id: string | number, anilistId?: number): Promise<any[]> {
   const numMalId = Number(id);
   const resolvedAniListId = anilistId || numMalId;
 
   const providers = [
     {
-      name: 'Jikan Recommendations (Primary)',
+      name: 'AniList Recommendations (Primary)',
+      fn: async () => fetchAniListRecommendationsFallback(resolvedAniListId)
+    },
+    {
+      name: 'Jikan Recommendations (Secondary Fallback)',
       fn: async () => {
         const data = await fetchJikan(`/anime/${id}/recommendations`, GLOBAL_CACHE_TIME, 2000);
         return data?.data && Array.isArray(data.data) && data.data.length > 0
@@ -1042,10 +1155,6 @@ export async function getAnimeRecommendations(id: string | number, anilistId?: n
             }))
           : null;
       }
-    },
-    {
-      name: 'AniList Recommendations (Secondary Fallback)',
-      fn: async () => fetchAniListRecommendationsFallback(resolvedAniListId)
     }
   ];
 

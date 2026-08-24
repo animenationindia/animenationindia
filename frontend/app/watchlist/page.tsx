@@ -23,13 +23,17 @@ import {
   Volume2
 } from 'lucide-react';
 import { BACKEND_URL } from '../../lib/config';
+import { useWatchlist } from '../../hooks/useWatchlist';
 
 interface WatchlistItem {
-  id: number;
-  user_id: string;
+  id?: number;
+  mal_id?: number;
+  user_id?: string;
   anime_id: number;
-  anime_title: string;
-  anime_image: string;
+  anime_title?: string;
+  anime_image?: string;
+  title?: string;
+  image?: string;
   status: string;
   created_at?: string;
   type?: string;
@@ -88,6 +92,8 @@ function WatchlistContent() {
   const [mainTab, setMainTab] = useState<'watchlist' | 'favorites' | 'custom-lists' | 'playlists'>(
     initialTab === 'favorites' ? 'favorites' : initialTab === 'custom-lists' ? 'custom-lists' : initialTab === 'playlists' ? 'playlists' : 'watchlist'
   );
+
+  const { removeFromWatchlist: contextRemoveFromWatchlist } = useWatchlist();
 
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -312,6 +318,115 @@ function WatchlistContent() {
     }
   };
 
+  // Media Type & Status Helpers
+  const getItemMediaType = (item: any): string => {
+    const t = (item.type || item.format || '').toLowerCase();
+    if (t.includes('manhwa') || t.includes('manhua')) return 'MANHWA';
+    if (t.includes('novel') || t.includes('lightnovel') || t.includes('light novel')) return 'NOVEL';
+    if (t.includes('manga')) return 'MANGA';
+    return 'ANIME';
+  };
+
+  const getItemLink = (item: any): string => {
+    const id = item.anime_id || item.mal_id || item.id;
+    const mediaType = getItemMediaType(item);
+    if (mediaType === 'MANGA' || mediaType === 'MANHWA' || mediaType === 'NOVEL') {
+      return `/manga/${id}`;
+    }
+    return `/series/${id}`;
+  };
+
+  const getStatusDisplayLabel = (statusKey: string, mediaType: string) => {
+    const isBook = mediaType === 'MANGA' || mediaType === 'MANHWA' || mediaType === 'NOVEL';
+    if (statusKey === 'WATCHING') return isBook ? 'Reading' : 'Watching';
+    if (statusKey === 'PLAN_TO_WATCH') return isBook ? 'Plan to Read' : 'Plan to Watch';
+    if (statusKey === 'COMPLETED') return 'Completed';
+    if (statusKey === 'ON_HOLD') return 'On Hold';
+    if (statusKey === 'DROPPED') return 'Dropped';
+    return statusKey.replace(/_/g, ' ');
+  };
+
+  const getStatusBadgeClass = (statusKey: string) => {
+    if (statusKey === 'WATCHING') return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+    if (statusKey === 'PLAN_TO_WATCH') return 'bg-sky-500/20 text-sky-300 border border-sky-500/40';
+    if (statusKey === 'COMPLETED') return 'bg-purple-500/20 text-purple-300 border border-purple-500/40';
+    if (statusKey === 'ON_HOLD') return 'bg-amber-500/20 text-amber-300 border border-amber-500/40';
+    if (statusKey === 'DROPPED') return 'bg-rose-500/20 text-rose-300 border border-rose-500/40';
+    return 'bg-[#ff4dd2]/20 text-[#ff4dd2] border border-[#ff4dd2]/40';
+  };
+
+  const getTypeBadgeClass = (mediaType: string) => {
+    if (mediaType === 'MANGA') return 'bg-purple-600 text-white';
+    if (mediaType === 'MANHWA') return 'bg-cyan-500 text-black font-black';
+    if (mediaType === 'NOVEL') return 'bg-amber-500 text-black font-black';
+    return 'bg-[#ff4dd2] text-black font-black';
+  };
+
+  const handleRemoveWatchlistItem = async (itemId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // 1. Optimistically update local state on Watchlist page
+    setWatchlist(prev => prev.filter(w => Number(w.anime_id || w.mal_id || w.id) !== itemId));
+
+    // 2. Global context sync so navigating back or viewing details page is instantly in sync
+    try {
+      await contextRemoveFromWatchlist(itemId);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { animeId: itemId, status: 'ADD' } }));
+      }
+    } catch (err) {
+      console.error('Remove watchlist item error:', err);
+    }
+  };
+
+  const handleRemoveFavoriteItem = async (favId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
+    const userId = localStorage.getItem('user_id');
+    if (!token || !userId) return;
+
+    setFavorites(prev => prev.filter((f: any) => (f.mal_id || f.id) !== favId));
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/favorites/${userId}/${favId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok && typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('favorites-updated'));
+      }
+    } catch (err) {
+      console.error('Remove favorite item error:', err);
+    }
+  };
+
+  // Filtered lists
+  const filteredWatchlist = watchlist.filter((item: any) => {
+    const itemType = getItemMediaType(item);
+    const itemStatus = item.status || 'PLAN_TO_WATCH';
+    if (activeType !== 'ALL' && itemType !== activeType) return false;
+    if (activeTab !== 'ALL' && itemStatus !== activeTab) return false;
+    return true;
+  });
+
+  const filteredFavorites = favorites.filter((item: any) => {
+    const itemType = getItemMediaType(item);
+    if (activeType !== 'ALL' && itemType !== activeType) return false;
+    return true;
+  });
+
+  const mediaTypes = ['ALL', 'ANIME', 'MANGA', 'MANHWA', 'NOVEL'];
+  const statusOptions = [
+    { key: 'ALL', label: 'All' },
+    { key: 'WATCHING', label: 'Watching / Reading' },
+    { key: 'PLAN_TO_WATCH', label: 'Plan to Watch / Read' },
+    { key: 'COMPLETED', label: 'Completed' },
+    { key: 'ON_HOLD', label: 'On Hold' },
+    { key: 'DROPPED', label: 'Dropped' },
+  ];
+
   return (
     <main className="min-h-screen bg-[#050716] text-white pt-24 pb-20 relative overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-12 max-w-[1500px]">
@@ -323,13 +438,13 @@ function WatchlistContent() {
               My Library & Collections
             </h1>
             <p className="text-xs sm:text-sm text-gray-400 mt-1 font-medium">
-              Manage your anime watchlist, favorite titles, custom lists & theme songs
+              Manage your anime watchlist, manga, manhwa, novels, custom lists & theme songs
             </p>
           </div>
         </div>
 
         {/* 🌟 4 Primary Tabs */}
-        <div className="flex items-center gap-3 mb-8 border-b border-white/10 pb-4 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setMainTab('watchlist')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 cursor-pointer whitespace-nowrap ${
@@ -339,7 +454,7 @@ function WatchlistContent() {
             }`}
           >
             <Bookmark size={16} />
-            <span>Watchlist</span>
+            <span>Watchlist / Library</span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
               mainTab === 'watchlist' ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-300'
             }`}>
@@ -399,36 +514,122 @@ function WatchlistContent() {
           </button>
         </div>
 
-        {/* TAB 1: WATCHLIST */}
+        {/* TAB 1: WATCHLIST / LIBRARY */}
         {mainTab === 'watchlist' && (
-          <div>
-            {watchlist.length === 0 ? (
-              <div className="text-center py-20 text-gray-500 text-sm">
-                Your watchlist is empty. Explore anime and add titles to track your progress!
+          <div className="space-y-6">
+            {/* 1. Media Type Filter Pills (ALL, ANIME, MANGA, MANHWA, NOVEL) */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-gray-400 mr-1">Type:</span>
+              {mediaTypes.map((t) => {
+                const count = t === 'ALL'
+                  ? watchlist.length
+                  : watchlist.filter(item => getItemMediaType(item) === t).length;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setActiveType(t)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeType === t
+                        ? 'bg-white text-black shadow-md'
+                        : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/5'
+                    }`}
+                  >
+                    <span>{t}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      activeType === t ? 'bg-black/15 text-black' : 'bg-white/10 text-gray-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 2. Status Filter Sub-Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide border-b border-white/5">
+              {statusOptions.map((st) => {
+                const count = st.key === 'ALL'
+                  ? watchlist.filter(item => activeType === 'ALL' || getItemMediaType(item) === activeType).length
+                  : watchlist.filter(item => (activeType === 'ALL' || getItemMediaType(item) === activeType) && (item.status || 'PLAN_TO_WATCH') === st.key).length;
+
+                return (
+                  <button
+                    key={st.key}
+                    onClick={() => setActiveTab(st.key)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+                      activeTab === st.key
+                        ? 'bg-[#ff4dd2]/20 text-[#ff4dd2] border border-[#ff4dd2]/50 font-extrabold'
+                        : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    <span>{st.label}</span>
+                    <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-md text-gray-300">
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 3. Items Grid */}
+            {filteredWatchlist.length === 0 ? (
+              <div className="text-center py-20 text-gray-500 text-sm bg-white/[0.02] border border-white/5 rounded-3xl p-8">
+                <Bookmark size={36} className="mx-auto text-gray-600 mb-3 opacity-50" />
+                <p className="font-semibold text-gray-300">No items found in this section</p>
+                <p className="text-xs text-gray-500 mt-1">Try switching filters or explore titles to add to your collection.</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {watchlist.map((item) => (
-                  <Link
-                    key={item.anime_id}
-                    href={`/series/${item.anime_id}`}
-                    className="bg-[#0e0f1d] border border-white/5 rounded-2xl p-3 flex flex-col gap-2.5 hover:border-[#ff4dd2]/40 transition-all group"
-                  >
-                    <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-[#121326]">
-                      <img
-                        src={item.anime_image || '/placeholder-poster.png'}
-                        alt={item.anime_title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                      <span className="absolute top-1.5 left-1.5 bg-[#ff4dd2] text-black text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                        {item.status.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                    <h3 className="text-xs font-bold text-white truncate group-hover:text-[#ff4dd2]">
-                      {item.anime_title}
-                    </h3>
-                  </Link>
-                ))}
+                {filteredWatchlist.map((item) => {
+                  const mediaType = getItemMediaType(item);
+                  const statusKey = item.status || 'PLAN_TO_WATCH';
+                  const link = getItemLink(item);
+                  const itemId = Number(item.anime_id || item.mal_id || item.id);
+
+                  return (
+                    <Link
+                      key={itemId}
+                      href={link}
+                      className="bg-[#0e0f1d] border border-white/5 rounded-2xl p-3 flex flex-col gap-2.5 hover:border-[#ff4dd2]/40 transition-all group relative"
+                    >
+                      <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-[#121326]">
+                        <img
+                          src={item.anime_image || item.image || '/placeholder-poster.png'}
+                          alt={item.anime_title || item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+
+                        {/* Top Left: Status Badge */}
+                        <span className={`absolute top-2 left-2 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider backdrop-blur-md shadow-md ${getStatusBadgeClass(statusKey)}`}>
+                          {getStatusDisplayLabel(statusKey, mediaType)}
+                        </span>
+
+                        {/* Top Right: Type Badge */}
+                        <span className={`absolute top-2 right-2 text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md ${getTypeBadgeClass(mediaType)}`}>
+                          {mediaType}
+                        </span>
+
+                        {/* Hover Quick Remove Button */}
+                        <button
+                          onClick={(e) => handleRemoveWatchlistItem(itemId, e)}
+                          title="Remove from List"
+                          className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-black/80 hover:bg-rose-600 text-gray-300 hover:text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-md shadow-md"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-bold text-white truncate group-hover:text-[#ff4dd2] transition-colors">
+                          {item.anime_title || item.title}
+                        </h3>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {mediaType} • {getStatusDisplayLabel(statusKey, mediaType)}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -436,37 +637,84 @@ function WatchlistContent() {
 
         {/* TAB 2: FAVORITES */}
         {mainTab === 'favorites' && (
-          <div>
-            {favorites.length === 0 ? (
-              <div className="text-center py-20 text-gray-500 text-sm">
-                No favorites saved yet. Click the heart icon on any anime page!
+          <div className="space-y-6">
+            {/* Media Type Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-gray-400 mr-1">Type:</span>
+              {mediaTypes.map((t) => {
+                const count = t === 'ALL'
+                  ? favorites.length
+                  : favorites.filter(item => getItemMediaType(item) === t).length;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setActiveType(t)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-extrabold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeType === t
+                        ? 'bg-white text-black shadow-md'
+                        : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/5'
+                    }`}
+                  >
+                    <span>{t}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      activeType === t ? 'bg-black/15 text-black' : 'bg-white/10 text-gray-400'
+                    }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {filteredFavorites.length === 0 ? (
+              <div className="text-center py-20 text-gray-500 text-sm bg-white/[0.02] border border-white/5 rounded-3xl p-8">
+                <Heart size={36} className="mx-auto text-rose-500 mb-3 opacity-50" />
+                <p className="font-semibold text-gray-300">No favorites found in this category</p>
+                <p className="text-xs text-gray-500 mt-1">Click the heart icon on any anime or manga page to favorite it!</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {favorites.map((item: any) => {
+                {filteredFavorites.map((item: any) => {
                   const id = item.mal_id || item.id;
                   const title = item.title_english || item.title || 'Anime';
-                  const img = item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.image || '/placeholder-poster.png';
+                  const img = item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.image || item.anime_image || '/placeholder-poster.png';
+                  const mediaType = getItemMediaType(item);
+                  const link = getItemLink(item);
 
                   return (
                     <Link
                       key={id}
-                      href={`/series/${id}`}
-                      className="bg-[#0e0f1d] border border-white/5 rounded-2xl p-3 flex flex-col gap-2.5 hover:border-rose-500/50 transition-all group"
+                      href={link}
+                      className="bg-[#0e0f1d] border border-white/5 rounded-2xl p-3 flex flex-col gap-2.5 hover:border-rose-500/50 transition-all group relative"
                     >
                       <div className="relative aspect-[2/3] w-full rounded-xl overflow-hidden bg-[#121326]">
                         <img
                           src={img}
                           alt={title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        <span className="absolute top-1.5 right-1.5 bg-rose-500 text-white p-1 rounded-full">
-                          <Heart size={12} className="fill-white" />
+                        <span className="absolute top-2 right-2 bg-rose-500 text-white p-1.5 rounded-full shadow-md">
+                          <Heart size={11} className="fill-white" />
                         </span>
+                        <span className={`absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wider shadow-md ${getTypeBadgeClass(mediaType)}`}>
+                          {mediaType}
+                        </span>
+
+                        {/* Hover Quick Remove Button */}
+                        <button
+                          onClick={(e) => handleRemoveFavoriteItem(id, e)}
+                          title="Remove from Favorites"
+                          className="absolute bottom-2 right-2 p-1.5 rounded-lg bg-black/80 hover:bg-rose-600 text-gray-300 hover:text-white opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-md shadow-md"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
-                      <h3 className="text-xs font-bold text-white truncate group-hover:text-rose-400">
-                        {title}
-                      </h3>
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-bold text-white truncate group-hover:text-rose-400 transition-colors">
+                          {title}
+                        </h3>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{mediaType}</p>
+                      </div>
                     </Link>
                   );
                 })}

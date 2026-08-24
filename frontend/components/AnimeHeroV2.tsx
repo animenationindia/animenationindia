@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Star, 
   Heart, 
@@ -16,25 +17,51 @@ import {
   Mic, 
   Play,
   Film,
-  Radio
+  Radio,
+  Globe,
+  ChevronDown,
+  X
 } from 'lucide-react';
 import WatchlistDropdown from './WatchlistDropdown';
 import RatingModal from './RatingModal';
 import CustomListModal from './CustomListModal';
+import TrailerModal from './TrailerModal';
+import { resolveAnimeLanguages } from '../lib/languages';
+import { TMDBAnimeData } from '../lib/tmdb-api';
 
 interface AnimeHeroV2Props {
   anime: any;
   extraInfo?: any;
+  characters?: any[];
+  tmdbData?: TMDBAnimeData | null;
 }
 
-export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
+export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbData = null }: AnimeHeroV2Props) {
   const [copiedTitle, setCopiedTitle] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [userRating, setUserRating] = useState<number | null>(null);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
+  const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const [showLangModal, setShowLangModal] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  const langInfo = useMemo(() => {
+    return resolveAnimeLanguages(anime, extraInfo, characters, tmdbData);
+  }, [anime, extraInfo, characters, tmdbData]);
+
+  // Close language popover on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langRef.current && !langRef.current.contains(event.target as Node)) {
+        setShowLangModal(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const animeId = anime.mal_id || anime.id || extraInfo?.idMal || extraInfo?.id;
   const englishTitle = anime.title_english || extraInfo?.title?.english || anime.title || 'Unknown Title';
@@ -79,7 +106,7 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
   };
   const nextEp = formatNextEpisode();
 
-  // Fetch initial Favorite and Rating from backend
+  // Fetch initial Favorite and Rating from backend with multi-event sync
   useEffect(() => {
     if (!animeId) return;
 
@@ -88,29 +115,45 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
 
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
-    // Check favorite
-    fetch(`${backendUrl}/api/favorites/check/${animeId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && typeof data.isFavorite === 'boolean') {
-          setIsFavorite(data.isFavorite);
-        }
+    const checkDetails = () => {
+      // Check favorite
+      fetch(`${backendUrl}/api/favorites/check/${animeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
       })
-      .catch(() => {});
+        .then(res => res.json())
+        .then(data => {
+          if (data && typeof data.isFavorite === 'boolean') {
+            setIsFavorite(data.isFavorite);
+          }
+        })
+        .catch(() => {});
 
-    // Check rating
-    fetch(`${backendUrl}/api/ratings/anime/${animeId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.userRating) {
-          setUserRating(data.userRating);
-        }
+      // Check rating
+      fetch(`${backendUrl}/api/ratings/anime/${animeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
       })
-      .catch(() => {});
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.userRating) {
+            setUserRating(data.userRating);
+          }
+        })
+        .catch(() => {});
+    };
+
+    checkDetails();
+
+    window.addEventListener('favorites-updated', checkDetails);
+    window.addEventListener('popstate', checkDetails);
+    window.addEventListener('pageshow', checkDetails);
+    window.addEventListener('focus', checkDetails);
+
+    return () => {
+      window.removeEventListener('favorites-updated', checkDetails);
+      window.removeEventListener('popstate', checkDetails);
+      window.removeEventListener('pageshow', checkDetails);
+      window.removeEventListener('focus', checkDetails);
+    };
   }, [animeId]);
 
   const handleCopyTitle = async () => {
@@ -182,10 +225,12 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
     }
   };
 
+  const trailerId = tmdbData?.trailerYoutubeId || anime.trailer?.youtube_id || extraInfo?.trailer?.id || null;
+
   return (
-    <div className="relative w-full overflow-hidden bg-[#040405]">
+    <div className="relative w-full bg-[#040405]">
       {/* 🖼️ High-Impact Ambient Backdrop Banner */}
-      <div className="absolute inset-0 h-[480px] lg:h-[560px] w-full overflow-hidden">
+      <div className="absolute inset-0 h-[480px] lg:h-[560px] w-full overflow-hidden pointer-events-none">
         {bannerImage ? (
           <img
             src={bannerImage}
@@ -201,7 +246,7 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
       </div>
 
       {/* Hero Content Container */}
-      <div className="relative container mx-auto px-4 pt-24 lg:pt-32 pb-6 max-w-[1500px]">
+      <div className="relative container mx-auto px-4 pt-24 lg:pt-32 pb-10 max-w-[1500px]">
         
         {/* 🧭 Breadcrumb */}
         <nav className="text-gray-400 text-xs mb-4 flex items-center gap-2 drop-shadow-md">
@@ -214,20 +259,14 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
 
         <div className="flex flex-col md:flex-row gap-6 lg:gap-10 items-center md:items-start">
           
-          {/* 👈 Floating Left Poster Card */}
-          <div className="w-[200px] sm:w-[240px] lg:w-[270px] flex-shrink-0">
-            <div className="relative aspect-[2/3] rounded-3xl overflow-hidden border-2 border-white/20 hover:border-[#ff4dd2]/80 shadow-[0_20px_50px_rgba(0,0,0,0.9)] bg-[#0d0e20] group transition-all duration-500">
+          {/* 👈 Left Poster Card Container */}
+          <div className="w-48 sm:w-56 md:w-64 lg:w-72 flex-shrink-0">
+            <div className="relative aspect-[2/3] rounded-3xl overflow-hidden shadow-2xl shadow-[#ff4dd2]/10 border-2 border-white/10 group">
               <img
                 src={posterImage}
                 alt={englishTitle}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 block"
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              
-              <span className="absolute top-3 left-3 bg-[#ff4dd2] text-black text-[10px] font-black px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider z-10">
-                {format}
-              </span>
-
               {/* Quick Watch Link Floating on Poster */}
               <Link
                 href={`/watch/${animeId}?ep=1`}
@@ -243,6 +282,17 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
           {/* 👉 Right Details Info Block */}
           <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left min-w-0">
             
+            {/* Official TMDB ClearArt Transparent PNG Logo */}
+            {tmdbData?.logoUrl && (
+              <div className="mb-2 max-w-[280px] sm:max-w-[340px] md:max-w-[380px] flex items-center justify-center md:justify-start">
+                <img
+                  src={tmdbData.logoUrl}
+                  alt={englishTitle}
+                  className="max-h-20 sm:max-h-24 w-auto object-contain filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.85)] hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            )}
+
             {/* Title & Copy Button */}
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 mb-1.5 w-full">
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
@@ -291,10 +341,129 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
                 )}
               </div>
 
-              {/* Sub / Dub Badge */}
-              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-bold shadow-md">
-                <Mic size={13} />
-                <span>English Dubbed & Sub</span>
+              {/* Dynamic Real Audio & Sub/Dub Badge */}
+              <div className="relative" ref={langRef}>
+                <button
+                  onClick={() => setShowLangModal(!showLangModal)}
+                  className={`flex items-center gap-2 border px-3 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all duration-300 cursor-pointer active:scale-95 ${
+                    langInfo.tone === 'purple'
+                      ? 'bg-purple-500/15 border-purple-500/40 text-purple-300 hover:bg-purple-500/25 shadow-purple-500/10'
+                      : langInfo.tone === 'cyan'
+                      ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/25 shadow-cyan-500/10'
+                      : langInfo.tone === 'amber'
+                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300 hover:bg-amber-500/25 shadow-amber-500/10'
+                      : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/25 shadow-emerald-500/10'
+                  }`}
+                  title="Click to view all available audio & subtitle tracks"
+                >
+                  <Mic size={13} className="flex-shrink-0" />
+                  <span className="flex items-center gap-1.5">
+                    <span>{langInfo.originalFlag}</span>
+                    <span>{langInfo.badgeLabel}</span>
+                  </span>
+                  <ChevronDown size={12} className={`transition-transform duration-300 ${showLangModal ? 'rotate-180 text-white' : 'opacity-60'}`} />
+                </button>
+
+                {/* 🌐 Language Breakdown Popover */}
+                <AnimatePresence>
+                  {showLangModal && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 sm:left-auto sm:right-0 md:left-0 mt-2 w-72 sm:w-80 bg-[#0c0d1e]/98 border border-[#ff4dd2]/30 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl z-[150] text-left max-h-[420px] overflow-y-auto"
+                    >
+                      <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/10">
+                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white">
+                          <Globe size={14} className="text-[#ff4dd2]" />
+                          <span>Audio & Subtitle Tracks</span>
+                        </div>
+                        <button 
+                          onClick={() => setShowLangModal(false)}
+                          className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+
+                      {/* 1. Original Audio Track */}
+                      <div className="mb-3">
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 block mb-1.5">
+                          Original Audio
+                        </span>
+                        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-white">
+                          <span className="text-sm">{langInfo.originalFlag}</span>
+                          <span>{langInfo.originalAudio} (Original)</span>
+                        </div>
+                      </div>
+
+                      {/* 2. Dubbed Audio Tracks */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400">
+                            Dubbed Audio ({langInfo.dubLanguages.length})
+                          </span>
+                        </div>
+                        {langInfo.dubLanguages.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                            {langInfo.dubLanguages.map((d) => (
+                              <span
+                                key={d.name}
+                                className="inline-flex items-center gap-1.5 bg-[#ff4dd2]/10 border border-[#ff4dd2]/30 text-[#ff4dd2] px-2.5 py-1 rounded-lg text-xs font-bold"
+                              >
+                                <span>{d.flag}</span>
+                                <span>{d.name}</span>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic">No dubbed audio tracks available (Subtitled only).</p>
+                        )}
+                      </div>
+
+                      {/* 3. Subtitles */}
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 block mb-1.5">
+                          Subtitles Available ({langInfo.subLanguages.length})
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                          {langInfo.subLanguages.map((s) => (
+                            <span
+                              key={s.name}
+                              className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-gray-200 px-2.5 py-1 rounded-lg text-xs font-semibold"
+                            >
+                              <span>{s.flag}</span>
+                              <span>{s.name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 4. Stream in India / OTT Partners */}
+                      {((tmdbData?.watchProvidersIndia && tmdbData.watchProvidersIndia.length > 0) || (tmdbData?.watchProvidersGlobal && tmdbData.watchProvidersGlobal.length > 0)) && (
+                        <div className="mt-3.5 pt-3 border-t border-white/10">
+                          <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 block mb-1.5">
+                            🇮🇳 Official Streaming Partners
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {(tmdbData?.watchProvidersIndia?.length ? tmdbData.watchProvidersIndia : tmdbData?.watchProvidersGlobal || []).map((p) => (
+                              <div
+                                key={p.name}
+                                className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-xl text-xs font-bold text-white shadow-sm"
+                              >
+                                {p.logoUrl && (
+                                  <img src={p.logoUrl} alt={p.name} className="w-4 h-4 rounded-md object-cover" />
+                                )}
+                                <span>{p.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -347,6 +516,17 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
                 <Play size={16} className="fill-black" />
                 <span>Watch Now</span>
               </Link>
+
+              {/* 🎬 4K Official Trailer Button */}
+              {trailerId && (
+                <button
+                  onClick={() => setIsTrailerOpen(true)}
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 hover:border-[#ff4dd2]/50 text-white font-extrabold px-4 sm:px-5 py-2.5 rounded-2xl text-xs uppercase tracking-wider transition-all duration-300 active:scale-95 shadow-md cursor-pointer"
+                >
+                  <Film size={15} className="text-[#ff4dd2]" />
+                  <span>Trailer</span>
+                </button>
+              )}
 
               {/* 1. ⭐ Rate Button */}
               <button
@@ -419,6 +599,13 @@ export default function AnimeHeroV2({ anime, extraInfo }: AnimeHeroV2Props) {
       </div>
 
       {/* Modals */}
+      <TrailerModal
+        isOpen={isTrailerOpen}
+        onClose={() => setIsTrailerOpen(false)}
+        youtubeId={trailerId}
+        title={englishTitle}
+      />
+
       <RatingModal
         isOpen={isRatingModalOpen}
         onClose={() => setIsRatingModalOpen(false)}

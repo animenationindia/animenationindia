@@ -179,6 +179,23 @@ function BrowseAllAnimeContent() {
             onRetry={() => fetchAnime(1, sort, format)}
           />
         </div>
+      ) : animeList.length === 0 ? (
+        <div className="text-center py-20 px-6 bg-[#0e0f22]/60 rounded-3xl border border-white/5 shadow-xl max-w-xl mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-[#ff4dd2]/10 border border-[#ff4dd2]/30 flex items-center justify-center mx-auto mb-4 text-[#ff4dd2]">
+            <Filter size={28} />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2">No Anime Found</h3>
+          <p className="text-gray-400 text-xs sm:text-sm mb-6">No anime found matching your active filter combination.</p>
+          <button
+            onClick={() => {
+              setFormat('ALL');
+              setSort('POPULARITY_DESC');
+            }}
+            className="px-6 py-2.5 bg-[#ff4dd2] text-black font-extrabold text-xs rounded-xl uppercase tracking-wider hover:bg-[#ff7be0] transition-all cursor-pointer shadow-lg shadow-[#ff4dd2]/20"
+          >
+            🔄 Reset Filters
+          </button>
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">

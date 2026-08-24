@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { LayoutGrid, Film, Sparkles, Layers, Music } from 'lucide-react';
 import AnimeHeroV2 from './AnimeHeroV2';
 import AnimeOverviewTab from './AnimeOverviewTab';
 import AnimeEpisodesTab from './AnimeEpisodesTab';
 import AnimeThemeSongs from './AnimeThemeSongs';
+import AnimeWatchOrder from './AnimeWatchOrder';
 import SectionSlider from './SectionSlider';
 import { NormalizedTheme } from '../lib/animethemes-api';
+import { TMDBAnimeData } from '../lib/tmdb-api';
+import { buildFranchiseWatchOrder } from '../lib/franchise-order';
 
 interface AnimeDetailsContainerProps {
   anime: any;
@@ -18,6 +21,7 @@ interface AnimeDetailsContainerProps {
   recommendations?: any[];
   relations?: any[];
   themes?: NormalizedTheme[];
+  tmdbData?: TMDBAnimeData | null;
 }
 
 export default function AnimeDetailsContainer({
@@ -28,12 +32,18 @@ export default function AnimeDetailsContainer({
   recommendations = [],
   relations = [],
   themes = [],
+  tmdbData = null,
 }: AnimeDetailsContainerProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'episodes' | 'themes'>('overview');
 
   const animeId = anime.mal_id || anime.id || extraInfo?.idMal || extraInfo?.id;
   const episodeCount = anime.episodes || extraInfo?.episodes || episodes.length || 12;
   const englishTitle = anime.title_english || anime.title || 'Anime';
+  const posterImage = anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '/placeholder-poster.png';
+
+  const watchOrderSteps = useMemo(() => {
+    return buildFranchiseWatchOrder(anime, relations);
+  }, [anime, relations]);
 
   // Format recommendations for SectionSlider with full fallback support
   const formattedRecommendations = recommendations.map((r: any) => {
@@ -63,10 +73,10 @@ export default function AnimeDetailsContainer({
   return (
     <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pb-20">
       {/* 1. 🌟 Hero Banner Section */}
-      <AnimeHeroV2 anime={anime} extraInfo={extraInfo} />
+      <AnimeHeroV2 anime={anime} extraInfo={extraInfo} characters={characters} tmdbData={tmdbData} />
 
       {/* 2. 🗂️ Sticky Tab Navigation Bar */}
-      <div className="sticky top-20 z-30 bg-[#040405]/95 backdrop-blur-xl border-y border-white/5 shadow-lg">
+      <div className="sticky top-[72px] z-30 bg-[#040405]/95 backdrop-blur-xl border-y border-white/5 shadow-lg">
         <div className="container mx-auto px-4 max-w-[1500px]">
           <div className="flex items-center gap-3 py-3 overflow-x-auto scrollbar-hide">
             <button
@@ -134,7 +144,11 @@ export default function AnimeDetailsContainer({
               extraInfo={extraInfo}
               characters={characters}
               themes={themes}
+              tmdbData={tmdbData}
             />
+
+            {/* 🧭 Franchise Watch Order Roadmap */}
+            <AnimeWatchOrder steps={watchOrderSteps} />
 
             {/* Franchise & Related Media Grid */}
             {relations.length > 0 && (
@@ -210,6 +224,8 @@ export default function AnimeDetailsContainer({
             animeId={animeId}
             episodes={episodes}
             totalCount={episodeCount}
+            tmdbEpisodes={tmdbData?.episodes || []}
+            posterFallback={posterImage}
           />
         ) : (
           /* Dedicated Themes & Music Tab Content */

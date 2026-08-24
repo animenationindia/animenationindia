@@ -10,6 +10,7 @@ import {
   getAnimeEpisodes 
 } from '../../../lib/api';
 import { fetchAnimeThemes } from '../../../lib/animethemes-api';
+import { getTMDBAnimeData } from '../../../lib/tmdb-api';
 import { sanitizeDescription } from '../../../lib/sanitize';
 import AnimeDetailsContainer from '../../../components/AnimeDetailsContainer';
 import type { Metadata } from 'next';
@@ -147,6 +148,11 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
         })
     : [];
 
+  // Fetch TMDB data (Audio languages, Worldwide translations, Transparent ClearArt Logo, Watch Providers)
+  const searchTitle = anime.title_english || anime.title || extraInfo?.title?.english || extraInfo?.title?.romaji || '';
+  const animeYear = anime.year || extraInfo?.seasonYear;
+  const tmdbData = await getTMDBAnimeData(searchTitle, animeYear);
+
   return (
     <AnimeDetailsContainer
       anime={anime}
@@ -156,6 +162,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
       recommendations={recommendations}
       relations={sortedRelations}
       themes={themes}
+      tmdbData={tmdbData}
     />
   );
 }
