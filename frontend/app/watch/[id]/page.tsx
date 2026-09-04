@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { cache } from 'react';
 import { getAnimeFullDetails, getAnimeEpisodes } from '@/lib/api';
 import { getTMDBAnimeData } from '@/lib/tmdb-api';

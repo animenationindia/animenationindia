@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { cache } from 'react';
 import { getMangaFullDetails, getMangaCharacters, getAniListMangaExtraInfo, getMangaRecommendations } from '../../../lib/api';
 import { sanitizeDescription } from '../../../lib/sanitize';

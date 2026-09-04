@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/purity */
 /* eslint-disable react-hooks/set-state-in-effect */

@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 /* eslint-disable @next/next/no-img-element */
 import { getNews, getNewsById } from '../../../lib/getNews';
 import Link from 'next/link';

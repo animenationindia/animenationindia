@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+export const runtime = 'edge';
 
-// Simple in-memory rate-limiter for Next.js API route
+import { NextResponse } from 'next/server';
+import { BACKEND_URL } from '@/lib/config';
+
 const ipMap = new Map<string, { count: number; resetTime: number }>();
 
 function checkRateLimit(ip: string, limit = 5, windowMs = 15 * 60 * 1000): { allowed: boolean; retryAfter?: number } {
@@ -59,52 +60,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
+    const backendRes = await fetch(`${BACKEND_URL}/api/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, subject, message }),
     });
 
-    const mailOptions = {
-      from: `"${name}" <${process.env.EMAIL_USER}>`,
-      replyTo: email,
-      to: process.env.EMAIL_TO || 'shouvikdaswork@gmail.com',
-      subject: `[ANI Contact Form] ${subject || 'New Message'}`,
-      text: `
-You have received a new message from the Anime Nation India Contact Form.
+    const data = await backendRes.json().catch(() => ({}));
 
-Name: ${name}
-Email: ${email}
-Subject: ${subject}
-
-Message:
-${message}
-      `,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
-          <h2 style="color: #ff4dd2;">New Message via Anime Nation India</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
-          <p><strong>Subject:</strong> ${subject}</p>
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;" />
-          <h3 style="color: #333;">Message:</h3>
-          <p style="white-space: pre-wrap; color: #555; line-height: 1.6;">${message}</p>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    if (!backendRes.ok) {
+      throw new Error(data.message || 'Failed to send message via backend.');
+    }
 
     return NextResponse.json(
       { message: 'Email sent successfully!' },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending email:', error);
     return NextResponse.json(
-      { error: 'Failed to send email. Please try again later.' },
+      { error: error.message || 'Failed to send email. Please try again later.' },
       { status: 500 }
     );
   }

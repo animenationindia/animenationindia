@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { getTopCharactersAniList } from '../../lib/api';
 import PersonCard from '../../components/PersonCard';
 import Link from 'next/link';

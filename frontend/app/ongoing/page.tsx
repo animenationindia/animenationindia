@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { getFilteredAnimeAniList } from '../../lib/api';
 import CategoryLayout from '../../components/CategoryLayout';
 
