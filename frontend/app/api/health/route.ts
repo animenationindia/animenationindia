@@ -1,11 +1,9 @@
-import { fetchAniList, getTopAiringAnimeAniList } from '../../../lib/api';
-
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const diagnostics: Record<string, any> = {};
 
-  const tests = [
+  const tests: { name: string; headers: Record<string, string> }[] = [
     { name: 'bare', headers: { 'Content-Type': 'application/json' } },
     { name: 'bare_accept', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } },
     { name: 'app_ua', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'AnimeNationIndia/1.0' } },
