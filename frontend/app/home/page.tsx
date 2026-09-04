@@ -41,6 +41,7 @@ import {
   getEvergreenAnimeAniList,
   getSimilarToMHAAnimeAniList,
   getHiddenGemsAnimeAniList,
+  fetchAniList,
   fetchInBatches,
   type AiringSchedule
 } from '../../lib/api';
@@ -236,18 +237,7 @@ export default async function Home() {
     () => getTopMoviesAniList(),
     () => getTopTVSeriesAniList(),
     () => getYearAwardsAniList(currentYear),
-    () =>
-      fetch('https://graphql.anilist.co', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        body: JSON.stringify({ query: trailerQuery }),
-        next: { revalidate: 3600 },
-      })
-        .then((res) => res.json())
-        .catch(() => null),
+    () => fetchAniList(trailerQuery, {}, 3600),
   ];
 
   const results = await fetchInBatches(aboveTheFoldTasks, 4, 100);

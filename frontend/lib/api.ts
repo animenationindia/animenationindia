@@ -4,6 +4,8 @@ import { logError } from './logger';
 import { fetchKitsuCharacters } from './kitsu-api';
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animenationindia.onrender.com';
+const ANILIST_PROXY_URL = `${BACKEND_BASE_URL}/api/anilist/proxy`;
 const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 
 export const GLOBAL_CACHE_TIME = 21600; // 6 hours in seconds
@@ -59,21 +61,35 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
 
+      const isServer = typeof window === 'undefined';
+      // Server-side (Cloudflare Worker) uses Render proxy because AniList blocks Cloudflare IPs with 403.
+      // Client-side (browser) attempts direct AniList query.
+      const targetUrl = isServer ? ANILIST_PROXY_URL : ANILIST_API_URL;
+      const fallbackUrl = isServer ? ANILIST_API_URL : ANILIST_PROXY_URL;
+
       const fetchOptions: any = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          'Accept': 'application/json'
         },
         body: JSON.stringify({ query, variables }),
-        signal: controller.signal
+        signal: controller.signal,
+        cache: 'no-store'
       };
 
-      fetchOptions.cache = 'no-store';
-
       try {
-        const res = await fetch(ANILIST_API_URL, fetchOptions);
+        let res = await fetch(targetUrl, fetchOptions);
+        
+        // If target returned 403 (e.g. Cloudflare Worker IP blocked) or 502/503/504, attempt fallback
+        if ((res.status === 403 || res.status >= 500) && targetUrl !== fallbackUrl) {
+          console.warn(`Endpoint ${targetUrl} returned status ${res.status}. Falling back to ${fallbackUrl}...`);
+          try {
+            res = await fetch(fallbackUrl, fetchOptions);
+          } catch (fbErr: any) {
+            console.error('Fallback fetch error:', fbErr.message);
+          }
+        }
         clearTimeout(timer);
         
         if (res.status === 429) {

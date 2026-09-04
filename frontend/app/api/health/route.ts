@@ -1,33 +1,52 @@
+import { fetchAniList, getTopAiringAnimeAniList } from '../../../lib/api';
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const diagnostics: Record<string, any> = {};
 
-  const tests: { name: string; headers: Record<string, string> }[] = [
-    { name: 'bare', headers: { 'Content-Type': 'application/json' } },
-    { name: 'bare_accept', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' } },
-    { name: 'app_ua', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'AnimeNationIndia/1.0' } },
-    { name: 'browser_ua', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } }
-  ];
+  // 1. Direct AniList check
+  try {
+    const res = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query: 'query { Page(page: 1, perPage: 1) { media(type: ANIME) { id } } }' })
+    });
+    diagnostics.directAniListStatus = res.status;
+  } catch (err: any) {
+    diagnostics.directAniListError = err.message;
+  }
 
-  for (const t of tests) {
-    try {
-      const res = await fetch('https://graphql.anilist.co', {
-        method: 'POST',
-        headers: t.headers,
-        body: JSON.stringify({
-          query: 'query { Page(page: 1, perPage: 1) { media(type: ANIME) { id title { romaji } } } }'
-        })
-      });
-      const text = await res.text();
-      diagnostics[t.name] = {
-        status: res.status,
-        headers: Object.fromEntries(res.headers.entries()),
-        bodySnippet: text.slice(0, 150)
-      };
-    } catch (err: any) {
-      diagnostics[t.name] = { error: err.message };
+  // 2. Render Proxy check
+  try {
+    const res = await fetch('https://animenationindia.onrender.com/api/anilist/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ query: 'query { Page(page: 1, perPage: 1) { media(type: ANIME) { id title { romaji } } } }' })
+    });
+    diagnostics.renderProxyStatus = res.status;
+    if (res.ok) {
+      const data = await res.json();
+      diagnostics.renderProxyAnime = data?.data?.Page?.media?.[0]?.title?.romaji || null;
     }
+  } catch (err: any) {
+    diagnostics.renderProxyError = err.message;
+  }
+
+  // 3. High-level fetchAniList check
+  try {
+    const data = await fetchAniList('query { Page(page: 1, perPage: 2) { media(type: ANIME) { id title { romaji } } } }');
+    diagnostics.fetchAniListCount = data?.data?.Page?.media?.length || 0;
+  } catch (err: any) {
+    diagnostics.fetchAniListError = err.message;
+  }
+
+  // 4. Hero List check
+  try {
+    const heroList = await getTopAiringAnimeAniList();
+    diagnostics.heroListCount = heroList?.length || 0;
+  } catch (err: any) {
+    diagnostics.heroListError = err.message;
   }
 
   return Response.json(diagnostics);

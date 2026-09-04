@@ -124,12 +124,13 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'https://animenationindia.online',
   'https://www.animenationindia.online',
+  'https://animenationindia.animenationindia-global.workers.dev',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || (typeof origin === 'string' && (origin.endsWith('.animenationindia.online') || origin.endsWith('.workers.dev')))) {
       callback(null, true);
     } else {
       callback(new Error(`CORS Error: Access from origin ${origin} blocked by security policy.`));
@@ -1086,6 +1087,46 @@ app.get('/api/hero', async (req, res) => {
   } catch (error) { 
     console.error('Hero Fetch Error:', error);
     res.status(500).json({ message: "Internal server error" }); 
+  }
+});
+
+// ============================================================================
+// 🔥 High-Speed GraphQL Proxy for AniList (Bypasses Cloudflare Workers IP Blocks) 🔥
+// ============================================================================
+const anilistProxyCache = new Map();
+const ANILIST_PROXY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+
+app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) => {
+  try {
+    const { query, variables } = req.body;
+    if (!query) {
+      return res.status(400).json({ error: 'GraphQL query is required' });
+    }
+
+    const cacheKey = JSON.stringify({ query, variables });
+    const cached = anilistProxyCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < ANILIST_PROXY_CACHE_TTL)) {
+      return res.json(cached.data);
+    }
+
+    const aniRes = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ query, variables }),
+      signal: AbortSignal.timeout(8000)
+    });
+
+    const data = await aniRes.json();
+    if (aniRes.ok && data?.data) {
+      anilistProxyCache.set(cacheKey, { data, timestamp: Date.now() });
+    }
+    return res.status(aniRes.status).json(data);
+  } catch (err) {
+    console.error('AniList Proxy Error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 });
 
