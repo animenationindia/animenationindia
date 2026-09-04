@@ -70,11 +70,7 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
         signal: controller.signal
       };
 
-      if (revalidate === 0) {
-        fetchOptions.cache = 'no-store';
-      } else {
-        fetchOptions.next = { revalidate };
-      }
+      fetchOptions.cache = 'no-store';
 
       try {
         const res = await fetch(ANILIST_API_URL, fetchOptions);
@@ -127,7 +123,7 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
   return promise;
 }
 
-export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 3500) {
+export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 5000) {
   const cacheKey = `jikan:${endpoint}`;
 
   // 1. Return from memory cache if fresh
@@ -145,12 +141,7 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    const fetchOptions: any = { signal: controller.signal };
-    if (revalidate === 0) {
-      fetchOptions.cache = 'no-store';
-    } else {
-      fetchOptions.next = { revalidate };
-    }
+    const fetchOptions: any = { signal: controller.signal, cache: 'no-store' };
 
     try {
       const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);

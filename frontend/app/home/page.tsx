@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+export const dynamic = 'force-dynamic';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Hero from '../../components/Hero';

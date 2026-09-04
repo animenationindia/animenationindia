@@ -1,6 +1,8 @@
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { fetchAniList } from '../lib/api';
 import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Anime Nation India - Watch Anime, Live Schedule, Reviews & Watchlist",
@@ -20,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 // 🚀 Dynamic Import to split heavy motion bundles away from the initial critical HTML path
-const LandingPageClient = dynamic(() => import('../components/LandingPageClient'), {
+const LandingPageClient = nextDynamic(() => import('../components/LandingPageClient'), {
   loading: () => (
     <div className="relative w-full min-h-screen bg-[#0a0510] flex items-center justify-center">
       <div className="flex flex-col items-center justify-center text-center px-4 max-w-4xl mx-auto py-16 animate-pulse">
