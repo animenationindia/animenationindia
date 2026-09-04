@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
-import dns from "node:dns";
-dns.setDefaultResultOrder("ipv4first");
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const dns = require("node:dns");
+  dns.setDefaultResultOrder("ipv4first");
+} catch {
+  // Edge runtime or browser fallback
+}
 
 const withPWA = withPWAInit({
   dest: "public",
