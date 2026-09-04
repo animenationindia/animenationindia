@@ -37,7 +37,7 @@ export async function fetchInBatches<T>(
   return results;
 }
 
-export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 3000) {
+export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 8000) {
   const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
   // 1. Return from memory cache if fresh
@@ -61,7 +61,11 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
 
       const fetchOptions: any = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        },
         body: JSON.stringify({ query, variables }),
         signal: controller.signal
       };
