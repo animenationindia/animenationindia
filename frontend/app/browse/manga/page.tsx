@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import { Metadata } from 'next';
 import { searchMangaJikan, getTrendingMangaSpotlight } from '../../../lib/api';
 import AnimeCard from '../../../components/AnimeCard';

@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 /* eslint-disable @next/next/no-img-element */
 // app/series/[id]/page.tsx
 import { cache } from 'react';

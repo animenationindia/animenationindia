@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 /* eslint-disable @next/next/no-img-element */
 import { cache } from 'react';
 import { getCharacterDetailsJikan } from '../../../lib/api';

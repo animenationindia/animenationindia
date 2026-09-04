@@ -1,4 +1,3 @@
-export const runtime = 'edge';
 import { Metadata } from 'next';
 import GenresContent from '../../components/GenresContent';
 import { getJikanGenres } from '../../lib/api';
