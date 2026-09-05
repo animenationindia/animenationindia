@@ -87,8 +87,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 basicSubscriptions.init({
                   type: "NewsArticle",
                   isPartOfType: ["Product"],
-                  isPartOfProductId: "CAows4THDA:openaccess",
-                  clientOptions: { theme: "light", lang: "en-GB" },
+                  isPartOfProductId: "CAow4N3HDA:openaccess",
+                  clientOptions: { theme: "light", lang: "en" },
                 });
               });
             `}
