@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { getNews } from '../lib/getNews';
+import { getArticles } from '../lib/articles';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online';
 
@@ -141,7 +142,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error fetching manga for sitemap:", error);
   }
 
-  // Dynamically fetch latest news article links for SEO
+  // Dynamically fetch custom MongoDB articles for Google News & Discover (Priority 0.9)
+  let dynamicCustomArticleRoutes: MetadataRoute.Sitemap = [];
+  try {
+    const customList = await getArticles({ limit: 100 });
+    if (customList && customList.length > 0) {
+      dynamicCustomArticleRoutes = customList.map((article) => ({
+        url: `${SITE_URL}/news/${article.slug}`,
+        lastModified: new Date(article.publishedAt),
+        changeFrequency: 'daily' as const,
+        priority: 0.9,
+      }));
+    }
+  } catch (error) {
+    console.error("Error fetching custom articles for sitemap:", error);
+  }
+
+  // Dynamically fetch latest RSS news article links for SEO
   let dynamicNewsRoutes: MetadataRoute.Sitemap = [];
   try {
     const newsList = await getNews();
@@ -157,5 +174,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Error fetching news for sitemap:", error);
   }
 
-  return [...staticRoutes, ...dynamicAnimeRoutes, ...dynamicMangaRoutes, ...dynamicNewsRoutes];
+  return [
+    ...staticRoutes,
+    ...dynamicCustomArticleRoutes,
+    ...dynamicAnimeRoutes,
+    ...dynamicMangaRoutes,
+    ...dynamicNewsRoutes,
+  ];
 }

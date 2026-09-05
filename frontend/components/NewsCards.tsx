@@ -3,7 +3,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { Clock, User } from 'lucide-react';
+import { Clock, User, Eye } from 'lucide-react';
 
 interface NewsCardProps {
   id: string;
@@ -16,6 +16,8 @@ interface NewsCardProps {
   categories: string[];
   author: string;
   index?: number;
+  views?: number;
+  originalPost?: boolean;
 }
 
 function timeAgo(dateStr: string): string {
@@ -53,7 +55,7 @@ function CategoryBadges({ categories, variant = 'default' }: { categories: strin
 // ═══════════════════════════════════════════════════════
 // SPOTLIGHT HERO CARD (Big featured card)
 // ═══════════════════════════════════════════════════════
-export function SpotlightCard({ id, title, date, snippet, image, source, categories, author }: NewsCardProps) {
+export function SpotlightCard({ id, title, date, snippet, image, source, categories, author, views }: NewsCardProps) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -80,6 +82,12 @@ export function SpotlightCard({ id, title, date, snippet, image, source, categor
             <span>•</span>
             <span className="flex items-center gap-1"><Clock size={10} />{timeAgo(date)}</span>
             {author && <><span>•</span><span className="flex items-center gap-1"><User size={10} />{author}</span></>}
+            {views !== undefined && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-1 text-[#ff4dd2] font-semibold"><Eye size={11} />{views.toLocaleString()}</span>
+              </>
+            )}
           </div>
         </div>
       </Link>
@@ -165,7 +173,7 @@ export function SectionSmallCard({ id, title, date, image, categories, author }:
 // ═══════════════════════════════════════════════════════
 // GRID CARD (For "More Stories" bottom section)
 // ═══════════════════════════════════════════════════════
-export function GridCard({ id, title, date, snippet, image, source, categories, author, index = 0 }: NewsCardProps) {
+export function GridCard({ id, title, date, snippet, image, source, categories, author, views, index = 0 }: NewsCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -191,6 +199,12 @@ export function GridCard({ id, title, date, snippet, image, source, categories, 
             <span>•</span>
             <span>{timeAgo(date)}</span>
             {author && <><span>•</span><span>{author}</span></>}
+            {views !== undefined && (
+              <>
+                <span>•</span>
+                <span className="flex items-center gap-1 text-[#ff4dd2]"><Eye size={10} />{views.toLocaleString()}</span>
+              </>
+            )}
           </div>
         </div>
       </Link>
