@@ -525,7 +525,6 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
   const query = `
     query ($page: Int, $start: Int, $end: Int) {
       Page(page: $page, perPage: 50) {
-        pageInfo { hasNextPage }
         airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
           id
           airingAt
@@ -539,23 +538,15 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
     }
   `;
   try {
-    let allSchedules: AiringSchedule[] = [];
-    let hasNextPage = true;
-    let currentPage = page;
+    // Fast parallel fetch for page 1 & 2 (up to 100 schedule items) in 1 roundtrip
+    const [p1, p2] = await Promise.all([
+      fetchAniList(query, { page: 1, start, end }, 3600, 2500),
+      fetchAniList(query, { page: 2, start, end }, 3600, 2500)
+    ]);
 
-    // Fetch up to 4 pages to ensure we get a good amount of the week's schedule
-    while (hasNextPage && currentPage <= 4) {
-      const data = await fetchAniList(query, { page: currentPage, start, end });
-      if (data?.data?.Page?.airingSchedules) {
-        allSchedules = allSchedules.concat(data.data.Page.airingSchedules);
-        hasNextPage = data.data.Page.pageInfo?.hasNextPage || false;
-      } else {
-        hasNextPage = false;
-      }
-      currentPage++;
-    }
-    
-    return allSchedules;
+    const s1 = p1?.data?.Page?.airingSchedules || [];
+    const s2 = p2?.data?.Page?.airingSchedules || [];
+    return [...s1, ...s2];
   } catch (error) { 
     console.error("Error fetching schedule from AniList:", error);
     return [] as AiringSchedule[];

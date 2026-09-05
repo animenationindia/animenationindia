@@ -215,23 +215,35 @@ async function scrapeOgImage(url: string): Promise<string | null> {
 export async function getNews(): Promise<NewsItem[]> {
   const allItems: NewsItem[] = [];
 
-  for (const feed of RSS_FEEDS) {
+  const fetchFeed = async (feed: { url: string; source: string }) => {
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2500);
       const res = await fetch(feed.url, {
+        signal: controller.signal,
         next: { revalidate: 1800 },
         headers: {
           'User-Agent': 'Anime Nation India/1.0 (News Aggregator)',
           'Accept': 'application/rss+xml, application/xml, text/xml, */*',
         },
       });
+      clearTimeout(timer);
       if (!res.ok) {
         console.error(`[getNews] HTTP ${res.status} from ${feed.source}`);
-        continue;
+        return [];
       }
       const xml = await res.text();
-      allItems.push(...parseRssXml(xml, feed.source));
+      return parseRssXml(xml, feed.source);
     } catch (error) {
       console.error(`[getNews] Failed to fetch ${feed.source}:`, error);
+      return [];
+    }
+  };
+
+  const results = await Promise.allSettled(RSS_FEEDS.map(fetchFeed));
+  for (const r of results) {
+    if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+      allItems.push(...r.value);
     }
   }
 
