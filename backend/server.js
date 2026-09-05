@@ -144,6 +144,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// 🚀 Health Check & Uptime Monitoring Endpoints (Zero-Load Keep-Alive for UptimeRobot)
+app.get('/', (req, res) => res.json({ status: 'ok', service: 'AnimeNation India Backend', timestamp: new Date().toISOString() }));
+app.get('/api/ping', (req, res) => res.json({ status: 'pong', uptime: Math.floor(process.uptime()), timestamp: Date.now() }));
+app.get('/api/health', (req, res) => res.json({
+  status: 'healthy',
+  uptime: Math.floor(process.uptime()),
+  database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+  timestamp: new Date().toISOString()
+}));
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('🔥 MongoDB Atlas Connected Successfully!'))
