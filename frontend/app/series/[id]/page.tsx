@@ -33,13 +33,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const numId = Number(id);
 
   try {
-    const [jikanRes, extraInfoRes] = await Promise.allSettled([
-      getCachedAnimeDetails(id),
-      getCachedAniListExtraInfo(numId)
-    ]);
-    
-    const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
-    const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
+    const jikanAnime = await getCachedAnimeDetails(id);
+    let extraInfo = null;
+    if (!jikanAnime && !isNaN(numId) && numId > 0) {
+      extraInfo = await getCachedAniListExtraInfo(numId);
+    }
 
     if (!jikanAnime && !extraInfo) {
       return {

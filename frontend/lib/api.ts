@@ -772,15 +772,15 @@ export async function getAnimeCharacters(id: string | number, anilistId?: number
 
   const providers = [
     {
-      name: 'AniList Characters (Primary)',
-      fn: async () => fetchAniListCharactersFallback(resolvedAniListId)
-    },
-    {
-      name: 'Jikan Characters (Secondary)',
+      name: 'Jikan Characters (Primary for MAL ID)',
       fn: async () => {
-        const res = await fetchJikan(`/anime/${id}/characters`, GLOBAL_CACHE_TIME, 2500);
+        const res = await fetchJikan(`/anime/${id}/characters`, GLOBAL_CACHE_TIME, 2000);
         return res?.data && Array.isArray(res.data) && res.data.length > 0 ? res.data : null;
       }
+    },
+    {
+      name: 'AniList Characters (Secondary Fallback)',
+      fn: async () => fetchAniListCharactersFallback(resolvedAniListId)
     },
     {
       name: 'Kitsu Characters (Tertiary)',

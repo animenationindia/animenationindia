@@ -28,7 +28,7 @@ export async function fetchAnimeThemes(
   if (isNaN(numericMalId) || numericMalId <= 0) return [];
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  const timeoutId = setTimeout(() => controller.abort(), 2000);
 
   try {
     const url = `${ANIMETHEMES_API_BASE}/anime?filter[has]=resources&filter[site]=MyAnimeList&filter[external_id]=${numericMalId}&include=animethemes.song.artists,animethemes.animethemeentries.videos.audio`;

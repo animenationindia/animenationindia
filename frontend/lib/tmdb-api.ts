@@ -54,6 +54,20 @@ function cleanSearchQuery(title: string): string {
     .trim();
 }
 
+// Safe fetch with strict timeout to protect Cloudflare Worker limits
+async function fetchWithTimeout(url: string, options: any = {}, timeoutMs = 2500): Promise<Response | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 /**
  * Fetch season episode details with crystal-clear 1080p/720p still screencaps
  */
@@ -66,10 +80,10 @@ export async function getTMDBSeasonEpisodes(tmdbId: number, seasonNumber = 1): P
   }
 
   try {
-    const res = await fetch(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`, {
+    const res = await fetchWithTimeout(`${TMDB_BASE_URL}/tv/${tmdbId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`, {
       next: { revalidate: 86400 }
-    });
-    if (!res.ok) return [];
+    }, 2000);
+    if (!res || !res.ok) return [];
     const data = await res.json();
     const episodes: TMDBEpisode[] = (data.episodes || []).map((ep: any) => ({
       episodeNumber: ep.episode_number,
@@ -89,6 +103,7 @@ export async function getTMDBSeasonEpisodes(tmdbId: number, seasonNumber = 1): P
 
 /**
  * Fetch comprehensive TMDB data for an anime (Audio, Subtitles, ClearArt Logo, OTT Streaming, Trailers, Episode Stills)
+ * Uses append_to_response to consolidate 6 separate calls into 1 fast single call.
  */
 export async function getTMDBAnimeData(title: string, year?: number): Promise<TMDBAnimeData | null> {
   if (!title || !title.trim()) return null;
@@ -113,128 +128,123 @@ export async function getTMDBAnimeData(title: string, year?: number): Promise<TM
         searchUrl += `&first_air_date_year=${year}`;
       }
 
-      const searchRes = await fetch(searchUrl, {
-        next: { revalidate: 86400 } // Cache 24 hours
-      });
+      const searchRes = await fetchWithTimeout(searchUrl, { next: { revalidate: 86400 } }, 2000);
+      if (!searchRes || !searchRes.ok) return null;
+      const searchData = await searchRes.json();
+      let show = searchData.results?.[0];
 
-    if (!searchRes.ok) return null;
-    const searchData = await searchRes.json();
-    let show = searchData.results?.[0];
-
-    // Fallback: If year-specific search had 0 results, retry without year filter
-    if (!show && year) {
-      const retryRes = await fetch(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`, {
-        next: { revalidate: 86400 }
-      });
-      if (retryRes.ok) {
-        const retryData = await retryRes.json();
-        show = retryData.results?.[0];
+      // Fallback: If year-specific search had 0 results, retry without year filter
+      if (!show && year) {
+        const retryRes = await fetchWithTimeout(`${TMDB_BASE_URL}/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`, {
+          next: { revalidate: 86400 }
+        }, 1500);
+        if (retryRes && retryRes.ok) {
+          const retryData = await retryRes.json();
+          show = retryData.results?.[0];
+        }
       }
-    }
 
-    // Movie fallback if TV search had 0 results
-    if (!show) {
-      const movieRes = await fetch(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`, {
-        next: { revalidate: 86400 }
-      });
-      if (movieRes.ok) {
-        const movieData = await movieRes.json();
-        show = movieData.results?.[0];
+      // Movie fallback if TV search had 0 results
+      if (!show) {
+        const movieRes = await fetchWithTimeout(`${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`, {
+          next: { revalidate: 86400 }
+        }, 1500);
+        if (movieRes && movieRes.ok) {
+          const movieData = await movieRes.json();
+          show = movieData.results?.[0];
+        }
       }
-    }
 
-    if (!show || !show.id) return null;
-    const tmdbId = show.id;
-    const isMovie = Boolean(show.title && !show.name);
-    const mediaType = isMovie ? 'movie' : 'tv';
+      if (!show || !show.id) return null;
+      const tmdbId = show.id;
+      const isMovie = Boolean(show.title && !show.name);
+      const mediaType = isMovie ? 'movie' : 'tv';
 
-    // Parallel fetch: Details, Translations, Images, Watch Providers, Videos, Season 1 Episodes
-    const [detailsRes, transRes, imagesRes, watchRes, videosRes, season1Res] = await Promise.allSettled([
-      fetch(`${TMDB_BASE_URL}/${mediaType}/${tmdbId}?api_key=${TMDB_API_KEY}`, { next: { revalidate: 86400 } }).then(r => r.json()),
-      fetch(`${TMDB_BASE_URL}/${mediaType}/${tmdbId}/translations?api_key=${TMDB_API_KEY}`, { next: { revalidate: 86400 } }).then(r => r.json()),
-      fetch(`${TMDB_BASE_URL}/${mediaType}/${tmdbId}/images?api_key=${TMDB_API_KEY}`, { next: { revalidate: 86400 } }).then(r => r.json()),
-      fetch(`${TMDB_BASE_URL}/${mediaType}/${tmdbId}/watch/providers?api_key=${TMDB_API_KEY}`, { next: { revalidate: 86400 } }).then(r => r.json()),
-      fetch(`${TMDB_BASE_URL}/${mediaType}/${tmdbId}/videos?api_key=${TMDB_API_KEY}`, { next: { revalidate: 86400 } }).then(r => r.json()),
-      !isMovie ? getTMDBSeasonEpisodes(tmdbId, 1) : Promise.resolve([])
-    ]);
+      // Consolidated single TMDB call with append_to_response
+      const detailUrl = `${TMDB_BASE_URL}/${mediaType}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=translations,images,watch/providers,videos`;
+      const [detailRes, season1Episodes] = await Promise.all([
+        fetchWithTimeout(detailUrl, { next: { revalidate: 86400 } }, 2500).then(r => r && r.ok ? r.json() : null),
+        !isMovie ? getTMDBSeasonEpisodes(tmdbId, 1) : Promise.resolve([])
+      ]);
 
-    const details = detailsRes.status === 'fulfilled' ? detailsRes.value : null;
-    const trans = transRes.status === 'fulfilled' ? transRes.value : null;
-    const images = imagesRes.status === 'fulfilled' ? imagesRes.value : null;
-    const watch = watchRes.status === 'fulfilled' ? watchRes.value : null;
-    const videos = videosRes.status === 'fulfilled' ? videosRes.value : null;
-    const season1Episodes = season1Res.status === 'fulfilled' ? season1Res.value : [];
+      if (!detailRes) return null;
 
-    // 1. Spoken Languages
-    const spokenLanguages = (details?.spoken_languages || []).map((l: any) => ({
-      name: l.english_name || l.name,
-      iso: l.iso_639_1
-    }));
+      const details = detailRes;
+      const trans = detailRes.translations;
+      const images = detailRes.images;
+      const watch = detailRes['watch/providers'];
+      const videos = detailRes.videos;
 
-    // 2. Subtitle Translations
-    const subtitleLanguages = (trans?.translations || []).map((t: any) => ({
-      name: t.english_name || t.name,
-      iso: t.iso_639_1
-    }));
+      // 1. Spoken Languages
+      const spokenLanguages = (details?.spoken_languages || []).map((l: any) => ({
+        name: l.english_name || l.name,
+        iso: l.iso_639_1
+      }));
 
-    // 3. ClearArt Logo (Prefer English, fallback to Japanese or first available)
-    let logoUrl: string | null = null;
-    if (images?.logos && Array.isArray(images.logos) && images.logos.length > 0) {
-      const enLogo = images.logos.find((l: any) => l.iso_639_1 === 'en');
-      const jaLogo = images.logos.find((l: any) => l.iso_639_1 === 'ja');
-      const selectedLogo = enLogo || jaLogo || images.logos[0];
-      if (selectedLogo?.file_path) {
-        logoUrl = `${IMAGE_BASE_URL}/original${selectedLogo.file_path}`;
+      // 2. Subtitle Translations
+      const subtitleLanguages = (trans?.translations || []).map((t: any) => ({
+        name: t.english_name || t.name,
+        iso: t.iso_639_1
+      }));
+
+      // 3. ClearArt Logo (Prefer English, fallback to Japanese or first available)
+      let logoUrl: string | null = null;
+      if (images?.logos && Array.isArray(images.logos) && images.logos.length > 0) {
+        const enLogo = images.logos.find((l: any) => l.iso_639_1 === 'en');
+        const jaLogo = images.logos.find((l: any) => l.iso_639_1 === 'ja');
+        const selectedLogo = enLogo || jaLogo || images.logos[0];
+        if (selectedLogo?.file_path) {
+          logoUrl = `${IMAGE_BASE_URL}/original${selectedLogo.file_path}`;
+        }
       }
+
+      // 4. Backdrop
+      let backdropUrl: string | null = null;
+      if (details?.backdrop_path) {
+        backdropUrl = `${IMAGE_BASE_URL}/original${details.backdrop_path}`;
+      }
+
+      // 5. Official Trailer (YouTube)
+      let trailerYoutubeId: string | null = null;
+      if (videos?.results && Array.isArray(videos.results)) {
+        const officialTrailer = videos.results.find((v: any) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
+        const anyYoutube = videos.results.find((v: any) => v.site === 'YouTube');
+        trailerYoutubeId = officialTrailer?.key || anyYoutube?.key || null;
+      }
+
+      // 6. Watch Providers (India & US)
+      const inFlatrate = watch?.results?.IN?.flatrate || watch?.results?.IN?.buy || [];
+      const watchProvidersIndia: TMDBProvider[] = inFlatrate.map((p: any) => ({
+        name: p.provider_name,
+        logoUrl: `${IMAGE_BASE_URL}/w92${p.logo_path}`
+      }));
+
+      const usFlatrate = watch?.results?.US?.flatrate || [];
+      const watchProvidersGlobal: TMDBProvider[] = usFlatrate.map((p: any) => ({
+        name: p.provider_name,
+        logoUrl: `${IMAGE_BASE_URL}/w92${p.logo_path}`
+      }));
+
+      const result: TMDBAnimeData = {
+        tmdbId,
+        originalLanguage: details?.original_language || 'ja',
+        spokenLanguages,
+        subtitleLanguages,
+        logoUrl,
+        backdropUrl,
+        trailerYoutubeId,
+        watchProvidersIndia,
+        watchProvidersGlobal,
+        overview: details?.overview,
+        episodes: season1Episodes
+      };
+      tmdbMemoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      return result;
+    } catch (error) {
+      logError('getTMDBAnimeData', error);
+      return null;
     }
-
-    // 4. Backdrop
-    let backdropUrl: string | null = null;
-    if (details?.backdrop_path) {
-      backdropUrl = `${IMAGE_BASE_URL}/original${details.backdrop_path}`;
-    }
-
-    // 5. Official Trailer (YouTube)
-    let trailerYoutubeId: string | null = null;
-    if (videos?.results && Array.isArray(videos.results)) {
-      const officialTrailer = videos.results.find((v: any) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
-      const anyYoutube = videos.results.find((v: any) => v.site === 'YouTube');
-      trailerYoutubeId = officialTrailer?.key || anyYoutube?.key || null;
-    }
-
-    // 6. Watch Providers (India & US)
-    const inFlatrate = watch?.results?.IN?.flatrate || watch?.results?.IN?.buy || [];
-    const watchProvidersIndia: TMDBProvider[] = inFlatrate.map((p: any) => ({
-      name: p.provider_name,
-      logoUrl: `${IMAGE_BASE_URL}/w92${p.logo_path}`
-    }));
-
-    const usFlatrate = watch?.results?.US?.flatrate || [];
-    const watchProvidersGlobal: TMDBProvider[] = usFlatrate.map((p: any) => ({
-      name: p.provider_name,
-      logoUrl: `${IMAGE_BASE_URL}/w92${p.logo_path}`
-    }));
-
-    const result: TMDBAnimeData = {
-      tmdbId,
-      originalLanguage: details?.original_language || 'ja',
-      spokenLanguages,
-      subtitleLanguages,
-      logoUrl,
-      backdropUrl,
-      trailerYoutubeId,
-      watchProvidersIndia,
-      watchProvidersGlobal,
-      overview: details?.overview,
-      episodes: season1Episodes
-    };
-    tmdbMemoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
-    return result;
-  } catch (error) {
-    logError('getTMDBAnimeData', error);
-    return null;
-  }
-};
+  };
 
   const promise = execute().finally(() => {
     tmdbInFlight.delete(cacheKey);
