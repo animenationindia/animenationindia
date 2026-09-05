@@ -156,7 +156,10 @@ app.get('/api/health', (req, res) => res.json({
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('🔥 MongoDB Atlas Connected Successfully!'))
+  .then(() => {
+    console.log('🔥 MongoDB Atlas Connected Successfully!');
+    seedInitialArticles();
+  })
   .catch((err) => console.error('MongoDB Error: ', err));
 
 // ==========================================
@@ -280,6 +283,85 @@ const messageSchema = new mongoose.Schema({
 });
 const Message = mongoose.model('Message', messageSchema);
 
+// ==========================================
+// 📰 ARTICLE SCHEMA (Google News & Magazine Engine)
+// ==========================================
+const articleSchema = new mongoose.Schema({
+  title: { type: String, required: true, trim: true },
+  slug: { type: String, required: true, unique: true, index: true, trim: true, lowercase: true },
+  snippet: { type: String, required: true, trim: true },
+  content: { type: String, required: true },
+  coverImage: { type: String, required: true },
+  category: { 
+    type: String, 
+    enum: ['Anime', 'Manga', 'Movies', 'Reviews', 'Industry', 'Gaming'], 
+    default: 'Anime',
+    index: true 
+  },
+  tags: [{ type: String, trim: true }],
+  author: { type: String, default: 'Anime Nation India Editorial' },
+  authorAvatar: { type: String, default: 'https://www.animenationindia.online/ani-logo.png' },
+  views: { type: Number, default: 0 },
+  featured: { type: Boolean, default: false },
+  publishedAt: { type: Date, default: Date.now, index: true }
+}, {
+  timestamps: true
+});
+const Article = mongoose.model('Article', articleSchema);
+
+// Auto-seed initial high-quality anime articles if collection is empty
+async function seedInitialArticles() {
+  try {
+    const count = await Article.countDocuments();
+    if (count === 0) {
+      console.log('Seeding initial Anime News articles to MongoDB Atlas...');
+      await Article.insertMany([
+        {
+          title: "Solo Leveling Season 2 -Arise from the Shadow- Global Premiere & Episode Guide",
+          slug: "solo-leveling-season-2-arise-from-the-shadow-premiere-guide",
+          snippet: "Sung Jinwoo returns with upgraded monarch powers. Here is everything you need to know about Solo Leveling Season 2 broadcast schedule and plot arcs.",
+          content: `<p>The wait is finally over for millions of hunters worldwide. <strong>Solo Leveling Season 2 -Arise from the Shadow-</strong> has officially premiered, continuing the meteoric journey of Sung Jinwoo from the world's weakest E-rank hunter to the unassailable Shadow Monarch.</p><h2>The Stakes Have Never Been Higher</h2><p>Following the harrowing events of the Jeju Island raid arc and the awakening of supreme shadow soldiers like Igris and Beru, Season 2 plunges deeper into the overarching mystery of the Monarchs and the Rulers. Jinwoo faces international scrutiny as hunter associations across Japan, America, and Korea attempt to fathom his unprecedented growth.</p><h2>Where to Watch and Episode Schedule</h2><p>New episodes are simulcast every Saturday with English subtitles and dubs across global streaming services. With Studio A-1 Pictures bringing cinema-quality action choreography, fans can anticipate breathtaking battles, jaw-dropping necromancy sequences, and the iconic 'Arise' command brought to life with thundering sound design.</p>`,
+          coverImage: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&q=80",
+          category: "Anime",
+          tags: ["Solo Leveling", "Action", "Fall Season", "Anime Nation India"],
+          author: "Anime Nation India Editorial",
+          views: 1420,
+          featured: true,
+          publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+        },
+        {
+          title: "Demon Slayer: Kimetsu no Yaiba Infinity Castle Movie Trilogy — What We Know So Far",
+          slug: "demon-slayer-infinity-castle-movie-trilogy-details",
+          snippet: "Ufotable confirms the final battle against Muzan Kibutsuji will be an epic 3-part theatrical anime cinematic event.",
+          content: `<p>Following the emotional culmination of the Hashira Training Arc, <strong>Demon Slayer: Kimetsu no Yaiba</strong> is embarking on its most ambitious chapter yet: the <em>Infinity Castle Arc</em>, adapted into an expansive theatrical movie trilogy by legendary animation powerhouse <strong>Ufotable</strong>.</p><h2>A War Beyond Dimensions</h2><p>The Infinity Castle serves as the grotesque, ever-shifting stronghold of Muzan Kibutsuji and his remaining Upper Rank demons, including Akaza, Doma, and the formidable Kokushibo. Every surviving Hashira, alongside Tanjiro, Nezuko, Zenitsu, and Inosuke, will be pushed beyond their biological limits.</p><h2>Cinematic Release Strategy</h2><p>Ufotable and Aniplex have teamed up with Sony Pictures and Crunchyroll to deliver a worldwide theatrical rollout. Each movie will be optimized for IMAX and premium large formats, ensuring viewers witness the transcendent swordplay and visual artistry with ground-shaking acoustics.</p>`,
+          coverImage: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&q=80",
+          category: "Movies",
+          tags: ["Demon Slayer", "Movies", "Ufotable", "Kimetsu no Yaiba"],
+          author: "Anime Nation India Editorial",
+          views: 2850,
+          featured: true,
+          publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000)
+        },
+        {
+          title: "Top 5 Most Anticipated Anime of 2026: The Ultimate Otaku Watchlist",
+          slug: "top-5-most-anticipated-anime-2026-watchlist",
+          snippet: "From epic returns to revolutionary new adaptations, here are the top 5 anime titles set to dominate screens this year.",
+          content: `<p>2026 is shaping up to be one of the most unforgettable years for anime enthusiasts worldwide. Whether you are craving psychological suspense, supernatural shounen adrenaline, or heartwarming slice-of-life storytelling, the seasonal lineup is stacked with powerhouse productions.</p><h2>1. Chainsaw Man – The Reze Arc (Movie)</h2><p>MAPPA brings the fan-favorite bomb devil arc to the silver screen with mind-bending visuals and emotional turbulence for Denji.</p><h2>2. Jujutsu Kaisen: The Culling Game Arc</h2><p>Following the devastation of the Shibuya Incident, Kenjaku's deadly ritual commences, introducing deadly ancient sorcerers into the fray.</p><h2>3. One Piece – Elbaf Island Arc</h2><p>The Straw Hat Pirates finally reach the land of the giants, unraveling long-teased Void Century lore and legendary Norse-inspired conflicts.</p><h2>4. Bleach: Thousand-Year Blood War – The Conflict</h2><p>The climax of the Quincy blood war reaches peak intensity as the Royal Guard and Ichigo unlock their ultimate spiritual potentials.</p><h2>5. Spy x Family Season 3</h2><p>The Forger family returns with brand new covert espionage, school shenanigans at Eden Academy, and lovable Anya expressions.</p>`,
+          coverImage: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&q=80",
+          category: "Reviews",
+          tags: ["Recommendations", "Top 5", "Jujutsu Kaisen", "One Piece"],
+          author: "Anime Nation India Editorial",
+          views: 3190,
+          featured: false,
+          publishedAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
+        }
+      ]);
+      console.log('Seeded initial Anime News articles successfully!');
+    }
+  } catch (err) {
+    console.error('Error seeding initial articles:', err.message);
+  }
+}
 
 // ==========================================
 // 🔥 AUTHENTICATION ROUTES 🔥
@@ -1243,6 +1325,212 @@ app.get('/api/anime/search', async (req, res) => {
   } catch (error) {
     console.error('Anime Search Error:', error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ==========================================
+// 📰 CUSTOM ANIME NEWS & ARTICLES API
+// ==========================================
+
+// 1. GET /api/articles - List articles with pagination, category filter & search
+app.get('/api/articles', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 12, 50);
+    const category = req.query.category;
+    const search = req.query.search;
+    const featured = req.query.featured;
+
+    const filter = {};
+    if (category && category !== 'All') {
+      filter.category = new RegExp(`^${category}$`, 'i');
+    }
+    if (featured === 'true') {
+      filter.featured = true;
+    }
+    if (search && typeof search === 'string') {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { snippet: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+
+    const total = await Article.countDocuments(filter);
+    const articles = await Article.find(filter)
+      .sort({ publishedAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    res.json({
+      success: true,
+      data: articles,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Articles Fetch Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch articles' });
+  }
+});
+
+// 2. GET /api/articles/:slug - Single article reader + increment view counter
+app.get('/api/articles/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const article = await Article.findOneAndUpdate(
+      { slug: slug.toLowerCase() },
+      { $inc: { views: 1 } },
+      { new: true }
+    ).lean();
+
+    if (!article) {
+      return res.status(404).json({ success: false, message: 'Article not found' });
+    }
+
+    // Fetch related articles from same category
+    const related = await Article.find({
+      category: article.category,
+      _id: { $ne: article._id }
+    })
+      .sort({ publishedAt: -1 })
+      .limit(3)
+      .select('title slug coverImage category publishedAt views snippet')
+      .lean();
+
+    res.json({
+      success: true,
+      data: article,
+      related
+    });
+  } catch (error) {
+    console.error('Single Article Fetch Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch article' });
+  }
+});
+
+// 3. POST /api/articles - Create/Publish new article (Admin protected)
+app.post('/api/articles', async (req, res) => {
+  try {
+    const adminPasscode = req.headers['x-admin-passcode'] || req.body.adminPasscode;
+    const expectedPasscode = process.env.ADMIN_PASSCODE || 'ani2026admin';
+
+    if (adminPasscode !== expectedPasscode) {
+      return res.status(403).json({ success: false, message: 'Unauthorized: Invalid Admin Passcode' });
+    }
+
+    let { title, slug, snippet, content, coverImage, category, tags, author, featured } = req.body;
+
+    if (!title || !content || !coverImage) {
+      return res.status(400).json({ success: false, message: 'Title, content, and coverImage are required' });
+    }
+
+    if (!slug) {
+      slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
+    } else {
+      slug = slug.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    }
+
+    if (!snippet) {
+      snippet = content.replace(/<[^>]*>?/gm, '').slice(0, 180) + '...';
+    }
+
+    const newArticle = new Article({
+      title,
+      slug,
+      snippet,
+      content,
+      coverImage,
+      category: category || 'Anime',
+      tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()) : []),
+      author: author || 'Anime Nation India Editorial',
+      featured: Boolean(featured),
+      publishedAt: new Date()
+    });
+
+    await newArticle.save();
+    res.status(201).json({ success: true, data: newArticle, message: 'Article published successfully!' });
+  } catch (error) {
+    console.error('Article Create Error:', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'An article with this slug/title already exists.' });
+    }
+    res.status(500).json({ success: false, message: error.message || 'Failed to create article' });
+  }
+});
+
+// 4. DELETE /api/articles/:id - Delete an article (Admin protected)
+app.delete('/api/articles/:id', async (req, res) => {
+  try {
+    const adminPasscode = req.headers['x-admin-passcode'] || req.query.adminPasscode;
+    const expectedPasscode = process.env.ADMIN_PASSCODE || 'ani2026admin';
+
+    if (adminPasscode !== expectedPasscode) {
+      return res.status(403).json({ success: false, message: 'Unauthorized: Invalid Admin Passcode' });
+    }
+
+    const deleted = await Article.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, message: 'Article not found' });
+
+    res.json({ success: true, message: 'Article deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 5. GET /api/news/feed.xml or /feed.xml - Google News Compliant RSS 2.0 XML Feed
+app.get(['/api/news/feed.xml', '/feed.xml'], async (req, res) => {
+  try {
+    const articles = await Article.find().sort({ publishedAt: -1 }).limit(30).lean();
+    const siteUrl = 'https://www.animenationindia.online';
+    const now = new Date().toUTCString();
+
+    const itemsXml = articles.map(art => `
+    <item>
+      <title><![CDATA[${art.title}]]></title>
+      <link>${siteUrl}/news/${art.slug}</link>
+      <guid isPermaLink="true">${siteUrl}/news/${art.slug}</guid>
+      <pubDate>${new Date(art.publishedAt).toUTCString()}</pubDate>
+      <description><![CDATA[${art.snippet}]]></description>
+      <category>${art.category}</category>
+      <author><![CDATA[${art.author}]]></author>
+      <enclosure url="${art.coverImage}" type="image/jpeg" length="150000" />
+      <media:content url="${art.coverImage}" medium="image">
+        <media:title><![CDATA[${art.title}]]></media:title>
+      </media:content>
+    </item>`).join('');
+
+    const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title>Anime Nation India - Latest News &amp; Articles</title>
+    <link>${siteUrl}/news</link>
+    <description>Latest anime, manga, and gaming news, official trailer breakdowns, and in-depth reviews from Anime Nation India.</description>
+    <language>en-us</language>
+    <lastBuildDate>${now}</lastBuildDate>
+    <atom:link href="${siteUrl}/api/news/feed.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>${siteUrl}/ani-logo.png</url>
+      <title>Anime Nation India</title>
+      <link>${siteUrl}</link>
+    </image>${itemsXml}
+  </channel>
+</rss>`;
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=600, s-maxage=600');
+    res.send(rssXml);
+  } catch (error) {
+    console.error('RSS Feed Error:', error);
+    res.status(500).send('Error generating RSS feed');
   }
 });
 
