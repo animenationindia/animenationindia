@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bookmark, User, Search, X, Loader2, LogOut, Settings, Menu, Home, Flame, CalendarDays, Layers, MonitorPlay, Newspaper, Mail, Sparkles, Play, BookOpen, Heart, ListPlus, Music, ChevronRight } from 'lucide-react';
+import { Bookmark, User, Search, X, Loader2, LogOut, Settings, Menu, Home, Flame, CalendarDays, Layers, MonitorPlay, Newspaper, Mail, Sparkles, BookOpen, Heart, ListPlus, Music, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
@@ -121,7 +121,6 @@ export default function Navbar() {
     { name: 'Simulcast', path: '/simulcast', icon: MonitorPlay },
     { name: 'Genres', path: '/genres', icon: Layers },
     { name: 'Schedule', path: '/schedule', icon: CalendarDays },
-    { name: 'Trailers', path: '/trailers', icon: Play },
     { name: 'News', path: '/news', icon: Newspaper },
     { name: 'Contact', path: '/contact', icon: Mail },
   ];
