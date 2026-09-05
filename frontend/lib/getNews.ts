@@ -247,20 +247,6 @@ export async function getNews(): Promise<NewsItem[]> {
   // Sort newest first
   unique.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Scrape images concurrently for items that have the fallback image
-  // We limit to the top 50 items to prevent overload
-  const itemsToScrape = unique.slice(0, 50);
-  await Promise.all(
-    itemsToScrape.map(async (item) => {
-      if (item.image === FALLBACK_IMAGE) {
-        const scrapedImage = await scrapeOgImage(item.link);
-        if (scrapedImage) {
-          item.image = scrapedImage;
-        }
-      }
-    })
-  );
-
   return unique;
 }
 
