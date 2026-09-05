@@ -1,7 +1,7 @@
 import { getNews, getNewsByCategory } from '../lib/getNews';
 import { getArticles, ArticleItem } from '../lib/articles';
 import { SpotlightCard, SidebarCard, SectionHeroCard, SectionSmallCard, GridCard } from './NewsCards';
-import { Newspaper, ArrowRight, Sparkles, PenSquare, Flame } from 'lucide-react';
+import { Newspaper, ArrowRight, Sparkles, Flame } from 'lucide-react';
 import Link from 'next/link';
 
 function SectionHeader({
@@ -122,10 +122,10 @@ export default async function NewsContent() {
           </div>
         </div>
 
-        {/* Quick Links: RSS & Write News */}
+        {/* Quick Links: RSS Feed */}
         <div className="flex items-center gap-2.5 flex-wrap">
           <a
-            href="https://animenationindia.onrender.com/api/news/feed.xml"
+            href="/feed.xml"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs font-semibold text-[#888] hover:text-white border border-[#2A2B30] hover:border-[#444] px-3.5 py-2 rounded-lg transition-colors flex items-center gap-1.5"
@@ -134,13 +134,6 @@ export default async function NewsContent() {
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
             RSS Feed
           </a>
-          <Link
-            href="/admin/publish"
-            className="text-xs font-bold text-white bg-gradient-to-r from-[#ff4dd2] to-[#c822a0] hover:from-[#ff66da] hover:to-[#e028b5] shadow-[0_0_15px_rgba(255,77,210,0.35)] px-4 py-2 rounded-lg transition-all flex items-center gap-1.5"
-          >
-            <PenSquare size={13} />
-            Publish Article
-          </Link>
         </div>
       </div>
 

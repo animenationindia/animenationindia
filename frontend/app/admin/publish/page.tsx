@@ -7,6 +7,7 @@ import {
   PenSquare,
   Sparkles,
   Eye,
+  EyeOff,
   CheckCircle2,
   AlertCircle,
   Trash2,
@@ -33,7 +34,8 @@ function slugify(text: string): string {
 
 export default function AdminPublishPage() {
   // Passcode state
-  const [adminPasscode, setAdminPasscode] = useState('ani2026admin');
+  const [adminPasscode, setAdminPasscode] = useState('');
+  const [showPasscode, setShowPasscode] = useState(false);
 
   // Article form state
   const [title, setTitle] = useState('');
@@ -64,6 +66,14 @@ export default function AdminPublishPage() {
       if (saved) setAdminPasscode(saved);
     }
   }, []);
+
+  const handlePasscodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setAdminPasscode(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ani_admin_passcode', val);
+    }
+  };
 
   // Update slug when title changes unless user manually edited slug
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,20 +257,30 @@ export default function AdminPublishPage() {
           <form onSubmit={handlePublish} className="lg:col-span-8 space-y-6">
             {/* Passcode Security */}
             <div className="p-4 rounded-xl bg-[#121326]/60 border border-[#2A2B30]/60">
-              <label className="text-xs font-bold text-[#b0b0b0] uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                <KeyRound size={13} className="text-[#ff4dd2]" /> Admin Passcode
+              <label className="text-xs font-bold text-[#b0b0b0] uppercase tracking-wider flex items-center justify-between mb-2">
+                <span className="flex items-center gap-1.5">
+                  <KeyRound size={13} className="text-[#ff4dd2]" /> Admin Passcode *
+                </span>
+                <span className="text-[11px] text-[#777] font-normal">Stored locally in your browser</span>
               </label>
-              <input
-                type="password"
-                value={adminPasscode}
-                onChange={(e) => setAdminPasscode(e.target.value)}
-                placeholder="Enter admin passcode"
-                className="w-full bg-[#050716] border border-[#2A2B30] focus:border-[#ff4dd2] text-sm text-white px-3.5 py-2.5 rounded-lg outline-none transition-colors"
-                required
-              />
-              <span className="text-[11px] text-[#666] mt-1 block">
-                Default: <code className="text-[#ff4dd2]">ani2026admin</code> (Saved securely in your browser session)
-              </span>
+              <div className="relative">
+                <input
+                  type={showPasscode ? 'text' : 'password'}
+                  value={adminPasscode}
+                  onChange={handlePasscodeChange}
+                  placeholder="Enter admin passcode"
+                  className="w-full bg-[#050716] border border-[#2A2B30] focus:border-[#ff4dd2] text-sm text-white px-3.5 py-2.5 pr-10 rounded-lg outline-none transition-colors font-mono"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasscode(!showPasscode)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888] hover:text-[#ff4dd2] transition-colors p-1"
+                  title={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                >
+                  {showPasscode ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             {/* Title & Slug */}
