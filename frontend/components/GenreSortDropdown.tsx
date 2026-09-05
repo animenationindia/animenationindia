@@ -8,10 +8,6 @@ export default function GenreSortDropdown() {
   const searchParams = useSearchParams();
   
   const currentSort = searchParams.get('sort') || 'popular';
-  const genreId = searchParams.get('genreId');
-
-  if (!genreId) return null;
-
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSort = e.target.value;
     const params = new URLSearchParams(searchParams.toString());

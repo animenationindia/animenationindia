@@ -2,6 +2,7 @@
 // lib/api.ts
 import { logError } from './logger';
 import { fetchKitsuCharacters } from './kitsu-api';
+import { DEFAULT_GENRES_LIST } from './genres-data';
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animenationindia.onrender.com';
@@ -1135,20 +1136,21 @@ export async function getFilteredAnimeAniList(params: {
   }
 }
 
-// ??. Jikan API - Get All Genres (Hentai Filtered Out)
+// ??. Jikan API - Get All Genres (Hentai Filtered Out with high-reliability fallback)
 export async function getJikanGenres() {
   try {
-    const data = await fetchJikan('/genres/anime');
+    const data = await fetchJikan('/genres/anime', 86400, 2500);
     const list = data?.data || [];
     // Strict block on Hentai & explicit adult categories
-    return list.filter((g: any) => 
+    const filtered = list.filter((g: any) => 
       g.name.toLowerCase() !== 'hentai' && 
       g.mal_id !== 12
     );
+    if (filtered.length > 0) return filtered;
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error('getJikanGenres error, using default genre list:', error);
   }
+  return DEFAULT_GENRES_LIST;
 }
 
 // ??. Jikan API - Get Anime by Genre
