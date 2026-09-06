@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Hero from '../../components/Hero';
-import InstallAppButton from '../../components/InstallAppButton';
 import SectionSlider from '../../components/SectionSlider'; 
 import AnimeCard from '../../components/AnimeCard';
 import NewEpisodesList from '../../components/NewEpisodesList';
@@ -284,7 +283,6 @@ export default async function Home() {
 
   return (
     <div className="pb-12 bg-[#050716] min-h-screen">
-      <InstallAppButton />
       <Hero animeList={safeHeroAnimeList} />
 
       <main className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] mt-12">
