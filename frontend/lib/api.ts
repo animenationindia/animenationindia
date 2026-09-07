@@ -715,11 +715,66 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
-// ৪. Details Page এর জন্য Jikan Full Info (With AniList Direct Fallback)
+// ─── Kitsu Anime External ID Resolver ─────────────────────────────────────────
+export async function resolveKitsuAnimeByExternalId(externalId: string | number): Promise<any | null> {
+  const strId = String(externalId).trim();
+  if (!strId || isNaN(Number(strId))) return null;
+
+  const sites = ['anilist/anime', 'myanimelist/anime'];
+  for (const site of sites) {
+    try {
+      const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=${site}&filter[external_id]=${strId}&include=item`;
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/vnd.api+json' },
+        next: { revalidate: GLOBAL_CACHE_TIME }
+      });
+      if (res.status === 200) {
+        const json = await res.json();
+        const item = json.included?.find((inc: any) => inc.type === 'anime');
+        if (item && item.attributes) {
+          const attr = item.attributes;
+          const canonical = attr.canonicalTitle || 'Unknown Title';
+          const titleEng = attr.titles?.en || attr.titles?.en_us || canonical || attr.titles?.en_jp || canonical;
+          const titleRom = attr.titles?.en_jp || canonical || titleEng;
+          const rawScore = attr.averageRating ? parseFloat(attr.averageRating) : null;
+          const score = rawScore ? parseFloat((rawScore / 10).toFixed(1)) : null;
+
+          return {
+            mal_id: Number(strId),
+            kitsuId: item.id,
+            title: titleRom,
+            title_english: titleEng,
+            title_japanese: attr.titles?.ja_jp || '',
+            synopsis: attr.synopsis || attr.description || 'No synopsis available.',
+            images: {
+              webp: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' },
+              jpg: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' }
+            },
+            bannerImage: attr.coverImage?.large || attr.coverImage?.original || null,
+            score: score,
+            episodes: attr.episodeCount || null,
+            status: attr.status === 'current' ? 'Currently Airing' : 'Finished Airing',
+            genres: [],
+            year: attr.startDate ? parseInt(attr.startDate.slice(0, 4)) : null,
+            trailer: attr.youtubeVideoId ? {
+              youtube_id: attr.youtubeVideoId,
+              embed_url: `https://www.youtube.com/embed/${attr.youtubeVideoId}`
+            } : null
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[resolveKitsuAnimeByExternalId Fail] site=${site}, id=${strId}:`, e?.message);
+    }
+  }
+  return null;
+}
+
+// ৪. Details Page এর জন্য Jikan Full Info (With AniList & Kitsu Multi-Tier Fallback)
 export async function getAnimeFullDetails(id: string) {
   const numId = Number(id);
 
-  // 1. Try Jikan API
+  // 1. Try Jikan API (primary for MAL IDs)
   try {
     const res = await fetchJikan(`/anime/${id}/full`);
     if (res?.data && isSafeContent(res.data)) return res.data;
@@ -749,6 +804,16 @@ export async function getAnimeFullDetails(id: string) {
           trailer: extra.trailer,
           studios: extra.studios
         };
+      }
+    } catch {}
+  }
+
+  // 3. Fallback to Kitsu Mapping Resolver if both Jikan & AniList failed (e.g. AniList 403 / Jikan 504)
+  if (!isNaN(numId) && numId > 0) {
+    try {
+      const kitsuAnime = await resolveKitsuAnimeByExternalId(numId);
+      if (kitsuAnime && isSafeContent(kitsuAnime)) {
+        return kitsuAnime;
       }
     } catch {}
   }
@@ -1700,9 +1765,38 @@ const ANILIST_TO_KITSU_MAP: Record<string, string> = {
   '86334': '39293',  // Lookism AniList
   '93633': '39293',  // Lookism MAL
   '38167': '38167',  // Wind Breaker
-  '30013': '13',     // One Piece
-  '13': '13',        // One Piece MAL
+  '30013': '38',     // One Piece AniList -> Kitsu manga 38
+  '13': '38',        // One Piece MAL -> Kitsu manga 38
 };
+
+// ─── Kitsu Manga External ID Resolver ─────────────────────────────────────────
+export async function resolveKitsuMangaByExternalId(externalId: string | number): Promise<any | null> {
+  const strId = String(externalId).trim();
+  if (!strId || isNaN(Number(strId))) return null;
+
+  // Try both anilist/manga and myanimelist/manga mappings
+  const sites = ['anilist/manga', 'myanimelist/manga'];
+  for (const site of sites) {
+    try {
+      const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=${site}&filter[external_id]=${strId}&include=item`;
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/vnd.api+json' },
+        next: { revalidate: GLOBAL_CACHE_TIME }
+      });
+      if (res.status === 200) {
+        const json = await res.json();
+        const item = json.included?.find((inc: any) => inc.type === 'manga');
+        if (item && item.id) {
+          const details = await getKitsuMangaDetails(item.id);
+          if (details) return details;
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[resolveKitsuMangaByExternalId Fail] site=${site}, id=${strId}:`, e?.message);
+    }
+  }
+  return null;
+}
 
 // Kitsu Manga Details Resolver
 export async function getKitsuMangaDetails(id: string) {
@@ -1811,19 +1905,82 @@ const MANGA_DETAILS_CACHE = new Map<string, any>([
     relations: [],
     characters: [],
     recommendations: []
+  }],
+  ['30013', {
+    mal_id: 13,
+    id: 30013,
+    anilistId: 30013,
+    title: 'One Piece',
+    title_english: 'One Piece',
+    title_japanese: 'ONE PIECE',
+    synopsis: 'Gol D. Roger was known as the "Pirate King," the strongest and most infamous being to have sailed the Grand Line. The capture and execution of Roger by the World Government brought a change throughout the world. His last words before his death revealed the existence of the greatest treasure in the world, One Piece.',
+    images: {
+      webp: { large_image_url: 'https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30013-ulVq0AocWbhx.png' },
+      jpg: { large_image_url: 'https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30013-ulVq0AocWbhx.png' }
+    },
+    bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/manga/banner/30013-v04l7bZ7r2oF.jpg',
+    genres: [{ mal_id: 1, name: 'Action' }, { mal_id: 2, name: 'Adventure' }, { mal_id: 3, name: 'Comedy' }, { mal_id: 4, name: 'Fantasy' }],
+    score: 9.2,
+    type: 'Manga',
+    status: 'Publishing',
+    countryOfOrigin: 'JP',
+    chapters: null,
+    volumes: null,
+    relations: [],
+    characters: [],
+    recommendations: []
+  }],
+  ['13', {
+    mal_id: 13,
+    id: 30013,
+    anilistId: 30013,
+    title: 'One Piece',
+    title_english: 'One Piece',
+    title_japanese: 'ONE PIECE',
+    synopsis: 'Gol D. Roger was known as the "Pirate King," the strongest and most infamous being to have sailed the Grand Line. The capture and execution of Roger by the World Government brought a change throughout the world. His last words before his death revealed the existence of the greatest treasure in the world, One Piece.',
+    images: {
+      webp: { large_image_url: 'https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30013-ulVq0AocWbhx.png' },
+      jpg: { large_image_url: 'https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30013-ulVq0AocWbhx.png' }
+    },
+    bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/manga/banner/30013-v04l7bZ7r2oF.jpg',
+    genres: [{ mal_id: 1, name: 'Action' }, { mal_id: 2, name: 'Adventure' }, { mal_id: 3, name: 'Comedy' }, { mal_id: 4, name: 'Fantasy' }],
+    score: 9.2,
+    type: 'Manga',
+    status: 'Publishing',
+    countryOfOrigin: 'JP',
+    chapters: null,
+    volumes: null,
+    relations: [],
+    characters: [],
+    recommendations: []
   }]
 ]);
 
 export async function getMangaFullDetails(id: string) {
   const strId = String(id).trim();
 
-  // 1. If Kitsu ID format
+  // 1. If explicit Kitsu ID format (e.g. kitsu-38)
   if (strId.startsWith('kitsu-')) {
     const kitsuManga = await getKitsuMangaDetails(strId);
     if (kitsuManga) return kitsuManga;
   }
 
-  // 2. Try AniList Direct Fetcher First
+  // 2. Check in-memory persistent cache first
+  if (MANGA_DETAILS_CACHE.has(strId)) {
+    return MANGA_DETAILS_CACHE.get(strId);
+  }
+
+  // 3. Try Jikan API (primary for numeric MAL IDs, e.g. /manga/13)
+  try {
+    const data = await fetchJikan(`/manga/${strId}/full`, GLOBAL_CACHE_TIME, 2500);
+    const mangaData = data?.data;
+    if (mangaData && isSafeContent(mangaData)) {
+      MANGA_DETAILS_CACHE.set(strId, mangaData);
+      return mangaData;
+    }
+  } catch {}
+
+  // 4. Try AniList Direct Fetcher (primary for AniList IDs, e.g. /manga/30013)
   try {
     const aniManga = await fetchAniListMangaDetails(strId);
     if (aniManga && isSafeContent(aniManga)) {
@@ -1836,7 +1993,7 @@ export async function getMangaFullDetails(id: string) {
     console.warn(`[AniList Manga Fail] ID ${strId}:`, error);
   }
 
-  // 3. Try mapped Kitsu ID if AniList is failing/403
+  // 5. Try explicit curated static map to Kitsu ID
   if (ANILIST_TO_KITSU_MAP[strId]) {
     try {
       const mappedKitsu = await getKitsuMangaDetails(ANILIST_TO_KITSU_MAP[strId]);
@@ -1844,28 +2001,14 @@ export async function getMangaFullDetails(id: string) {
     } catch {}
   }
 
-  // 4. Try Kitsu by ID directly
+  // 6. Try Kitsu dynamic mapping resolver (maps AniList ID or MAL ID -> Kitsu item via official mappings API)
+  // NEVER query Kitsu by raw numeric ID directly! That caused the "Simple Knot Loafers" bug!
   try {
-    const kitsuManga = await getKitsuMangaDetails(strId);
-    if (kitsuManga && isSafeContent(kitsuManga)) {
-      return kitsuManga;
+    const resolvedKitsu = await resolveKitsuMangaByExternalId(strId);
+    if (resolvedKitsu && isSafeContent(resolvedKitsu)) {
+      return resolvedKitsu;
     }
   } catch {}
-
-  // 5. Fallback to Jikan API
-  try {
-    const data = await fetchJikan(`/manga/${strId}/full`, GLOBAL_CACHE_TIME, 2500);
-    const mangaData = data?.data;
-    if (mangaData && isSafeContent(mangaData)) {
-      MANGA_DETAILS_CACHE.set(strId, mangaData);
-      return mangaData;
-    }
-  } catch {}
-
-  // 6. Fallback to Persistent In-Memory Cache
-  if (MANGA_DETAILS_CACHE.has(strId)) {
-    return MANGA_DETAILS_CACHE.get(strId);
-  }
 
   return null;
 }
@@ -2449,8 +2592,31 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
   }
 }
 
+// ─── Curated Sections (Loaded from MongoDB Atlas with AniList Fallback) ───────
+
+async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<AniListMedia[]> {
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/curated/${sectionKey}`, {
+      next: { revalidate: 3600 }, // 1-hour ISR cache
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        return json.data as AniListMedia[];
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[fetchCuratedSectionFromAtlas] Failed to fetch section ${sectionKey}:`, err.message);
+  }
+  return [];
+}
+
 // Anime Not For Kids Curated List (25 titles)
 export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('not_for_kids');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 25) {
@@ -2467,7 +2633,7 @@ export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
   ];
   try {
     const data = await fetchAniList(query, { ids });
-    return data.data.Page.media as AniListMedia[];
+    return (data?.data?.Page?.media || []) as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
   }
@@ -2475,6 +2641,9 @@ export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
 
 // Kickstart Your Anime Journey Curated List (25 titles)
 export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('kickstart');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 25) {
@@ -2491,7 +2660,7 @@ export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]>
   ];
   try {
     const data = await fetchAniList(query, { ids });
-    return data.data.Page.media as AniListMedia[];
+    return (data?.data?.Page?.media || []) as AniListMedia[];
   } catch {
     return [] as AniListMedia[];
   }
@@ -2537,6 +2706,9 @@ export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
 
 // Inspired by Sword Art Online (Fetches recommendations for SAO: 11757)
 export async function getSimilarToSAOAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('similar_sao');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -2639,6 +2811,9 @@ export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
 
 // Evergreen Anime Curated List (25 titles)
 export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('evergreen');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 25) {
@@ -2656,8 +2831,6 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
   try {
     const data = await fetchAniList(query, { ids });
     const mediaList = data.data.Page.media as AniListMedia[];
-    
-    // Sort mediaList by the order of IDs in the array to preserve user preference
     return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   } catch {
     return [] as AniListMedia[];
@@ -2666,6 +2839,9 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
 
 // Must Watch For My Hero Academia Fans (Fetches recommendations for MHA: 21459)
 export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('similar_mha');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($id: Int) {
       Media(id: $id, type: ANIME) {
@@ -2692,6 +2868,9 @@ export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
 
 // Hidden Gems Curated List (20 titles including Makoto Shinkai movies and underrated gems)
 export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('hidden_gems');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 20) {
@@ -2708,8 +2887,6 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
   try {
     const data = await fetchAniList(query, { ids });
     const mediaList = data.data.Page.media as AniListMedia[];
-    
-    // Sort mediaList by the order of IDs in the array to preserve user preference
     return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   } catch {
     return [] as AniListMedia[];

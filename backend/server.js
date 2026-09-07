@@ -309,6 +309,48 @@ const articleSchema = new mongoose.Schema({
 });
 const Article = mongoose.model('Article', articleSchema);
 
+// ==========================================
+// 🌟 PERMANENT CURATED ANIME SCHEMA
+// ==========================================
+const curatedAnimeSchema = new mongoose.Schema({
+  id: { type: Number, required: true },
+  idMal: { type: Number },
+  title: {
+    english: String,
+    romaji: String,
+    native: String
+  },
+  coverImage: {
+    extraLarge: String,
+    large: String,
+    medium: String,
+    color: String
+  },
+  bannerImage: String,
+  description: String,
+  episodes: Number,
+  format: String,
+  status: String,
+  averageScore: Number,
+  genres: [String],
+  seasonYear: Number,
+  season: String,
+  studio: String,
+  trailer: {
+    id: String,
+    site: String
+  },
+  section: { type: String, required: true, index: true },
+  sectionName: String,
+  order: { type: Number, default: 0 },
+  updatedAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true
+});
+curatedAnimeSchema.index({ section: 1, order: 1 });
+curatedAnimeSchema.index({ section: 1, id: 1 }, { unique: true });
+const CuratedAnime = mongoose.model('CuratedAnime', curatedAnimeSchema);
+
 // Auto-seed initial high-quality anime articles if collection is empty
 async function seedInitialArticles() {
   try {
@@ -1464,6 +1506,33 @@ app.post('/api/articles', async (req, res) => {
       return res.status(400).json({ success: false, message: 'An article with this slug/title already exists.' });
     }
     res.status(500).json({ success: false, message: error.message || 'Failed to create article' });
+  }
+});
+
+// ==========================================
+// 🌟 PERMANENT CURATED ANIME ROUTES
+// ==========================================
+
+// 1. GET /api/curated - Get all curated sections grouped by section
+app.get('/api/curated', async (req, res) => {
+  try {
+    const animeList = await CuratedAnime.find({}).sort({ section: 1, order: 1 }).lean();
+    res.json({ success: true, data: animeList });
+  } catch (error) {
+    console.error('Curated Anime Fetch Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch curated anime' });
+  }
+});
+
+// 2. GET /api/curated/:section - Get curated anime for a specific section
+app.get('/api/curated/:section', async (req, res) => {
+  try {
+    const { section } = req.params;
+    const animeList = await CuratedAnime.find({ section }).sort({ order: 1 }).lean();
+    res.json({ success: true, data: animeList });
+  } catch (error) {
+    console.error(`Curated Anime [${req.params.section}] Fetch Error:`, error);
+    res.status(500).json({ success: false, message: 'Failed to fetch curated section' });
   }
 });
 
