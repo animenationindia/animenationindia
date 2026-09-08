@@ -14,7 +14,7 @@ export interface NewsItem {
   author: string;
 }
 
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80';
+const FALLBACK_IMAGE = '/ani-logo.png';
 
 const RSS_FEEDS = [
   { url: 'https://myanimelist.net/rss/news.xml', source: 'MyAnimeList' },

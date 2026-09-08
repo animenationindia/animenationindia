@@ -349,7 +349,7 @@ export default function Navbar() {
                 </button>
 
                 {/* 🌟 User Profile Card at Top of Drawer */}
-                {user ? (
+                {mounted && user ? (
                   <Link
                     href="/profile"
                     onClick={() => setIsMenuOpen(false)}
@@ -455,7 +455,7 @@ export default function Navbar() {
                     <Music size={17} className="text-[#ff4dd2]" /> My Playlists 🎵
                   </Link>
 
-                  {user && (
+                  {mounted && user && (
                     <>
                       <Link 
                         href="/settings" 

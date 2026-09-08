@@ -61,15 +61,15 @@ export default function NewEpisodesList({ episodes }: { episodes: EpisodeData[] 
       {/* Grid of List Items */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
         {visibleEpisodes.map((ep, idx) => {
-          const title = ep.title.english || ep.title.romaji;
+          const title = ep?.title?.english || ep?.title?.romaji || 'New Episode';
           const isDub = title.toLowerCase().includes('dub');
           const formattedTitle = isDub ? title : `(Sub) ${title}`;
-          const type = ep.format === 'TV' ? 'Sub | Dub' : 'Subtitled';
+          const type = ep?.format === 'TV' ? 'Sub | Dub' : 'Subtitled';
 
           return (
             <Link 
-              href={`/series/${ep.idMal || ep.id}`} 
-              key={`${ep.id}-${idx}`}
+              href={`/series/${ep?.idMal || ep?.id}`} 
+              key={`${ep?.id || idx}-${idx}`}
               className="flex items-center gap-4 group p-2 rounded hover:bg-white/5 transition-colors"
             >
               {/* Thumbnail */}
@@ -92,7 +92,7 @@ export default function NewEpisodesList({ episodes }: { episodes: EpisodeData[] 
                     {ep.airingEpisode ? `Episode ${ep.airingEpisode}` : 'Latest Episode'}
                     <span className="text-gray-500 mt-0.5">{type}</span>
                   </div>
-                  <div className="text-xs font-semibold text-[#ff4dd2]">
+                  <div suppressHydrationWarning className="text-xs font-semibold text-[#ff4dd2]">
                     {formatTime(ep.airingAt)}
                   </div>
                 </div>

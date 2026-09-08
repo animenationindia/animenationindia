@@ -33,7 +33,7 @@ function highlightText(text: string, query: string) {
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface AnimeMedia {
-  id: number;
+  id: number | string;
   idMal: number | null;
   title: { english: string | null; romaji: string | null };
   coverImage: { large: string | null; extraLarge?: string | null };
@@ -85,10 +85,10 @@ function formatBadgeColor(f: string | null) {
   }
 }
 
-// ─── AniList API ─────────────────────────────────────────────────────────────
-async function anilistFetch(query: string, variables: Record<string, unknown>) {
+// ─── AniList API (With /api/anime/search Resilient Fallback) ───────────────────
+async function anilistFetch(query: string, variables: Record<string, unknown> = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
+  const timeout = setTimeout(() => controller.abort(), 3500);
   try {
     const res = await fetch(ANILIST, {
       method: 'POST',
@@ -96,11 +96,43 @@ async function anilistFetch(query: string, variables: Record<string, unknown>) {
       body: JSON.stringify({ query, variables }),
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`AniList ${res.status}`);
-    const json = await res.json();
-    if (json.errors) throw new Error(json.errors[0]?.message || 'AniList error');
-    return json.data;
-  } finally { clearTimeout(timeout); }
+    if (res.ok) {
+      const json = await res.json();
+      if (!json.errors && json.data) {
+        return json.data;
+      }
+    }
+  } catch {
+    // AniList unreachable / disabled -> Fallback to internal server-side search handler
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  // 2. Resilient Internal API Fallback (/api/anime/search)
+  try {
+    const params = new URLSearchParams();
+    if (variables.search) params.set('q', String(variables.search));
+    if (variables.page) params.set('page', String(variables.page));
+    if (variables.format) params.set('format', String(variables.format));
+    if (variables.genres && Array.isArray(variables.genres) && variables.genres.length > 0) {
+      params.set('genre', variables.genres.join(','));
+    }
+
+    const fallbackRes = await fetch(`/api/anime/search?${params.toString()}`);
+    if (fallbackRes.ok) {
+      const fallbackJson = await fallbackRes.json();
+      return {
+        Page: {
+          pageInfo: fallbackJson.pageInfo || { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false },
+          media: fallbackJson.media || []
+        }
+      };
+    }
+  } catch (err: any) {
+    console.warn('[Search Fallback Error]:', err?.message);
+  }
+
+  throw new Error('Search failed across all providers');
 }
 
 const SEARCH_Q = `
@@ -176,7 +208,11 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
   const router = useRouter();
 
   const title = anime.title?.english || anime.title?.romaji || 'Unknown';
-  const linkId = anime.idMal || anime.id;
+  const linkId = anime.idMal 
+    ? anime.idMal 
+    : (typeof anime.id === 'string' && (anime.id.startsWith('kitsu-') || anime.id.startsWith('al-'))
+        ? anime.id
+        : (typeof anime.id === 'number' && anime.id > 65000 ? `al-${anime.id}` : anime.id));
   const isManga = anime.type === 'MANGA' || anime.format === 'MANGA' || anime.format === 'NOVEL';
   const cover = anime.coverImage?.extraLarge || anime.coverImage?.large || '';
   const desc = sanitizeDescription(anime.description);
@@ -541,7 +577,11 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
       e.preventDefault(); 
       if (activeSugg >= 0 && suggestions[activeSugg]) {
         const selected = suggestions[activeSugg];
-        const linkId = selected.idMal || selected.id;
+        const linkId = selected.idMal 
+          ? selected.idMal 
+          : (typeof selected.id === 'string' && (selected.id.startsWith('kitsu-') || selected.id.startsWith('al-'))
+              ? selected.id
+              : (typeof selected.id === 'number' && selected.id > 65000 ? `al-${selected.id}` : selected.id));
         const t = selected.title?.english || selected.title?.romaji || '';
         if (t && isLoggedIn) addRecentSearch(t);
         setShowSugg(false);
@@ -741,8 +781,12 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                         const romajiTitle = a.title?.romaji;
                         const displayTitle = englishTitle || romajiTitle || 'Unknown';
                         const showRomajiSubtitle = englishTitle && romajiTitle && englishTitle.toLowerCase() !== romajiTitle.toLowerCase();
-                        const linkId = a.idMal || a.id;
                         const isHighlighted = activeSugg === idx;
+                        const linkId = a.idMal 
+                          ? a.idMal 
+                          : (typeof a.id === 'string' && (a.id.startsWith('kitsu-') || a.id.startsWith('al-'))
+                              ? a.id
+                              : (typeof a.id === 'number' && a.id > 65000 ? `al-${a.id}` : a.id));
 
                         return (
                           <Link

@@ -82,7 +82,8 @@ export async function fetchKitsuCharacters(malId: number): Promise<any[] | null>
         normalizedCharacters.push({
           role: rel.attributes?.role === 'main' ? 'Main' : 'Supporting',
           character: {
-            mal_id: Number(charId) || 0,
+            mal_id: charAttr.malId ? Number(charAttr.malId) : null,
+            kitsuId: charId,
             name: charAttr.name,
             images: {
               jpg: {

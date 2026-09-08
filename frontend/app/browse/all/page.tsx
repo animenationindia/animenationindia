@@ -85,25 +85,81 @@ function BrowseAllAnimeContent() {
         variables.format = currentFormat;
       }
 
-      const res = await fetch(ANILIST_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables }),
-      });
+      let mediaItems: any[] = [];
+      let hasNext = false;
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      try {
+        const res = await fetch(ANILIST_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, variables }),
+        });
 
-      const data = await res.json();
-      
-      if (data?.data?.Page?.media) {
-        if (pageNum === 1) {
-          setAnimeList(data.data.Page.media);
-        } else {
-          setAnimeList((prev) => [...prev, ...data.data.Page.media]);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
+            mediaItems = data.data.Page.media;
+            hasNext = Boolean(data.data.Page.pageInfo?.hasNextPage);
+          }
         }
-        setHasNextPage(data.data.Page.pageInfo.hasNextPage);
+      } catch (aniErr) {
+        console.warn('AniList fetch failed in browse/all, executing fallback:', aniErr);
+      }
+
+      // ── Fallback 1: Backend Curated Atlas Section ──
+      if (mediaItems.length === 0) {
+        try {
+          const sectionKey = currentFormat === 'TV' ? 'top_tv' : (currentFormat === 'MOVIE' ? 'top_movies' : 'popular');
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+          const curRes = await fetch(`${backendUrl}/api/curated/${sectionKey}`);
+          if (curRes.ok) {
+            const curData = await curRes.json();
+            if (curData.success && Array.isArray(curData.data) && curData.data.length > 0) {
+              mediaItems = curData.data;
+              hasNext = false;
+            }
+          }
+        } catch {}
+      }
+
+      // ── Fallback 2: Jikan API ──
+      if (mediaItems.length === 0) {
+        try {
+          const typeParam = currentFormat === 'TV' ? '&type=tv' : (currentFormat === 'MOVIE' ? '&type=movie' : '');
+          const jikanRes = await fetch(`https://api.jikan.moe/v4/top/anime?page=${pageNum}&limit=20${typeParam}`);
+          if (jikanRes.ok) {
+            const jikanJson = await jikanRes.json();
+            if (jikanJson?.data && Array.isArray(jikanJson.data)) {
+              mediaItems = jikanJson.data.map((item: any) => ({
+                id: item.mal_id,
+                idMal: item.mal_id,
+                title: {
+                  english: item.title_english || item.title,
+                  romaji: item.title,
+                },
+                coverImage: {
+                  large: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+                },
+                genres: (item.genres || []).map((g: any) => g.name),
+                averageScore: item.score ? Math.round(item.score * 10) : null,
+                episodes: item.episodes,
+                status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
+              }));
+              hasNext = Boolean(jikanJson.pagination?.has_next_page);
+            }
+          }
+        } catch {}
+      }
+
+      if (mediaItems.length > 0) {
+        if (pageNum === 1) {
+          setAnimeList(mediaItems);
+        } else {
+          setAnimeList((prev) => [...prev, ...mediaItems]);
+        }
+        setHasNextPage(hasNext);
       } else {
-        throw new Error('No media returned');
+        if (pageNum === 1) setHasError(true);
       }
     } catch (error) {
       console.error('Error fetching anime:', error);

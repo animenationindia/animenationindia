@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   Plus,
   Minus,
-  Tv
+  Tv,
+  MessageCircle
 } from 'lucide-react';
 import ReadMoreText from './ReadMoreText';
 import AnimeThemeSongs from './AnimeThemeSongs';
@@ -24,6 +25,7 @@ interface AnimeOverviewTabProps {
   characters?: any[];
   themes?: NormalizedTheme[];
   tmdbData?: TMDBAnimeData | null;
+  reviews?: any[];
 }
 
 function getStreamingSearchUrl(providerName: string, animeTitle: string): string {
@@ -53,9 +55,18 @@ function getBrandColor(name: string): { bg: string; border: string; text: string
   return { bg: 'bg-white/5', border: 'border-white/10 hover:border-white/30', text: 'text-white', initialBg: 'bg-indigo-600' };
 }
 
-export default function AnimeOverviewTab({ anime, extraInfo, characters = [], themes = [], tmdbData = null }: AnimeOverviewTabProps) {
+export default function AnimeOverviewTab({ 
+  anime, 
+  extraInfo, 
+  characters = [], 
+  themes = [], 
+  tmdbData = null,
+  reviews = []
+}: AnimeOverviewTabProps) {
   const [showAllCharacters, setShowAllCharacters] = useState(false);
   const [progressEp, setProgressEp] = useState(1);
+  const [expandedReviewId, setExpandedReviewId] = useState<number | null>(null);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   const synopsis = anime.synopsis || extraInfo?.description || 'No detailed synopsis available.';
   const englishTitle = anime.title_english || anime.title || 'Anime';
@@ -267,6 +278,101 @@ export default function AnimeOverviewTab({ anime, extraInfo, characters = [], th
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* 💬 Community Reviews Section */}
+        {reviews.length > 0 && (
+          <div className="bg-[#0b0c20]/60 backdrop-blur-xl border border-white/5 rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-[#ff4dd2]">
+                  <MessageCircle size={20} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Community Reviews</h3>
+                  <p className="text-xs text-gray-400 mt-0.5">Honest thoughts and critiques from anime viewers</p>
+                </div>
+              </div>
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300">
+                {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
+              </span>
+            </div>
+
+            <div className="space-y-4">
+              {(showAllReviews ? reviews : reviews.slice(0, 3)).map((rev: any, idx: number) => {
+                const isExpanded = expandedReviewId === (rev.id || idx);
+                const reviewText = rev.review || '';
+                const isLong = reviewText.length > 300;
+                const displayText = isExpanded || !isLong ? reviewText : reviewText.slice(0, 300) + '...';
+
+                return (
+                  <div 
+                    key={rev.id || idx} 
+                    className="bg-[#0e0f1d] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors space-y-3"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
+                          {rev.user?.image ? (
+                            <img src={rev.user.image} alt={rev.user.username} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-bold text-sm text-[#ff4dd2]">
+                              {rev.user?.username?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold text-white flex items-center gap-2 flex-wrap">
+                            <span className="truncate">{rev.user?.username || 'Anime Fan'}</span>
+                            {rev.tags?.map((tag: string, tIdx: number) => (
+                              <span 
+                                key={tIdx} 
+                                className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-[#ff4dd2]/15 text-[#ff4dd2] border border-[#ff4dd2]/30"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="text-[11px] text-gray-500">
+                            {rev.date ? new Date(rev.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Recent'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {rev.score && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-sm flex-shrink-0">
+                          <Star size={14} className="fill-amber-400 text-amber-400" />
+                          <span>{rev.score}/10</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">
+                      {displayText}
+                    </p>
+
+                    {isLong && (
+                      <button
+                        onClick={() => setExpandedReviewId(isExpanded ? null : (rev.id || idx))}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-[#ff4dd2] hover:underline cursor-pointer pt-1"
+                      >
+                        {isExpanded ? 'Read Less' : 'Read Full Review'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {reviews.length > 3 && (
+              <button
+                onClick={() => setShowAllReviews(!showAllReviews)}
+                className="w-full py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 hover:text-white transition-colors cursor-pointer"
+              >
+                {showAllReviews ? 'Show Fewer Reviews' : `Show All ${reviews.length} Reviews`}
+              </button>
+            )}
           </div>
         )}
 

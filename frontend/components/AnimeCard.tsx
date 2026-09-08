@@ -10,7 +10,7 @@ import { useWatchlist } from '../hooks/useWatchlist';
 
 interface AnimeCardProps {
   anime: {
-    id: number;
+    id: number | string;
     idMal?: number | null;
     title?: {
       english?: string | null;
@@ -42,7 +42,11 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
   const { isInWatchlist, toggleWatchlist } = useWatchlist();
 
   const title = anime.title?.english || anime.title?.romaji || 'Unknown Title';
-  const linkId = anime.idMal || anime.id;
+  const linkId = anime.idMal 
+    ? anime.idMal 
+    : (typeof anime.id === 'string' && (anime.id.startsWith('kitsu-') || anime.id.startsWith('al-'))
+        ? anime.id
+        : (typeof anime.id === 'number' && anime.id > 65000 ? `al-${anime.id}` : anime.id));
   const year = anime.seasonYear || (anime.startDate ? anime.startDate.year : null);
   const format = anime.format ? anime.format.replace('_', ' ') : 'TV';
   const coverImage = anime.coverImage?.extraLarge || anime.coverImage?.large || '';

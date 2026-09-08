@@ -21,7 +21,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const anime = await getCachedAnime(id);
     if (!anime) throw new Error("Anime not found");
 
-    const title = anime.title?.english || anime.title?.romaji || 'Watch Anime';
+    const title = typeof anime.title === 'string' 
+      ? anime.title 
+      : (anime.title?.english || anime.title?.romaji || anime.title_english || anime.title_japanese || 'Watch Anime');
     const rawDesc = anime.synopsis || anime.description || 'Watch anime online on Anime Nation India.';
     const cleanDesc = sanitizeDescription(rawDesc).replace(/\s+/g, ' ').slice(0, 160);
     const cover = anime.images?.jpg?.large_image_url || anime.coverImage?.extraLarge || anime.coverImage?.large || '/ani-logo.png';

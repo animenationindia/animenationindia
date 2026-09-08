@@ -69,7 +69,7 @@ export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerPr
           <h2 className="text-3xl md:text-5xl font-bebas text-white tracking-wide leading-none uppercase mb-4 drop-shadow-lg">
             {title}
           </h2>
-          <p
+          <div
             className="text-gray-400 text-xs md:text-sm line-clamp-3 leading-relaxed mb-6 max-w-xl"
             dangerouslySetInnerHTML={{ __html: sanitizeHTML(anime.description) || 'Watch the latest episodes of this season\'s most popular trending series.' }}
           />

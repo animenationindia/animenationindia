@@ -10,9 +10,10 @@ export const metadata: Metadata = {
 export default async function PastWeekPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const pageStr = searchParams.page as string;
+  const resolvedParams = await searchParams;
+  const pageStr = resolvedParams?.page as string;
   const page = pageStr ? parseInt(pageStr, 10) : 1;
 
   const data = await getPastWeekReleasesAniList(page);

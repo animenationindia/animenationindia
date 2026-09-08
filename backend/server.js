@@ -154,6 +154,26 @@ app.get('/api/health', (req, res) => res.json({
   timestamp: new Date().toISOString()
 }));
 
+// 🔥 AniList GraphQL Proxy (Bypasses Cloudflare Worker IP block from AniList) 🔥
+app.post('/api/anilist/proxy', async (req, res) => {
+  try {
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)'
+      },
+      body: JSON.stringify(req.body)
+    });
+    const data = await response.json();
+    return res.status(response.status).json(data);
+  } catch (error) {
+    console.error('❌ AniList Proxy Error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
@@ -1357,6 +1377,43 @@ app.get('/api/trending', async (req, res) => {
   }
 });
 
+// 🔥 High-Speed Curated Sections API (Loaded from Atlas with In-Memory Cache) 🔥
+const curatedMemoryCache = new Map();
+
+app.get('/api/curated/:sectionKey', async (req, res) => {
+  try {
+    const { sectionKey } = req.params;
+    if (!sectionKey) return res.status(400).json({ success: false, message: 'Section key required' });
+
+    const cached = curatedMemoryCache.get(sectionKey);
+    if (cached && (Date.now() - cached.timestamp < 3600000)) {
+      return res.json({ success: true, count: cached.data.length, data: cached.data });
+    }
+
+    const normalizedKey = sectionKey.replace(/_zone$/, '').replace(/_cyberpunk$/, '').replace(/^similar_/, 'similar_');
+
+    const animes = await CuratedAnime.find({
+      $or: [
+        { section: sectionKey },
+        { section: normalizedKey },
+        { section: sectionKey.replace('sports_zone', 'sports') },
+        { section: sectionKey.replace('fantasy_zone', 'fantasy') },
+        { section: sectionKey.replace('scifi_cyberpunk', 'scifi') }
+      ]
+    }).sort({ order: 1, _id: 1 }).lean();
+
+    if (animes && animes.length > 0) {
+      curatedMemoryCache.set(sectionKey, { data: animes, timestamp: Date.now() });
+      return res.json({ success: true, count: animes.length, data: animes });
+    }
+
+    return res.json({ success: true, count: 0, data: [] });
+  } catch (error) {
+    console.error(`Error fetching curated section ${req.params.sectionKey}:`, error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 app.get('/api/anime/search', async (req, res) => {
   const query = req.query.q;
   if (!query || typeof query !== 'string') return res.status(400).json({ message: "Search query required" });
@@ -1533,6 +1590,51 @@ app.get('/api/curated/:section', async (req, res) => {
   } catch (error) {
     console.error(`Curated Anime [${req.params.section}] Fetch Error:`, error);
     res.status(500).json({ success: false, message: 'Failed to fetch curated section' });
+  }
+});
+
+// 3. GET /api/reviews - Get recent community anime reviews (Cached)
+let cachedReviews = [];
+let lastReviewsFetch = 0;
+const REVIEWS_CACHE_TTL = 30 * 60 * 1000; // 30 mins
+
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || '10', 10);
+    const now = Date.now();
+
+    if (cachedReviews.length > 0 && (now - lastReviewsFetch < REVIEWS_CACHE_TTL)) {
+      return res.json({ success: true, data: cachedReviews.slice(0, limit) });
+    }
+
+    const jikanRes = await fetch('https://api.jikan.moe/v4/reviews/anime', {
+      headers: {
+        'User-Agent': 'AnimeNationIndia/1.0',
+        'Accept': 'application/json'
+      },
+      signal: AbortSignal.timeout(6000)
+    });
+
+    if (jikanRes.ok) {
+      const data = await jikanRes.json();
+      if (data && data.data && Array.isArray(data.data)) {
+        cachedReviews = data.data;
+        lastReviewsFetch = now;
+        return res.json({ success: true, data: cachedReviews.slice(0, limit) });
+      }
+    }
+
+    if (cachedReviews.length > 0) {
+      return res.json({ success: true, data: cachedReviews.slice(0, limit) });
+    }
+
+    return res.json({ success: true, data: [] });
+  } catch (error) {
+    console.error('Reviews Fetch Error:', error.message);
+    if (cachedReviews.length > 0) {
+      return res.json({ success: true, data: cachedReviews.slice(0, 10) });
+    }
+    return res.json({ success: true, data: [] });
   }
 });
 

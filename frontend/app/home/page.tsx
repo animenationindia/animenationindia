@@ -10,8 +10,6 @@ import HomeTrendingBanner from '../../components/HomeTrendingBanner';
 import HomeTopLists from '../../components/HomeTopLists';
 import TrailerSlider from '../../components/TrailerSlider';
 import HomeNewsSection from '../../components/HomeNewsSection';
-import HomeRecommendations from '../../components/HomeRecommendations';
-import HomeReviews from '../../components/HomeReviews';
 import HomeAnnouncementBanner from '../../components/HomeAnnouncementBanner';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { SliderSkeleton } from '../../components/SkeletonLoaders';
@@ -23,8 +21,8 @@ import {
   getPopularDubbedAniList,   
   getTopAiringAnimeAniList,
   getTrendingAnimeAniList,
-  getTopCharactersJikan,
-  getTopPeopleJikan,
+  getTopCharactersAniList,
+  getTopStaffAniList,
   getTopMoviesAniList,
   getTopTVSeriesAniList,
   getYearAwardsAniList,
@@ -45,6 +43,7 @@ import {
   type AiringSchedule
 } from '../../lib/api';
 import { getNews, getNewsByCategory } from '../../lib/getNews';
+import { getTMDBAnimeTrailers } from '../../lib/tmdb-api';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -96,7 +95,7 @@ async function ThemeZonesSection({
     () => getHiddenGemsAnimeAniList(),
   ];
 
-  const results = await fetchInBatches(tasks, 3, 100);
+  const results = await Promise.all(tasks.map((fn) => fn().catch(() => [])));
 
   const safeKickstartAnime = dedupe(results[0] || []);
   const safeShounenAnime = dedupe(results[1] || []).slice(0, 20);
@@ -162,7 +161,7 @@ async function ThemeZonesSection({
 
 async function TopCharactersSection() {
   const results = await fetchInBatches(
-    [() => getTopCharactersJikan(), () => getTopPeopleJikan()],
+    [() => getTopCharactersAniList(1), () => getTopStaffAniList(1)],
     2,
     200
   );
@@ -184,12 +183,10 @@ async function TopCharactersSection() {
   );
 }
 
-async function NewsAndReviewsSection({ news }: { news: any[] }) {
+async function NewsSection({ news }: { news: any[] }) {
   return (
     <div className="flex flex-col gap-14">
       <HomeNewsSection news={news} />
-      <HomeRecommendations />
-      <HomeReviews />
     </div>
   );
 }
@@ -239,7 +236,7 @@ export default async function Home() {
     () => fetchAniList(trailerQuery, {}, 3600),
   ];
 
-  const results = await fetchInBatches(aboveTheFoldTasks, 4, 100);
+  const results = await Promise.all(aboveTheFoldTasks.map((fn) => fn().catch(() => null)));
 
   const todayData = results[0];
   const heroAnimeList = results[1] || [];
@@ -259,19 +256,6 @@ export default async function Home() {
     console.log(`[Home Server Fetch] Initial Above-the-fold loaded in ${duration}ms | Succeeded: ${succeededCount}/${results.length} calls | Rate limit safe!`);
   }
 
-  // Deduplicate initial lists
-  const trailersData = dedupe(
-    trailersRes?.data?.Page?.media?.filter((a: any) => a.trailer && a.trailer.site === 'youtube') || []
-  ).slice(0, 15);
-
-  const todayReleases = dedupe(
-    (todayData?.airingSchedules || []).map((schedule: AiringSchedule) => ({
-      ...schedule.media,
-      airingEpisode: schedule.episode,
-      airingAt: schedule.airingAt,
-    }))
-  );
-
   const safeHeroAnimeList = dedupe(heroAnimeList);
   const safeTopAnime = dedupe(topAnime);
   const safeUpcomingAnime = dedupe(upcomingAnime);
@@ -280,6 +264,63 @@ export default async function Home() {
   const safeTopTVSeries = dedupe(topTVSeries);
   const safeYearAwards = dedupe(yearAwards);
   const safeNotForKidsAnime = dedupe(notForKidsAnime);
+
+  // Deduplicate initial lists
+  let trailersData = dedupe(
+    trailersRes?.data?.Page?.media?.filter((a: any) => a.trailer && a.trailer.site === 'youtube') || []
+  ).slice(0, 15);
+
+  if (trailersData.length === 0 && safeHeroAnimeList.length > 0) {
+    const listWithTrailers = safeHeroAnimeList
+      .filter((a: any) => a.trailer && a.trailer.id)
+      .map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        trailer: { id: a.trailer.id, site: 'youtube', thumbnail: a.coverImage?.large || a.coverImage?.extraLarge }
+      }));
+    if (listWithTrailers.length > 0) {
+      trailersData = listWithTrailers;
+    }
+  }
+
+  // Backup fallback: TMDB Anime Trailers API
+  if (trailersData.length === 0) {
+    try {
+      const tmdbTrailers = await getTMDBAnimeTrailers(8);
+      if (tmdbTrailers && tmdbTrailers.length > 0) {
+        trailersData = tmdbTrailers;
+      }
+    } catch {}
+  }
+
+  if (trailersData.length === 0) {
+    trailersData = [
+      { id: 38000, title: { english: 'Demon Slayer: Infinity Castle', romaji: 'Kimetsu no Yaiba' }, trailer: { id: 'VQGCKyvzIM4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/VQGCKyvzIM4/hqdefault.jpg' } },
+      { id: 52299, title: { english: 'Solo Leveling Season 2 -Arise from the Shadow-', romaji: 'Ore dake Level Up na Ken' }, trailer: { id: 'gFl_P6d7q5M', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/gFl_P6d7q5M/hqdefault.jpg' } },
+      { id: 40748, title: { english: 'Jujutsu Kaisen Season 2 (Shibuya Incident)', romaji: 'Jujutsu Kaisen' }, trailer: { id: 'O6qVieflwqs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/O6qVieflwqs/hqdefault.jpg' } },
+      { id: 41467, title: { english: 'Bleach: Thousand-Year Blood War Part 3', romaji: 'Bleach TYBW' }, trailer: { id: 'e8YBesRKq_U', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/e8YBesRKq_U/hqdefault.jpg' } },
+      { id: 52991, title: { english: 'Frieren: Beyond Journey\'s End', romaji: 'Sousou no Frieren' }, trailer: { id: 'qgQunxD0qMo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/qgQunxD0qMo/hqdefault.jpg' } },
+      { id: 52588, title: { english: 'Kaiju No. 8', romaji: 'Kaijuu 8-gou' }, trailer: { id: 'c3ISn_k_bZ8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/c3ISn_k_bZ8/hqdefault.jpg' } },
+      { id: 50265, title: { english: 'Spy x Family Code: White', romaji: 'Spy x Family' }, trailer: { id: 'ofXigq9aIpo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/ofXigq9aIpo/hqdefault.jpg' } },
+      { id: 44511, title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man' }, trailer: { id: 'v4yLeNt-kCU', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/v4yLeNt-kCU/hqdefault.jpg' } }
+    ];
+  }
+
+  let todayReleases = dedupe(
+    (todayData?.airingSchedules || []).map((schedule: AiringSchedule) => ({
+      ...schedule.media,
+      airingEpisode: schedule.episode,
+      airingAt: schedule.airingAt,
+    }))
+  );
+
+  if (todayReleases.length === 0 && safeHeroAnimeList.length > 0) {
+    todayReleases = safeHeroAnimeList.map((anime: any, idx: number) => ({
+      ...anime,
+      airingEpisode: anime.episodes || (idx + 1),
+      airingAt: Math.floor(Date.now() / 1000) - idx * 3600,
+    }));
+  }
 
   return (
     <div className="pb-12 bg-[#050716] min-h-screen">
@@ -330,9 +371,9 @@ export default async function Home() {
             </Suspense>
           </ErrorBoundary>
 
-          <ErrorBoundary sectionName="News & Community Reviews">
-            <Suspense fallback={<SliderSkeleton title="News & Community Reviews..." />}>
-              <NewsAndReviewsSection news={allNews} />
+          <ErrorBoundary sectionName="News & Articles">
+            <Suspense fallback={<SliderSkeleton title="News & Articles..." />}>
+              <NewsSection news={allNews} />
             </Suspense>
           </ErrorBoundary>
         </div>

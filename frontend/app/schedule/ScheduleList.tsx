@@ -183,7 +183,7 @@ function ScheduleAnimeCard({
           {/* Bottom Floating Info Bar */}
           <div className="absolute bottom-2.5 left-2.5 right-2.5 z-20 pointer-events-none">
             <div className="bg-black/85 backdrop-blur-md border border-white/10 rounded-xl px-2.5 py-1.5 flex items-center justify-between">
-              <span className="text-[#ff4dd2] text-[11px] font-extrabold flex items-center gap-1">
+              <span suppressHydrationWarning className="text-[#ff4dd2] text-[11px] font-extrabold flex items-center gap-1">
                 <Clock size={11} /> {timeStr}
               </span>
               
@@ -297,7 +297,7 @@ function ScheduleTimelineRow({ item, timezoneOffsetHours }: { item: AiringSchedu
       {/* Time Slot Pillar */}
       <div className="flex flex-col items-center justify-center min-w-[75px] md:min-w-[90px] py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-center flex-shrink-0">
         <Clock size={14} className="text-[#ff4dd2] mb-1" />
-        <span className="text-xs md:text-sm font-black text-white whitespace-nowrap">{timeStr}</span>
+        <span suppressHydrationWarning className="text-xs md:text-sm font-black text-white whitespace-nowrap">{timeStr}</span>
         <span className={`text-[9px] font-bold uppercase mt-1 px-1.5 py-0.2 rounded ${isAired ? 'text-gray-500 bg-white/5' : 'text-[#ff6400] bg-[#ff6400]/10'}`}>
           {isAired ? 'AIRED' : 'UPCOMING'}
         </span>

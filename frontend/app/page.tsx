@@ -1,5 +1,5 @@
 import nextDynamic from 'next/dynamic';
-import { fetchAniList } from '../lib/api';
+import { fetchAniList, fetchCuratedSectionFromAtlas } from '../lib/api';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -57,12 +57,33 @@ const TRENDING_QUERY = `
 `;
 
 export default async function RootPage() {
-  let trendingAnime = [];
+  let trendingAnime: any[] = [];
   try {
     const data = await fetchAniList(TRENDING_QUERY);
-    trendingAnime = data?.data?.Page?.media || data?.Page?.media || [];
+    if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
+      trendingAnime = data.data.Page.media;
+    }
   } catch (error) {
     console.error("Failed to fetch trending anime for landing page", error);
+  }
+
+  // Resilient fallback: use curated trending/popular from Atlas
+  if (trendingAnime.length === 0) {
+    const atlasTrending = await fetchCuratedSectionFromAtlas('trending');
+    const atlasPopular = atlasTrending.length > 0 ? atlasTrending : await fetchCuratedSectionFromAtlas('popular');
+    if (atlasPopular.length > 0) {
+      trendingAnime = atlasPopular.slice(0, 8).map((a: any) => ({
+        id: a.idMal || a.id,
+        title: {
+          romaji: a.title?.romaji || (typeof a.title === 'string' ? a.title : 'Anime'),
+          english: a.title?.english || a.title?.romaji || (typeof a.title === 'string' ? a.title : null)
+        },
+        coverImage: {
+          large: a.coverImage?.large || a.coverImage?.extraLarge || a.images?.webp?.large_image_url || '/placeholder-poster.png'
+        },
+        averageScore: a.averageScore || 85
+      }));
+    }
   }
 
   return <LandingPageClient initialAnime={trendingAnime} />;

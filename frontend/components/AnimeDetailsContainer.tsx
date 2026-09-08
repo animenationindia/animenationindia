@@ -22,6 +22,7 @@ interface AnimeDetailsContainerProps {
   relations?: any[];
   themes?: NormalizedTheme[];
   tmdbData?: TMDBAnimeData | null;
+  reviews?: any[];
 }
 
 export default function AnimeDetailsContainer({
@@ -33,6 +34,7 @@ export default function AnimeDetailsContainer({
   relations = [],
   themes = [],
   tmdbData = null,
+  reviews = [],
 }: AnimeDetailsContainerProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'episodes' | 'themes'>('overview');
 
@@ -145,6 +147,7 @@ export default function AnimeDetailsContainer({
               characters={characters}
               themes={themes}
               tmdbData={tmdbData}
+              reviews={reviews}
             />
 
             {/* 🧭 Franchise Watch Order Roadmap */}

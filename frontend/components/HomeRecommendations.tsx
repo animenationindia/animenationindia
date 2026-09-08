@@ -19,23 +19,151 @@ interface Recommendation {
   user: { username: string; };
 }
 
+const DEFAULT_RECOMMENDATIONS: Recommendation[] = [
+  {
+    mal_id: 'rec-1',
+    content: 'Both explore brilliant themes of mortality, legacy, and adventure with top-tier animation.',
+    user: { username: 'FrierenFanatic' },
+    entry: [
+      {
+        mal_id: 52991,
+        title: "Frieren: Beyond Journey's End",
+        url: 'https://myanimelist.net/anime/52991',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg' } }
+      },
+      {
+        mal_id: 39535,
+        title: 'Mushoku Tensei: Jobless Reincarnation',
+        url: 'https://myanimelist.net/anime/39535',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1530/117776.jpg' } }
+      }
+    ]
+  },
+  {
+    mal_id: 'rec-2',
+    content: 'Sensational modern supernatural battles with exhilarating fights and gorgeous animation.',
+    user: { username: 'GojoSensei' },
+    entry: [
+      {
+        mal_id: 38000,
+        title: 'Demon Slayer: Kimetsu no Yaiba',
+        url: 'https://myanimelist.net/anime/38000',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' } }
+      },
+      {
+        mal_id: 40748,
+        title: 'Jujutsu Kaisen',
+        url: 'https://myanimelist.net/anime/40748',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1171/109222.jpg' } }
+      }
+    ]
+  },
+  {
+    mal_id: 'rec-3',
+    content: 'Intense psychological mind games where tactical genius protagonists battle against the world.',
+    user: { username: 'KiraMaster' },
+    entry: [
+      {
+        mal_id: 1535,
+        title: 'Death Note',
+        url: 'https://myanimelist.net/anime/1535',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/9/9453.jpg' } }
+      },
+      {
+        mal_id: 1575,
+        title: 'Code Geass: Lelouch of the Rebellion',
+        url: 'https://myanimelist.net/anime/1575',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1032/135088.jpg' } }
+      }
+    ]
+  },
+  {
+    mal_id: 'rec-4',
+    content: 'Unstoppable hunter progression in gaming/dungeon environments filled with high-stakes action.',
+    user: { username: 'ShadowMonarch' },
+    entry: [
+      {
+        mal_id: 52299,
+        title: 'Solo Leveling',
+        url: 'https://myanimelist.net/anime/52299',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1547/140228.jpg' } }
+      },
+      {
+        mal_id: 11757,
+        title: 'Sword Art Online',
+        url: 'https://myanimelist.net/anime/11757',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/11/39717.jpg' } }
+      }
+    ]
+  },
+  {
+    mal_id: 'rec-5',
+    content: 'Epic generational dark fantasy with jaw-dropping plot twists and relentless battles for freedom.',
+    user: { username: 'ErenJaeger' },
+    entry: [
+      {
+        mal_id: 16498,
+        title: 'Attack on Titan',
+        url: 'https://myanimelist.net/anime/16498',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/10/47347.jpg' } }
+      },
+      {
+        mal_id: 37521,
+        title: 'Vinland Saga',
+        url: 'https://myanimelist.net/anime/37521',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1500/103005.jpg' } }
+      }
+    ]
+  },
+  {
+    mal_id: 'rec-6',
+    content: 'Dark, gritty, and visceral monster hunting with raw emotional depth and chaotic action.',
+    user: { username: 'PochitaBFF' },
+    entry: [
+      {
+        mal_id: 44511,
+        title: 'Chainsaw Man',
+        url: 'https://myanimelist.net/anime/44511',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1806/126216.jpg' } }
+      },
+      {
+        mal_id: 46569,
+        title: "Hell's Paradise: Jigokuraku",
+        url: 'https://myanimelist.net/anime/46569',
+        images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1483/135249.jpg' } }
+      }
+    ]
+  }
+];
+
 export default function HomeRecommendations() {
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>(DEFAULT_RECOMMENDATIONS);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchRecommendations = async () => {
       try {
-        const res = await fetch('https://api.jikan.moe/v4/recommendations/anime');
-        const data = await res.json();
-        setRecommendations(data.data ? data.data.slice(0, 6) : []);
-      } catch (error) {
-        console.error('Failed to fetch recommendations:', error);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch('https://api.jikan.moe/v4/recommendations/anime', {
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.data && Array.isArray(data.data) && data.data.length > 0) {
+            setRecommendations(data.data.slice(0, 6));
+          }
+        }
+      } catch {
+        // Fallback silently to DEFAULT_RECOMMENDATIONS
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     fetchRecommendations();
+    return () => { isMounted = false; };
   }, []);
 
   if (!loading && recommendations.length === 0) return null;
@@ -65,7 +193,7 @@ export default function HomeRecommendations() {
                 {rec.entry.length === 2 && (
                   <>
                     <div className="relative w-1/2 h-full overflow-hidden">
-                      <img src={rec.entry[0].images.jpg.image_url} alt={"rec.entry[0].title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={rec.entry[0].images.jpg.image_url} alt={rec.entry[0].title} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     </div>
                     <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                       <div className="w-8 h-8 rounded-full bg-[#050716] border border-[#ff4dd2]/30 flex items-center justify-center text-white font-bold shadow-lg shadow-black/50">
@@ -73,7 +201,7 @@ export default function HomeRecommendations() {
                       </div>
                     </div>
                     <div className="relative w-1/2 h-full overflow-hidden">
-                      <img src={rec.entry[1].images.jpg.image_url} alt={"rec.entry[1].title"} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={rec.entry[1].images.jpg.image_url} alt={rec.entry[1].title} loading="lazy" className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                     </div>
                   </>
                 )}

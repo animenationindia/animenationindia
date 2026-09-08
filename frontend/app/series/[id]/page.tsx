@@ -7,7 +7,8 @@ import {
   getAnimeCharacters, 
   getAniListExtraInfo, 
   getAnimeRecommendations,
-  getAnimeEpisodes 
+  getAnimeEpisodes,
+  getAnimeReviews
 } from '../../../lib/api';
 import { fetchAnimeThemes } from '../../../lib/animethemes-api';
 import { getTMDBAnimeData } from '../../../lib/tmdb-api';
@@ -31,12 +32,18 @@ const getCachedAniListExtraInfo = cache(async (numId: number) => {
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { id } = await params;
   const numId = Number(id);
+  const isAnilistDirect = id.startsWith('al-') || (!isNaN(numId) && numId > 65000);
+  const anilistId = isAnilistDirect ? (id.startsWith('al-') ? Number(id.replace('al-', '')) : numId) : null;
 
   try {
     const jikanAnime = await getCachedAnimeDetails(id);
     let extraInfo = null;
-    if (!jikanAnime && !isNaN(numId) && numId > 0) {
-      extraInfo = await getCachedAniListExtraInfo(numId);
+    if (!jikanAnime) {
+      if (anilistId) {
+        extraInfo = await getCachedAniListExtraInfo(anilistId);
+      } else if (!isNaN(numId) && numId > 0) {
+        extraInfo = await getCachedAniListExtraInfo(numId);
+      }
     }
 
     if (!jikanAnime && !extraInfo) {
@@ -78,38 +85,52 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 export default async function AnimeDetails({ params }: { params: Promise<Params> }) {
   const { id } = await params;
   const numId = Number(id);
+  const isAnilistDirect = id.startsWith('al-') || (!isNaN(numId) && numId > 65000);
+  const anilistId = isAnilistDirect ? (id.startsWith('al-') ? Number(id.replace('al-', '')) : numId) : null;
+  const malQueryId = !isNaN(numId) && numId > 0 && numId <= 65000 ? numId : null;
 
-  // 1. Fetch all anime details, characters, episodes, recommendations & AnimeThemes in parallel (~1s)
+  // 1. Fetch anime full details first
+  const jikanAnime = await getCachedAnimeDetails(id);
+
+  // Determine effective MAL ID and AniList ID
+  const effectiveMalId = (jikanAnime?.mal_id && typeof jikanAnime.mal_id === 'number' && jikanAnime.mal_id <= 65000)
+    ? jikanAnime.mal_id
+    : malQueryId;
+
+  const effectiveAniListId = anilistId || (effectiveMalId ? effectiveMalId : null);
+
+  // 2. Fetch extra info, episodes, characters, recommendations, themes & reviews in parallel
   const [
-    jikanRes, 
     extraInfoRes, 
     episodesRes,
     charactersRes, 
     recommendationsRes, 
-    themesRes
+    themesRes,
+    reviewsRes
   ] = await Promise.allSettled([
-    getCachedAnimeDetails(id),
-    getCachedAniListExtraInfo(numId),
-    getAnimeEpisodes(id),
-    getAnimeCharacters(numId),
-    getAnimeRecommendations(numId),
-    fetchAnimeThemes(numId)
+    effectiveAniListId ? getCachedAniListExtraInfo(effectiveAniListId) : Promise.resolve(null),
+    effectiveMalId ? getAnimeEpisodes(String(effectiveMalId)) : Promise.resolve([]),
+    effectiveMalId ? getAnimeCharacters(effectiveMalId, effectiveAniListId || undefined) : (effectiveAniListId ? getAnimeCharacters(effectiveAniListId, effectiveAniListId) : Promise.resolve([])),
+    effectiveMalId ? getAnimeRecommendations(effectiveMalId, effectiveAniListId || undefined) : (effectiveAniListId ? getAnimeRecommendations(effectiveAniListId, effectiveAniListId) : Promise.resolve([])),
+    effectiveMalId ? fetchAnimeThemes(effectiveMalId) : Promise.resolve([]),
+    effectiveMalId ? getAnimeReviews(effectiveMalId) : Promise.resolve([])
   ]);
 
-  const jikanAnime = jikanRes.status === 'fulfilled' ? jikanRes.value : null;
   const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
   const episodesData = episodesRes.status === 'fulfilled' ? episodesRes.value : [];
   const episodes = Array.isArray(episodesData) ? episodesData : (episodesData?.data || []);
   const characters = charactersRes.status === 'fulfilled' ? charactersRes.value : [];
   const recommendations = recommendationsRes.status === 'fulfilled' ? recommendationsRes.value : [];
   const themes = themesRes.status === 'fulfilled' ? themesRes.value : [];
+  const reviews = reviewsRes.status === 'fulfilled' ? reviewsRes.value : [];
 
   // Primary data resolution: Prefer Jikan, fallback to AniList extraInfo
   let anime = jikanAnime;
 
   if (!anime && extraInfo) {
+    const fallbackId = extraInfo.idMal || (anilistId ? `al-${anilistId}` : id);
     anime = {
-      mal_id: numId,
+      mal_id: fallbackId,
       title: extraInfo.title?.romaji || 'Unknown Title',
       title_english: extraInfo.title?.english || extraInfo.title?.romaji || 'Unknown Title',
       title_japanese: extraInfo.title?.native || '',
@@ -134,7 +155,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
     notFound();
   }
 
-  const sortedRelations = extraInfo?.relations?.edges 
+  let sortedRelations: any[] = extraInfo?.relations?.edges 
     ? [...extraInfo.relations.edges]
         .filter((edge: any) => edge && edge.node)
         .sort((a: any, b: any) => {
@@ -145,6 +166,34 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
           return getScore(b.node) - getScore(a.node);
         })
     : [];
+
+  // Fallback: If AniList relations are empty (e.g. AniList 403), map Jikan relations
+  if (sortedRelations.length === 0 && jikanAnime?.relations && Array.isArray(jikanAnime.relations)) {
+    const jikanEdges: any[] = [];
+    jikanAnime.relations.forEach((relGroup: any) => {
+      const relType = (relGroup.relation || 'RELATED').toUpperCase().replace(/\s+/g, '_');
+      if (Array.isArray(relGroup.entry)) {
+        relGroup.entry.forEach((entry: any) => {
+          const isManga = entry.type === 'manga';
+          jikanEdges.push({
+            relationType: relType,
+            node: {
+              id: entry.mal_id,
+              idMal: entry.mal_id,
+              title: { english: entry.name, romaji: entry.name },
+              type: isManga ? 'MANGA' : 'ANIME',
+              format: isManga ? 'MANGA' : 'TV',
+              coverImage: {
+                large: `https://api-cdn.myanimelist.net/images/anime/${entry.mal_id}.jpg`,
+              },
+              startDate: null
+            }
+          });
+        });
+      }
+    });
+    sortedRelations = jikanEdges;
+  }
 
   // Fetch TMDB data (Audio languages, Worldwide translations, Transparent ClearArt Logo, Watch Providers)
   const searchTitle = anime.title_english || anime.title || extraInfo?.title?.english || extraInfo?.title?.romaji || '';
@@ -161,6 +210,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
       relations={sortedRelations}
       themes={themes}
       tmdbData={tmdbData}
+      reviews={reviews}
     />
   );
 }

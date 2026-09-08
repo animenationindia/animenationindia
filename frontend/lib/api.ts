@@ -9,6 +9,25 @@ const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animena
 const ANILIST_PROXY_URL = `${BACKEND_BASE_URL}/api/anilist/proxy`;
 const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 
+// ─── Curated Sections Helper (Loaded from MongoDB Atlas with 1-Hour ISR) ─────
+export async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<AniListMedia[]> {
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/curated/${sectionKey}`, {
+      next: { revalidate: 3600 },
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        return json.data as AniListMedia[];
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[fetchCuratedSectionFromAtlas] Failed to fetch section ${sectionKey}:`, err.message);
+  }
+  return [];
+}
+
 export const GLOBAL_CACHE_TIME = 21600; // 6 hours in seconds
 
 // 🚀 High-Speed In-Memory LRU/TTL Cache (5-Minute Memory Cache)
@@ -40,7 +59,7 @@ export async function fetchInBatches<T>(
   return results;
 }
 
-export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 8000) {
+export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 2500) {
   const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
   // 1. Return from memory cache if fresh
@@ -55,81 +74,51 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
   }
 
   const executeFetch = async () => {
-    let retries = 2;
-    let delay = 500;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    while (retries > 0) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const isServer = typeof window === 'undefined';
+    const targetUrl = isServer ? ANILIST_PROXY_URL : ANILIST_API_URL;
+    const fallbackUrl = isServer ? ANILIST_API_URL : ANILIST_PROXY_URL;
 
-      const isServer = typeof window === 'undefined';
-      // Server-side (Cloudflare Worker) uses Render proxy because AniList blocks Cloudflare IPs with 403.
-      // Client-side (browser) attempts direct AniList query.
-      const targetUrl = isServer ? ANILIST_PROXY_URL : ANILIST_API_URL;
-      const fallbackUrl = isServer ? ANILIST_API_URL : ANILIST_PROXY_URL;
+    const fetchOptions: any = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ query, variables }),
+      signal: controller.signal,
+      cache: 'no-store'
+    };
 
-      const fetchOptions: any = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ query, variables }),
-        signal: controller.signal,
-        cache: 'no-store'
-      };
+    try {
+      let res = await fetch(targetUrl, fetchOptions);
 
-      try {
-        let res = await fetch(targetUrl, fetchOptions);
-        
-        // If target returned 403 (e.g. Cloudflare Worker IP blocked) or 502/503/504, attempt fallback
-        if ((res.status === 403 || res.status >= 500) && targetUrl !== fallbackUrl) {
-          console.warn(`Endpoint ${targetUrl} returned status ${res.status}. Falling back to ${fallbackUrl}...`);
-          try {
-            res = await fetch(fallbackUrl, fetchOptions);
-          } catch (fbErr: any) {
-            console.error('Fallback fetch error:', fbErr.message);
-          }
-        }
-        clearTimeout(timer);
-        
-        if (res.status === 429) {
-          console.warn(`AniList API 429 Rate Limit hit. Retrying in ${delay}ms...`);
-          retries--;
-          if (retries === 0) return null;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2;
-          continue;
-        }
-        
-        const data = await res.json();
-        if (data.errors && data.errors.some((err: any) => err.status === 429 || err.message === "Too Many Requests.")) {
-          console.warn(`AniList API returned 429 error in body. Retrying in ${delay}ms...`);
-          retries--;
-          if (retries === 0) return null;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2;
-          continue;
-        }
-        
-        if (data && data.data && (!data.errors || data.errors.length === 0)) {
-          apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
-        }
-        return data;
-      } catch (error: any) {
-        clearTimeout(timer);
-        if (error.name === 'AbortError') {
-          console.warn(`AniList API fetch timed out after ${timeoutMs}ms`);
-          return null;
-        }
-        console.error("Error in fetchAniList:", error);
-        retries--;
-        if (retries === 0) return null;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
+      if ((res.status === 403 || res.status >= 500) && targetUrl !== fallbackUrl) {
+        try {
+          res = await fetch(fallbackUrl, fetchOptions);
+        } catch {}
       }
+      clearTimeout(timer);
+
+      if (res.status === 429 || res.status === 403 || !res.ok) {
+        return null;
+      }
+
+      const data = await res.json();
+      if (data.errors && data.errors.length > 0) {
+        return null;
+      }
+
+      if (data && data.data) {
+        apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+      }
+      return data;
+    } catch (error: any) {
+      clearTimeout(timer);
+      return null;
     }
-    return null;
   };
 
   const promise = executeFetch().finally(() => {
@@ -164,7 +153,24 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
       const res = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
       clearTimeout(timer);
       
-      if (res.status === 429 || res.status === 504 || res.status === 503 || res.status === 502) {
+      if (res.status === 429) {
+        // Wait 600ms for Jikan rate bucket refill and retry once
+        await new Promise((r) => setTimeout(r, 600));
+        try {
+          const retryRes = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
+          if (retryRes.ok) {
+            const data = await retryRes.json();
+            if (data && data.data) {
+              apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+            }
+            return data;
+          }
+        } catch {}
+        console.warn(`Jikan API 429 hit on ${endpoint}. Returning null.`);
+        return null;
+      }
+      
+      if (res.status === 504 || res.status === 503 || res.status === 502) {
         console.warn(`Jikan API ${res.status} hit on ${endpoint}. Returning null to prevent timeout.`);
         return null;
       }
@@ -264,7 +270,7 @@ export async function fetchAniListCharactersFallback(anilistId: number): Promise
       return {
         role: edge.role === 'MAIN' ? 'Main' : 'Supporting',
         character: {
-          mal_id: edge.node?.id || 0,
+          mal_id: edge.node?.id ? `al-${edge.node.id}` : 0,
           name: edge.node?.name?.full || edge.node?.name?.userPreferred || 'Unknown Character',
           images: {
             jpg: {
@@ -276,7 +282,7 @@ export async function fetchAniListCharactersFallback(anilistId: number): Promise
           {
             language: 'Japanese',
             person: {
-              mal_id: japaneseVA.id || 0,
+              mal_id: japaneseVA.id ? `al-${japaneseVA.id}` : 0,
               name: japaneseVA.name?.full || japaneseVA.name?.userPreferred || 'Unknown VA',
               images: {
                 jpg: {
@@ -363,7 +369,7 @@ export async function fetchAniListRecommendationsFallback(animeId: number): Prom
 
     return validRecs.map((rec: any) => ({
       entry: {
-        mal_id: rec.idMal || rec.id,
+        mal_id: rec.idMal || (rec.id ? `al-${rec.id}` : null),
         title: rec.title?.english || rec.title?.romaji || 'Recommended Anime',
         images: {
           jpg: {
@@ -555,29 +561,143 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
 
 // ১. Today Releases
 export async function getTodayReleasesAniList(page = 1) {
-  const startOfDay = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
-  const endOfDay = Math.floor(new Date().setHours(23, 59, 59, 999) / 1000);
+  const now = Math.floor(Date.now() / 1000);
+  const startOfDay = now - 86400; // Exact last 24 hours
+  const endOfDay = now + 86400;
 
   const query = `
     query ($page: Int, $start: Int, $end: Int) {
       Page(page: $page, perPage: 24) {
-        pageInfo { hasNextPage currentPage }
+        pageInfo { hasNextPage currentPage lastPage total }
         airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME_DESC) {
+          id
+          airingAt
           episode
           media {
             id idMal title { english romaji } coverImage { extraLarge large }
-            episodes format status genres seasonYear
+            episodes format status genres seasonYear bannerImage description
           }
         }
       }
     }
   `;
   try {
-    const data = await fetchAniList(query, { page, start: startOfDay, end: endOfDay });
-    return data.data.Page; 
-  } catch { 
-    return { airingSchedules: [] as AiringSchedule[], pageInfo: { hasNextPage: false, currentPage: 1 } }; 
-  }
+    const data = await fetchAniList(query, { page, start: startOfDay, end: endOfDay }, 3600, 2500);
+    if (data?.data?.Page?.airingSchedules?.length > 0) {
+      return data.data.Page;
+    }
+  } catch {}
+
+  // Fallback 1: Jikan /schedules for current day of week
+  try {
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const currentDay = days[new Date().getDay()];
+    const jikanData = await fetchJikan(`/schedules?filter=${currentDay}&page=${page}&limit=24`, GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      return {
+        pageInfo: {
+          currentPage: page,
+          lastPage: jikanData.pagination?.last_visible_page || 1,
+          hasNextPage: jikanData.pagination?.has_next_page || false,
+          total: jikanData.pagination?.items?.total || jikanData.data.length
+        },
+        airingSchedules: jikanData.data.map((item: any, idx: number) => ({
+          id: item.mal_id,
+          airingAt: now - idx * 1800,
+          episode: item.episodes ? Math.min(item.episodes, (idx % 12) + 1) : (idx + 1),
+          media: {
+            id: item.mal_id,
+            idMal: item.mal_id,
+            title: { english: item.title_english || item.title, romaji: item.title },
+            coverImage: {
+              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+              large: item.images?.jpg?.large_image_url
+            },
+            bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+            episodes: item.episodes,
+            format: item.type || 'TV',
+            status: item.status || 'Releasing',
+            genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name),
+            seasonYear: item.year || new Date().getFullYear(),
+            description: item.synopsis || ''
+          }
+        }))
+      };
+    }
+  } catch {}
+
+  // Fallback 2: Jikan /seasons/now
+  try {
+    const jikanNow = await fetchJikan(`/seasons/now?page=${page}&limit=24`, GLOBAL_CACHE_TIME, 2500);
+    if (jikanNow?.data && Array.isArray(jikanNow.data) && jikanNow.data.length > 0) {
+      return {
+        pageInfo: {
+          currentPage: page,
+          lastPage: jikanNow.pagination?.last_visible_page || 1,
+          hasNextPage: jikanNow.pagination?.has_next_page || false,
+          total: jikanNow.pagination?.items?.total || jikanNow.data.length
+        },
+        airingSchedules: jikanNow.data.map((item: any, idx: number) => ({
+          id: item.mal_id,
+          airingAt: now - idx * 1800,
+          episode: item.episodes ? Math.min(item.episodes, (idx % 12) + 1) : (idx + 1),
+          media: {
+            id: item.mal_id,
+            idMal: item.mal_id,
+            title: { english: item.title_english || item.title, romaji: item.title },
+            coverImage: {
+              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+              large: item.images?.jpg?.large_image_url
+            },
+            bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+            episodes: item.episodes,
+            format: item.type || 'TV',
+            status: item.status || 'Releasing',
+            genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name),
+            seasonYear: item.year || new Date().getFullYear(),
+            description: item.synopsis || ''
+          }
+        }))
+      };
+    }
+  } catch {}
+
+  // Fallback 3: MongoDB Atlas Trending Airing Collection (/api/trending)
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/trending`, {
+      next: { revalidate: 3600 },
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+        return {
+          pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: json.data.length },
+          airingSchedules: json.data.map((item: any, idx: number) => ({
+            id: item.mal_id,
+            airingAt: now - idx * 3600,
+            episode: (idx % 12) + 1,
+            media: {
+              id: item.mal_id,
+              idMal: item.mal_id,
+              title: { english: item.title_english || item.title, romaji: item.title },
+              coverImage: {
+                extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+                large: item.images?.jpg?.large_image_url
+              },
+              episodes: 12,
+              format: 'TV',
+              status: 'Releasing',
+              genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name),
+              seasonYear: new Date().getFullYear()
+            }
+          }))
+        };
+      }
+    }
+  } catch {}
+
+  return { airingSchedules: [] as AiringSchedule[], pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: 0 } };
 }
 
 // ১.১ Past Week Releases
@@ -588,6 +708,7 @@ export async function getPastWeekReleasesAniList(page = 1) {
   const query = `
     query ($page: Int, $start: Int, $end: Int) {
       Page(page: $page, perPage: 24) {
+        pageInfo { hasNextPage currentPage lastPage total }
         airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME_DESC) {
           episode media { id idMal title { english romaji } coverImage { extraLarge large } episodes format status genres seasonYear }
         }
@@ -596,8 +717,56 @@ export async function getPastWeekReleasesAniList(page = 1) {
   `;
   try {
     const data = await fetchAniList(query, { page, start, end });
-    return data.data.Page; 
-  } catch { return { airingSchedules: [] as AiringSchedule[] }; }
+    if (data?.data?.Page?.airingSchedules?.length > 0) {
+      return data.data.Page;
+    }
+  } catch {}
+
+  // Resilient Fallback 1: Jikan /seasons/now
+  try {
+    const jikanData = await fetchJikan(`/seasons/now?page=${page}&limit=24`, GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      return {
+        pageInfo: {
+          currentPage: page,
+          lastPage: jikanData.pagination?.last_visible_page || 5,
+          hasNextPage: jikanData.pagination?.has_next_page || false,
+          total: jikanData.pagination?.items?.total || 120
+        },
+        airingSchedules: jikanData.data.map((item: any) => ({
+          episode: item.episodes || 12,
+          media: {
+            id: item.mal_id,
+            idMal: item.mal_id,
+            title: { english: item.title_english || item.title, romaji: item.title },
+            coverImage: {
+              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+              large: item.images?.jpg?.large_image_url
+            },
+            episodes: item.episodes,
+            format: item.type || 'TV',
+            status: item.status || 'Releasing',
+            genres: (item.genres || []).map((g: any) => g.name),
+            seasonYear: item.year || new Date().getFullYear()
+          }
+        }))
+      };
+    }
+  } catch {}
+
+  // Resilient Fallback 2: Atlas curated 'trending'
+  const trendingAtlas = await fetchCuratedSectionFromAtlas('trending');
+  if (trendingAtlas.length > 0) {
+    return {
+      pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: trendingAtlas.length },
+      airingSchedules: trendingAtlas.slice(0, 24).map((m: any) => ({
+        episode: m.episodes || 12,
+        media: m
+      }))
+    };
+  }
+
+  return { airingSchedules: [] as AiringSchedule[], pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: 0 } };
 }
 
 // ১.২ Past Month Releases
@@ -608,6 +777,7 @@ export async function getPastMonthReleasesAniList(page = 1) {
   const query = `
     query ($page: Int, $start: Int, $end: Int) {
       Page(page: $page, perPage: 24) {
+        pageInfo { hasNextPage currentPage lastPage total }
         airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME_DESC) {
           episode media { id idMal title { english romaji } coverImage { extraLarge large } episodes format status genres seasonYear }
         }
@@ -616,16 +786,34 @@ export async function getPastMonthReleasesAniList(page = 1) {
   `;
   try {
     const data = await fetchAniList(query, { page, start, end });
-    return data.data.Page; 
-  } catch { return { airingSchedules: [] as AiringSchedule[] }; }
+    if (data?.data?.Page?.airingSchedules?.length > 0) {
+      return data.data.Page;
+    }
+  } catch {}
+
+  // Resilient Fallback: Atlas curated 'popular' & 'kickstart'
+  const popularAtlas = await fetchCuratedSectionFromAtlas('popular');
+  const kickstartAtlas = await fetchCuratedSectionFromAtlas('kickstart');
+  const combined = [...popularAtlas, ...kickstartAtlas];
+  if (combined.length > 0) {
+    return {
+      pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: combined.length },
+      airingSchedules: combined.slice(0, 24).map((m: any) => ({
+        episode: m.episodes || 24,
+        media: m
+      }))
+    };
+  }
+
+  return { airingSchedules: [] as AiringSchedule[], pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: 0 } };
 }
 
-// ২. Top Rated Anime
+// ২. Top Rated / All-Time Popular Anime (Primary: AniList, Backup: Jikan, No MongoDB)
 export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
   const query = `
     query {
-      Page(page: 1, perPage: 10) {
-        media(sort: SCORE_DESC, type: ANIME, isAdult: false) {
+      Page(page: 1, perPage: 12) {
+        media(sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
           id idMal title { romaji english } coverImage { extraLarge large } averageScore format status episodes seasonYear genres description
         }
       }
@@ -633,14 +821,44 @@ export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
+      return data.data.Page.media as AniListMedia[];
+    }
+  } catch {}
+
+  // Backup: Jikan /top/anime?filter=bypopularity
+  try {
+    const jikanData = await fetchJikan('/top/anime?filter=bypopularity&limit=12', GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      return jikanData.data.map((item: any) => ({
+        id: item.mal_id,
+        idMal: item.mal_id,
+        title: { english: item.title_english || item.title, romaji: item.title },
+        coverImage: {
+          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          large: item.images?.jpg?.large_image_url
+        },
+        averageScore: item.score ? Math.round(item.score * 10) : null,
+        format: item.type || 'TV',
+        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
+        episodes: item.episodes,
+        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null),
+        genres: (item.genres || []).map((g: any) => g.name),
+        description: item.synopsis || ''
+      })) as AniListMedia[];
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // ৩. Trending Anime (Updated for Home Page Grid)
 export async function getTrendingAnimeAniList(limit: number = 10): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('trending');
+  if (cachedFromAtlas.length > 0) {
+    return cachedFromAtlas.slice(0, limit);
+  }
+
   const query = `
     query {
       Page(page: 1, perPage: 30) { 
@@ -654,7 +872,6 @@ export async function getTrendingAnimeAniList(limit: number = 10): Promise<AniLi
     const data = await fetchAniList(query);
     const mediaList = data.data.Page.media as AniListMedia[];
     const animeWithBanners = mediaList.filter((anime) => anime.bannerImage !== null);
-    // If we request more than banner anime, just return mediaList directly
     if (limit > 10) {
       return mediaList.slice(0, limit);
     }
@@ -684,35 +901,134 @@ export async function getPopularAnimePageAniList(page: number = 1): Promise<{ me
   `;
   try {
     const data = await fetchAniList(query, { page });
+    if (data?.data?.Page?.media?.length > 0) {
+      return {
+        media: data.data.Page.media as AniListMedia[],
+        pageInfo: data.data.Page.pageInfo
+      };
+    }
+  } catch {}
+
+  // Fallback 1: Jikan /top/anime?filter=bypopularity
+  try {
+    const jikanData = await fetchJikan(`/top/anime?filter=bypopularity&page=${page}&limit=24`, GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      const media = jikanData.data.map((item: any) => ({
+        id: item.mal_id,
+        idMal: item.mal_id,
+        title: { english: item.title_english || item.title, romaji: item.title },
+        coverImage: {
+          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          large: item.images?.jpg?.large_image_url
+        },
+        bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+        description: item.synopsis || '',
+        episodes: item.episodes,
+        format: item.type || 'TV',
+        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
+        averageScore: item.score ? Math.round(item.score * 10) : null,
+        genres: (item.genres || []).map((g: any) => g.name),
+        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
+      })) as AniListMedia[];
+
+      return {
+        media,
+        pageInfo: {
+          total: jikanData.pagination?.items?.total || 240,
+          currentPage: page,
+          lastPage: jikanData.pagination?.last_visible_page || 10,
+          hasNextPage: jikanData.pagination?.has_next_page || false,
+          perPage: 24
+        }
+      };
+    }
+  } catch {}
+
+  // Fallback 2: Atlas curated 'popular' & 'trending'
+  const popularAtlas = await fetchCuratedSectionFromAtlas('popular');
+  const trendingAtlas = await fetchCuratedSectionFromAtlas('trending');
+  const combined = [...popularAtlas, ...trendingAtlas];
+  if (combined.length > 0) {
     return {
-      media: data.data.Page.media as AniListMedia[],
-      pageInfo: data.data.Page.pageInfo
+      media: combined.slice(0, 24),
+      pageInfo: {
+        total: combined.length,
+        currentPage: 1,
+        lastPage: 1,
+        hasNextPage: false,
+        perPage: 24
+      }
     };
-  } catch { 
-    return { media: [], pageInfo: { currentPage: 1, lastPage: 1 } }; 
   }
+
+  return { media: [], pageInfo: { currentPage: 1, lastPage: 1, hasNextPage: false, total: 0 } };
 }
 
 
-// ৩.১ Top Airing Anime (For Hero Slider)
+// ৩.১ Top Airing Anime (For Hero Slider: AniList Primary + MongoDB Atlas Trending / Curated Fallback)
 export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
   const query = `
     query {
       Page(page: 1, perPage: 25) { 
-        media(sort: POPULARITY_DESC, status: RELEASING, type: ANIME, isAdult: false) {
+        media(sort: [TRENDING_DESC, POPULARITY_DESC], status: RELEASING, type: ANIME, isAdult: false) {
           id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+          trailer { id site }
         }
       }
     }
   `;
   try {
     const data = await fetchAniList(query);
-    const mediaList = data.data.Page.media as AniListMedia[];
-    const animeWithBanners = mediaList.filter((anime) => anime.bannerImage !== null);
-    return animeWithBanners.slice(0, 10);
-  } catch { 
-    return [] as AniListMedia[]; 
+    const mediaList = data?.data?.Page?.media as AniListMedia[];
+    if (mediaList && mediaList.length > 0) {
+      const animeWithBanners = mediaList.filter((anime) => anime.bannerImage !== null);
+      if (animeWithBanners.length > 0) {
+        return animeWithBanners.slice(0, 10);
+      }
+      return mediaList.slice(0, 10);
+    }
+  } catch {}
+
+  // Fallback 1: MongoDB Atlas Auto-Updating Currently Streaming/Trending Collection (/api/trending)
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/trending`, {
+      next: { revalidate: 3600 },
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+        const mappedTrending: AniListMedia[] = json.data.map((item: any) => ({
+          id: item.mal_id,
+          idMal: item.mal_id,
+          title: {
+            english: item.title_english || item.title,
+            romaji: item.title || item.title_english
+          },
+          coverImage: {
+            extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.bannerImage,
+            large: item.images?.jpg?.large_image_url || item.bannerImage
+          },
+          bannerImage: item.bannerImage || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          description: item.synopsis || '',
+          averageScore: item.score ? Math.round(item.score * 10) : null,
+          format: 'TV',
+          status: 'RELEASING',
+          genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name)
+        }));
+        return mappedTrending.slice(0, 10);
+      }
+    }
+  } catch (err: any) {
+    console.warn('[getTopAiringAnimeAniList] /api/trending fallback error:', err.message);
   }
+
+  // Fallback 2: Atlas Curated (kickstart / shounen / evergreen)
+  const atlasKickstart = await fetchCuratedSectionFromAtlas('kickstart');
+  if (atlasKickstart.length > 0) return atlasKickstart.slice(0, 10);
+  const atlasShounen = await fetchCuratedSectionFromAtlas('shounen');
+  if (atlasShounen.length > 0) return atlasShounen.slice(0, 10);
+  return await fetchCuratedSectionFromAtlas('evergreen');
 }
 
 // ─── Kitsu Anime External ID Resolver ─────────────────────────────────────────
@@ -772,16 +1088,130 @@ export async function resolveKitsuAnimeByExternalId(externalId: string | number)
 
 // ৪. Details Page এর জন্য Jikan Full Info (With AniList & Kitsu Multi-Tier Fallback)
 export async function getAnimeFullDetails(id: string) {
-  const numId = Number(id);
+  const strId = String(id).trim();
+  const numId = Number(strId);
+  const isAnilistPrefixed = strId.startsWith('al-');
+  const isKitsuPrefixed = strId.startsWith('kitsu-');
+  const isAnilistNumeric = !isNaN(numId) && numId > 65000;
+  const isMalNumeric = !isNaN(numId) && numId > 0 && numId <= 65000;
 
-  // 1. Try Jikan API (primary for MAL IDs)
-  try {
-    const res = await fetchJikan(`/anime/${id}/full`);
-    if (res?.data && isSafeContent(res.data)) return res.data;
-  } catch {}
+  // CASE 1: Kitsu Prefixed ID (e.g. kitsu-41370)
+  if (isKitsuPrefixed) {
+    const kitsuId = strId.replace('kitsu-', '');
+    try {
+      const url = `https://kitsu.io/api/edge/anime/${kitsuId}?include=mappings`;
+      const res = await fetch(url, {
+        headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
+        next: { revalidate: GLOBAL_CACHE_TIME }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const item = json.data;
+        if (item && item.attributes) {
+          const attr = item.attributes;
+          let malId: number | null = null;
+          if (json.included && Array.isArray(json.included)) {
+            const malMapping = json.included.find(
+              (inc: any) => inc.type === 'mappings' && inc.attributes?.externalSite === 'myanimelist/anime' && inc.attributes?.externalId
+            );
+            if (malMapping) malId = Number(malMapping.attributes.externalId);
+          }
 
-  // 2. Fallback to AniList Direct Query if Jikan is rate-limited or times out
-  if (!isNaN(numId) && numId > 0) {
+          if (malId && malId <= 65000) {
+            try {
+              const jikanRes = await fetchJikan(`/anime/${malId}/full`);
+              if (jikanRes?.data && isSafeContent(jikanRes.data)) return jikanRes.data;
+            } catch {}
+          }
+
+          const canonical = attr.canonicalTitle || 'Unknown Title';
+          const titleEng = attr.titles?.en || attr.titles?.en_us || canonical || attr.titles?.en_jp || canonical;
+          const titleRom = attr.titles?.en_jp || canonical || titleEng;
+          const rawScore = attr.averageRating ? parseFloat(attr.averageRating) : null;
+
+          return {
+            mal_id: malId || `kitsu-${kitsuId}`,
+            kitsuId: item.id,
+            title: titleRom,
+            title_english: titleEng,
+            title_japanese: attr.titles?.ja_jp || '',
+            synopsis: attr.synopsis || attr.description || 'No synopsis available.',
+            images: {
+              webp: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' },
+              jpg: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' }
+            },
+            bannerImage: attr.coverImage?.large || attr.coverImage?.original || null,
+            score: rawScore ? parseFloat((rawScore / 10).toFixed(1)) : null,
+            episodes: attr.episodeCount || null,
+            status: attr.status === 'current' ? 'Currently Airing' : 'Finished Airing',
+            genres: [],
+            year: attr.startDate ? parseInt(attr.startDate.slice(0, 4)) : null,
+            trailer: attr.youtubeVideoId ? {
+              youtube_id: attr.youtubeVideoId,
+              embed_url: `https://www.youtube.com/embed/${attr.youtubeVideoId}`
+            } : null
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn(`[getAnimeFullDetails Kitsu Fail] id=${strId}:`, e?.message);
+    }
+    return null;
+  }
+
+  // CASE 2: AniList ID (al- prefix OR numeric > 65000)
+  if (isAnilistPrefixed || isAnilistNumeric) {
+    const anilistId = isAnilistPrefixed ? Number(strId.replace('al-', '')) : numId;
+    if (!isNaN(anilistId) && anilistId > 0) {
+      try {
+        const extra = await getAniListExtraInfo(anilistId);
+        if (extra && isSafeContent(extra)) {
+          if (extra.idMal && extra.idMal <= 65000) {
+            try {
+              const jikanRes = await fetchJikan(`/anime/${extra.idMal}/full`);
+              if (jikanRes?.data && isSafeContent(jikanRes.data)) return jikanRes.data;
+            } catch {}
+          }
+
+          return {
+            mal_id: extra.idMal || `al-${anilistId}`,
+            title: extra.title?.romaji || extra.title?.english || 'Unknown Title',
+            title_english: extra.title?.english || extra.title?.romaji || 'Unknown Title',
+            title_japanese: extra.title?.native || '',
+            synopsis: extra.description || 'No description available.',
+            images: {
+              webp: { large_image_url: extra.coverImage?.extraLarge || extra.coverImage?.large || '/placeholder-poster.png' },
+              jpg: { large_image_url: extra.coverImage?.large || '/placeholder-poster.png' }
+            },
+            bannerImage: extra.bannerImage,
+            score: extra.averageScore ? extra.averageScore / 10 : null,
+            episodes: extra.episodes || null,
+            status: extra.status === 'RELEASING' ? 'Currently Airing' : 'Finished Airing',
+            genres: (extra.genres || []).map(g => ({ name: g })),
+            year: extra.seasonYear || null,
+            trailer: extra.trailer,
+            studios: extra.studios
+          };
+        }
+      } catch {}
+
+      try {
+        const kitsuAnime = await resolveKitsuAnimeByExternalId(anilistId);
+        if (kitsuAnime && isSafeContent(kitsuAnime)) return kitsuAnime;
+      } catch {}
+    }
+    return null;
+  }
+
+  // CASE 3: Standard MAL ID (numId <= 65000)
+  if (isMalNumeric) {
+    // 1. Try Jikan API (primary for MAL IDs)
+    try {
+      const res = await fetchJikan(`/anime/${id}/full`);
+      if (res?.data && isSafeContent(res.data)) return res.data;
+    } catch {}
+
+    // 2. Fallback to AniList Direct Query if Jikan is rate-limited or times out
     try {
       const extra = await getAniListExtraInfo(numId);
       if (extra && isSafeContent(extra)) {
@@ -806,10 +1236,8 @@ export async function getAnimeFullDetails(id: string) {
         };
       }
     } catch {}
-  }
 
-  // 3. Fallback to Kitsu Mapping Resolver if both Jikan & AniList failed (e.g. AniList 403 / Jikan 504)
-  if (!isNaN(numId) && numId > 0) {
+    // 3. Fallback to Kitsu Mapping Resolver if both Jikan & AniList failed
     try {
       const kitsuAnime = await resolveKitsuAnimeByExternalId(numId);
       if (kitsuAnime && isSafeContent(kitsuAnime)) {
@@ -1046,6 +1474,9 @@ export async function getCurrentSeasonAniList(): Promise<AniListMedia[]> {
 
 // ৮. Upcoming (Next Season)
 export async function getUpcomingAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('upcoming');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 24) {
@@ -1065,6 +1496,9 @@ export async function getUpcomingAnimeAniList(): Promise<AniListMedia[]> {
 
 // ৯. Popular Dubbed
 export async function getPopularDubbedAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('popular_dubbed');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 15) {
@@ -1087,10 +1521,13 @@ export async function getTopCharactersAniList(page: number = 1): Promise<Charact
   const query = `query($page:Int){Page(page:$page,perPage:24){characters(sort:FAVOURITES_DESC){id name{full} image{large} favourites}}}`;
   try {
     const data = await fetchAniList(query, { page });
-    return data.data.Page.characters as CharacterItem[];
-  } catch { 
-    return [] as CharacterItem[]; 
-  }
+    if (data?.data?.Page?.characters?.length > 0) {
+      return data.data.Page.characters as CharacterItem[];
+    }
+  } catch {}
+
+  // Fallback: Jikan top characters with default list
+  return (await getTopCharactersJikan()) as CharacterItem[];
 }
 
 // ১১. Top Staff
@@ -1098,10 +1535,13 @@ export async function getTopStaffAniList(page: number = 1): Promise<StaffItem[]>
   const query = `query($page:Int){Page(page:$page,perPage:24){staff(sort:FAVOURITES_DESC){id name{full} image{large} favourites}}}`;
   try {
     const data = await fetchAniList(query, { page });
-    return data.data.Page.staff as StaffItem[];
-  } catch { 
-    return [] as StaffItem[]; 
-  }
+    if (data?.data?.Page?.staff?.length > 0) {
+      return data.data.Page.staff as StaffItem[];
+    }
+  } catch {}
+
+  // Fallback: Jikan top people with default list
+  return (await getTopPeopleJikan()) as StaffItem[];
 }
 
 // ১৩. Search Anime (With Pagination)
@@ -1181,15 +1621,82 @@ export async function getFilteredAnimeAniList(params: {
   try {
     const data = await fetchAniList(query, variables);
     const pageData = data?.data?.Page;
-    if (!pageData) return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
-    
-    // Filter out any adult/hentai content
-    pageData.media = (pageData.media || []).filter(isSafeContent);
-    return pageData;
+    if (pageData && Array.isArray(pageData.media) && pageData.media.length > 0) {
+      pageData.media = pageData.media.filter(isSafeContent);
+      return pageData;
+    }
   } catch (e) {
-    console.error("Filter API Error:", e);
-    return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
+    console.warn("Filter API AniList unavailable, executing fallback:", e);
   }
+
+  // ─── Resilient Fallback Engine for Filters & Browse Pages ───────────
+  try {
+    let fallbackMedia: AniListMedia[] = [];
+
+    if (status === 'NOT_YET_RELEASED') {
+      fallbackMedia = await fetchCuratedSectionFromAtlas('upcoming');
+      if (fallbackMedia.length === 0) {
+        const jikanUpcoming = await fetchJikan(`/seasons/upcoming?limit=24`, GLOBAL_CACHE_TIME, 2500);
+        if (jikanUpcoming?.data && Array.isArray(jikanUpcoming.data)) {
+          fallbackMedia = jikanUpcoming.data.map((item: any) => ({
+            id: item.mal_id,
+            idMal: item.mal_id,
+            title: { english: item.title_english || item.title, romaji: item.title },
+            coverImage: {
+              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+              large: item.images?.jpg?.large_image_url
+            },
+            bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+            description: item.synopsis || '',
+            episodes: item.episodes,
+            format: item.type || 'TV',
+            status: 'NOT_YET_RELEASED',
+            averageScore: null,
+            genres: (item.genres || []).map((g: any) => g.name),
+            seasonYear: item.year || null
+          })) as AniListMedia[];
+        }
+      }
+    } else if (format === 'TV') {
+      fallbackMedia = await fetchCuratedSectionFromAtlas('top_tv');
+    } else if (format === 'MOVIE') {
+      fallbackMedia = await fetchCuratedSectionFromAtlas('top_movies');
+    } else if (sort === 'TRENDING_DESC') {
+      fallbackMedia = await fetchCuratedSectionFromAtlas('trending');
+    } else if (cleanGenres.length > 0) {
+      const g = cleanGenres[0].toLowerCase();
+      if (g.includes('shounen') || g.includes('action')) fallbackMedia = await fetchCuratedSectionFromAtlas('shounen');
+      else if (g.includes('romance')) fallbackMedia = await fetchCuratedSectionFromAtlas('romance');
+      else if (g.includes('fantasy')) fallbackMedia = await fetchCuratedSectionFromAtlas('fantasy');
+      else if (g.includes('sci')) fallbackMedia = await fetchCuratedSectionFromAtlas('scifi');
+      else if (g.includes('supernatural')) fallbackMedia = await fetchCuratedSectionFromAtlas('supernatural');
+      else if (g.includes('sport')) fallbackMedia = await fetchCuratedSectionFromAtlas('sports');
+    }
+
+    if (fallbackMedia.length === 0) {
+      fallbackMedia = await fetchCuratedSectionFromAtlas('popular');
+    }
+
+    if (fallbackMedia.length === 0) {
+      fallbackMedia = await fetchCuratedSectionFromAtlas('kickstart');
+    }
+
+    if (fallbackMedia.length > 0) {
+      return {
+        media: fallbackMedia.slice(0, perPage),
+        pageInfo: {
+          total: fallbackMedia.length,
+          currentPage: page,
+          lastPage: Math.ceil(fallbackMedia.length / perPage) || 1,
+          hasNextPage: false
+        }
+      };
+    }
+  } catch (err: any) {
+    console.error("Error in getFilteredAnimeAniList fallback:", err?.message);
+  }
+
+  return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
 }
 
 // ??. Jikan API - Get All Genres (Hentai Filtered Out with high-reliability fallback)
@@ -1286,36 +1793,66 @@ export async function getAnimeRecommendations(id: string | number, anilistId?: n
   return result || [];
 }
 
-// 16. Top Characters (Jikan)
+const DEFAULT_TOP_CHARACTERS = [
+  { id: 417, name: { full: 'Lelouch Lamperouge' }, image: { large: 'https://cdn.myanimelist.net/images/characters/8/406163.jpg' }, favourites: 165000 },
+  { id: 45627, name: { full: 'Levi Ackerman' }, image: { large: 'https://cdn.myanimelist.net/images/characters/2/241413.jpg' }, favourites: 142000 },
+  { id: 40, name: { full: 'Monkey D. Luffy' }, image: { large: 'https://cdn.myanimelist.net/images/characters/9/310307.jpg' }, favourites: 138000 },
+  { id: 71, name: { full: 'L Lawliet' }, image: { large: 'https://cdn.myanimelist.net/images/characters/10/249697.jpg' }, favourites: 125000 },
+  { id: 35252, name: { full: 'Rintarou Okabe' }, image: { large: 'https://cdn.myanimelist.net/images/characters/6/123066.jpg' }, favourites: 95000 },
+  { id: 62, name: { full: 'Roronoa Zoro' }, image: { large: 'https://cdn.myanimelist.net/images/characters/3/100534.jpg' }, favourites: 105000 },
+  { id: 27, name: { full: 'Killua Zoldyck' }, image: { large: 'https://cdn.myanimelist.net/images/characters/2/327920.jpg' }, favourites: 93000 },
+  { id: 164477, name: { full: 'Satoru Gojo' }, image: { large: 'https://cdn.myanimelist.net/images/characters/4/422810.jpg' }, favourites: 110000 },
+  { id: 40882, name: { full: 'Eren Yeager' }, image: { large: 'https://cdn.myanimelist.net/images/characters/10/216895.jpg' }, favourites: 90000 },
+  { id: 11, name: { full: 'Edward Elric' }, image: { large: 'https://cdn.myanimelist.net/images/characters/9/72533.jpg' }, favourites: 87000 },
+  { id: 17, name: { full: 'Naruto Uzumaki' }, image: { large: 'https://cdn.myanimelist.net/images/characters/15/264417.jpg' }, favourites: 85000 },
+  { id: 34470, name: { full: 'Kurisu Makise' }, image: { large: 'https://cdn.myanimelist.net/images/characters/9/131317.jpg' }, favourites: 72000 }
+];
+
+const DEFAULT_TOP_PEOPLE = [
+  { id: 1880, name: { full: 'Tite Kubo' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/3/61986.jpg' }, favourites: 18000 },
+  { id: 118, name: { full: 'Hiroshi Kamiya' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/3/69903.jpg' }, favourites: 105000 },
+  { id: 86, name: { full: 'Mamoru Miyano' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/1/67634.jpg' }, favourites: 88000 },
+  { id: 124, name: { full: 'Kana Hanazawa' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/2/70366.jpg' }, favourites: 98000 },
+  { id: 145, name: { full: 'Kenjiro Tsuda' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/1/65845.jpg' }, favourites: 42000 },
+  { id: 2, name: { full: 'Hayao Miyazaki' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/2/18797.jpg' }, favourites: 41000 },
+  { id: 188, name: { full: 'Eiichiro Oda' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/1/70857.jpg' }, favourites: 52000 },
+  { id: 5087, name: { full: 'Makoto Shinkai' }, image: { large: 'https://cdn.myanimelist.net/images/voiceactors/2/43977.jpg' }, favourites: 36000 }
+];
+
+// 16. Top Characters (Jikan with curated fallback)
 export async function getTopCharactersJikan() {
   try {
-    const data = await fetchJikan('/top/characters?limit=15');
-    return (data?.data || []).map((char: any) => ({
-      id: char.mal_id,
-      name: { full: char.name },
-      image: { large: char.images?.jpg?.image_url },
-      favourites: char.favorites
-    }));
+    const data = await fetchJikan('/top/characters?limit=15', GLOBAL_CACHE_TIME, 2500);
+    if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+      return data.data.map((char: any) => ({
+        id: char.mal_id,
+        name: { full: char.name },
+        image: { large: char.images?.jpg?.image_url },
+        favourites: char.favorites
+      }));
+    }
   } catch (error) {
     console.error("Top Characters API Error:", error);
-    return [];
   }
+  return DEFAULT_TOP_CHARACTERS;
 }
 
-// 17. Top People / Staff (Jikan)
+// 17. Top People / Staff (Jikan with curated fallback)
 export async function getTopPeopleJikan() {
   try {
-    const data = await fetchJikan('/top/people?limit=15');
-    return (data?.data || []).map((person: any) => ({
-      id: person.mal_id,
-      name: { full: person.name },
-      image: { large: person.images?.jpg?.image_url },
-      favourites: person.favorites
-    }));
+    const data = await fetchJikan('/top/people?limit=15', GLOBAL_CACHE_TIME, 2500);
+    if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+      return data.data.map((person: any) => ({
+        id: person.mal_id,
+        name: { full: person.name },
+        image: { large: person.images?.jpg?.image_url },
+        favourites: person.favorites
+      }));
+    }
   } catch (error) {
     console.error("Top People API Error:", error);
-    return [];
   }
+  return DEFAULT_TOP_PEOPLE;
 }
 
 // AniList Direct Character Fetcher
@@ -1490,9 +2027,204 @@ export async function fetchAniListStaff(id: number): Promise<any | null> {
   }
 }
 
+// ─── Kitsu Character & People Mapping Resolvers ──────────────────────────────
+export async function resolveKitsuCharacterByMalId(malId: string | number): Promise<any | null> {
+  const strId = String(malId).trim();
+  if (!strId || isNaN(Number(strId))) return null;
+
+  try {
+    const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=myanimelist/character&filter[external_id]=${strId}&include=item`;
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const item = json.included?.find((inc: any) => inc.type === 'characters');
+      if (item && item.attributes) {
+        const attr = item.attributes;
+        const charName = attr.canonicalName || attr.name || 'Unknown Character';
+        const img = attr.image?.original || attr.image?.large || attr.image?.medium || '/placeholder.png';
+        return {
+          mal_id: Number(strId),
+          name: charName,
+          name_kanji: attr.names?.ja_jp || '',
+          nicknames: Array.isArray(attr.otherNames) ? attr.otherNames : [],
+          favorites: 0,
+          about: attr.description || '',
+          images: {
+            jpg: { image_url: img },
+            webp: { image_url: img }
+          },
+          anime: [],
+          voices: []
+        };
+      }
+    }
+  } catch (e: any) {
+    console.warn(`[resolveKitsuCharacterByMalId Fail] id=${strId}:`, e?.message);
+  }
+  return null;
+}
+
+export async function resolveKitsuPersonByMalId(malId: string | number): Promise<any | null> {
+  const strId = String(malId).trim();
+  if (!strId || isNaN(Number(strId))) return null;
+
+  try {
+    const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=myanimelist/people&filter[external_id]=${strId}&include=item`;
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const item = json.included?.find((inc: any) => inc.type === 'people');
+      if (item && item.attributes) {
+        const attr = item.attributes;
+        const img = attr.image?.original || attr.image?.large || attr.image?.medium || '/placeholder.png';
+        return {
+          mal_id: Number(strId),
+          name: attr.name || 'Unknown Staff',
+          given_name: '',
+          family_name: '',
+          about: attr.description || '',
+          favorites: 0,
+          images: {
+            jpg: { image_url: img },
+            webp: { image_url: img }
+          },
+          anime: [],
+          voices: []
+        };
+      }
+    }
+  } catch (e: any) {
+    console.warn(`[resolveKitsuPersonByMalId Fail] id=${strId}:`, e?.message);
+  }
+  return null;
+}
+
+const TOP_CHARACTERS_CACHE: Record<number, any> = {
+  1: {
+    mal_id: 1,
+    name: 'Spike Spiegel',
+    name_kanji: 'スパイク・スピーゲル',
+    nicknames: ['Swimming Bird'],
+    favorites: 75000,
+    about: 'Spike Spiegel is a former member of the Red Dragon Crime Syndicate, who left by faking his death. He is a bounty hunter and partner of Jet Black aboard the Bebop.',
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/characters/4/50197.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/characters/4/50197.webp' }
+    },
+    anime: [{ role: 'Main', anime: { mal_id: 1, title: 'Cowboy Bebop', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/4/19644.jpg' } } } }],
+    voices: [{ language: 'Japanese', person: { mal_id: 11, name: 'Kouichi Yamadera', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/2/54823.jpg' } } } }]
+  },
+  40: {
+    mal_id: 40,
+    name: 'Monkey D. Luffy',
+    name_kanji: 'モンキー・D・ルフィ',
+    nicknames: ['Straw Hat', 'Lucy'],
+    favorites: 140000,
+    about: 'Monkey D. Luffy is the captain of the Straw Hat Pirates and aspires to become the next Pirate King by finding the legendary treasure One Piece.',
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/characters/9/310307.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/characters/9/310307.webp' }
+    },
+    anime: [{ role: 'Main', anime: { mal_id: 21, title: 'One Piece', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/6/73245.jpg' } } } }],
+    voices: [{ language: 'Japanese', person: { mal_id: 79, name: 'Mayumi Tanaka', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/3/65133.jpg' } } } }]
+  },
+  62: {
+    mal_id: 62,
+    name: 'Roronoa Zoro',
+    name_kanji: 'ロロノア・ゾロ',
+    nicknames: ['Pirate Hunter Zoro'],
+    favorites: 115000,
+    about: 'Roronoa Zoro is the swordsman of the Straw Hat Pirates and aims to become the greatest swordsman in the world.',
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/characters/3/100534.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/characters/3/100534.webp' }
+    },
+    anime: [{ role: 'Main', anime: { mal_id: 21, title: 'One Piece', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/6/73245.jpg' } } } }],
+    voices: [{ language: 'Japanese', person: { mal_id: 123, name: 'Kazuya Nakai', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/2/74301.jpg' } } } }]
+  },
+  417: {
+    mal_id: 417,
+    name: 'Lelouch Lamperouge',
+    name_kanji: 'ルルーシュ・ランペルージ',
+    nicknames: ['Zero', 'Lulu'],
+    favorites: 165000,
+    about: 'Lelouch Lamperouge is the former Eleventh Prince of Britannia who leads the rebellion under the alias Zero.',
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/characters/8/406163.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/characters/8/406163.webp' }
+    },
+    anime: [{ role: 'Main', anime: { mal_id: 1575, title: 'Code Geass: Hangyaku no Lelouch', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/5/50331.jpg' } } } }],
+    voices: [{ language: 'Japanese', person: { mal_id: 86, name: 'Jun Fukuyama', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/1/40964.jpg' } } } }]
+  }
+};
+
+const TOP_STAFF_CACHE: Record<number, any> = {
+  1880: {
+    mal_id: 1880,
+    name: 'Tite Kubo',
+    given_name: 'Noriaki',
+    family_name: 'Kubo',
+    about: 'Tite Kubo is a Japanese manga artist best known for creating Bleach.',
+    favorites: 12000,
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/2/18165.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/2/18165.webp' }
+    },
+    anime: [{ position: 'Original Creator', anime: { mal_id: 269, title: 'Bleach', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/3/40451.jpg' } } } }],
+    voices: []
+  },
+  1870: {
+    mal_id: 1870,
+    name: 'Hayao Miyazaki',
+    given_name: 'Hayao',
+    family_name: 'Miyazaki',
+    about: 'Hayao Miyazaki is an acclaimed Japanese animator, director, producer, screenwriter, and manga artist. Co-founder of Studio Ghibli.',
+    favorites: 35000,
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/3/65134.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/3/65134.webp' }
+    },
+    anime: [{ position: 'Director', anime: { mal_id: 164, title: 'Mononoke Hime', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/7/7581.jpg' } } } }],
+    voices: []
+  },
+  1881: {
+    mal_id: 1881,
+    name: 'Eiichiro Oda',
+    given_name: 'Eiichiro',
+    family_name: 'Oda',
+    about: 'Eiichiro Oda is a Japanese manga artist, best known as the creator of the manga series One Piece.',
+    favorites: 85000,
+    images: {
+      jpg: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/1/40965.jpg' },
+      webp: { image_url: 'https://cdn.myanimelist.net/images/voiceactors/1/40965.webp' }
+    },
+    anime: [{ position: 'Original Creator', anime: { mal_id: 21, title: 'One Piece', images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/6/73245.jpg' } } } }],
+    voices: []
+  }
+};
+
 export async function getCharacterDetailsJikan(id: string | number) {
-  const numId = Number(id);
-  // 1. Try Jikan API
+  const strId = String(id).trim();
+
+  // If explicit AniList character ID
+  if (strId.startsWith('al-')) {
+    const aniId = Number(strId.replace('al-', ''));
+    if (!isNaN(aniId) && aniId > 0) {
+      const aniChar = await fetchAniListCharacter(aniId);
+      if (aniChar) return aniChar;
+    }
+    return null;
+  }
+
+  const numId = Number(strId);
+
+  // 1. Try Jikan API (primary for MAL character IDs)
   try {
     const data = await fetchJikan(`/characters/${id}/full`, GLOBAL_CACHE_TIME, 2500);
     if (data?.data) return data.data;
@@ -1500,18 +2232,36 @@ export async function getCharacterDetailsJikan(id: string | number) {
     console.warn(`[Jikan Character Fail] ID ${id}:`, error);
   }
 
-  // 2. Fallback to AniList Direct Query
+  // 2. Try In-Memory Cache for Top Characters
+  if (!isNaN(numId) && TOP_CHARACTERS_CACHE[numId]) {
+    return TOP_CHARACTERS_CACHE[numId];
+  }
+
+  // 3. Resilient Fallback to Kitsu character mapping (by MAL character ID)
   if (!isNaN(numId) && numId > 0) {
-    const aniChar = await fetchAniListCharacter(numId);
-    if (aniChar) return aniChar;
+    const kitsuChar = await resolveKitsuCharacterByMalId(numId);
+    if (kitsuChar) return kitsuChar;
   }
 
   return null;
 }
 
 export async function getPersonDetailsJikan(id: string | number) {
-  const numId = Number(id);
-  // 1. Try Jikan API
+  const strId = String(id).trim();
+
+  // If explicit AniList staff ID
+  if (strId.startsWith('al-')) {
+    const aniId = Number(strId.replace('al-', ''));
+    if (!isNaN(aniId) && aniId > 0) {
+      const aniStaff = await fetchAniListStaff(aniId);
+      if (aniStaff) return aniStaff;
+    }
+    return null;
+  }
+
+  const numId = Number(strId);
+
+  // 1. Try Jikan API (primary for MAL people IDs)
   try {
     const data = await fetchJikan(`/people/${id}/full`, GLOBAL_CACHE_TIME, 2500);
     if (data?.data) return data.data;
@@ -1519,10 +2269,15 @@ export async function getPersonDetailsJikan(id: string | number) {
     console.warn(`[Jikan People Fail] ID ${id}:`, error);
   }
 
-  // 2. Fallback to AniList Direct Query
+  // 2. Try In-Memory Cache for Top Staff
+  if (!isNaN(numId) && TOP_STAFF_CACHE[numId]) {
+    return TOP_STAFF_CACHE[numId];
+  }
+
+  // 3. Resilient Fallback to Kitsu people mapping (by MAL people ID)
   if (!isNaN(numId) && numId > 0) {
-    const aniStaff = await fetchAniListStaff(numId);
-    if (aniStaff) return aniStaff;
+    const kitsuPerson = await resolveKitsuPersonByMalId(numId);
+    if (kitsuPerson) return kitsuPerson;
   }
 
   return null;
@@ -2535,7 +3290,7 @@ export async function searchMangaJikan(
   }
 }
 
-// ৭. Top Movies (For Homepage Lists)
+// ৭. Top Movies (For Homepage Lists: Primary AniList, Backup Jikan)
 export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
   const query = `
     query {
@@ -2548,13 +3303,36 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
+      return data.data.Page.media as AniListMedia[];
+    }
+  } catch {}
+
+  // Backup: Jikan /top/anime?type=movie
+  try {
+    const jikanData = await fetchJikan('/top/anime?type=movie&limit=4', GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      return jikanData.data.map((item: any) => ({
+        id: item.mal_id,
+        idMal: item.mal_id,
+        title: { english: item.title_english || item.title, romaji: item.title },
+        coverImage: {
+          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          large: item.images?.jpg?.large_image_url
+        },
+        averageScore: item.score ? Math.round(item.score * 10) : null,
+        format: 'MOVIE',
+        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
+        episodes: item.episodes || 1,
+        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
+      })) as AniListMedia[];
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// ৮. Top TV Series (For Homepage Lists)
+// ৮. Top TV Series (For Homepage Lists: Primary AniList, Backup Jikan)
 export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
   const query = `
     query {
@@ -2567,13 +3345,36 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
+      return data.data.Page.media as AniListMedia[];
+    }
+  } catch {}
+
+  // Backup: Jikan /top/anime?type=tv
+  try {
+    const jikanData = await fetchJikan('/top/anime?type=tv&limit=4', GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      return jikanData.data.map((item: any) => ({
+        id: item.mal_id,
+        idMal: item.mal_id,
+        title: { english: item.title_english || item.title, romaji: item.title },
+        coverImage: {
+          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          large: item.images?.jpg?.large_image_url
+        },
+        averageScore: item.score ? Math.round(item.score * 10) : null,
+        format: 'TV',
+        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
+        episodes: item.episodes,
+        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
+      })) as AniListMedia[];
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// ৯. Year Awards/Contenders (For Homepage Lists)
+// ৯. Year Awards/Contenders (For Homepage Lists: Primary AniList, Backup Jikan)
 export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]> {
   const query = `
     query ($year: Int) {
@@ -2586,31 +3387,36 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
   `;
   try {
     const data = await fetchAniList(query, { year });
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
-}
-
-// ─── Curated Sections (Loaded from MongoDB Atlas with AniList Fallback) ───────
-
-async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<AniListMedia[]> {
-  try {
-    const res = await fetch(`${BACKEND_BASE_URL}/api/curated/${sectionKey}`, {
-      next: { revalidate: 3600 }, // 1-hour ISR cache
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        return json.data as AniListMedia[];
-      }
+    if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
+      return data.data.Page.media as AniListMedia[];
     }
-  } catch (err: any) {
-    console.warn(`[fetchCuratedSectionFromAtlas] Failed to fetch section ${sectionKey}:`, err.message);
-  }
-  return [];
+  } catch {}
+
+  // Backup: Jikan /top/anime?filter=airing
+  try {
+    const jikanData = await fetchJikan('/top/anime?filter=airing&limit=4', GLOBAL_CACHE_TIME, 2500);
+    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
+      return jikanData.data.map((item: any) => ({
+        id: item.mal_id,
+        idMal: item.mal_id,
+        title: { english: item.title_english || item.title, romaji: item.title },
+        coverImage: {
+          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          large: item.images?.jpg?.large_image_url
+        },
+        averageScore: item.score ? Math.round(item.score * 10) : null,
+        format: item.type || 'TV',
+        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
+        episodes: item.episodes,
+        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
+      })) as AniListMedia[];
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
+
+// Curated sections loaded from Atlas via top-level helper
 
 // Anime Not For Kids Curated List (25 titles)
 export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
@@ -2668,6 +3474,9 @@ export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]>
 
 // The Shounen Zone (Fetches top popular Shounen anime)
 export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('shounen');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 40) {
@@ -2679,14 +3488,17 @@ export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // The Sports Zone (Fetches top popular Sports anime)
 export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('sports');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 40) {
@@ -2698,10 +3510,10 @@ export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // Inspired by Sword Art Online (Fetches recommendations for SAO: 11757)
@@ -2735,6 +3547,9 @@ export async function getSimilarToSAOAnimeAniList(): Promise<AniListMedia[]> {
 
 // The Fantasy Zone (Fetches top popular Fantasy anime)
 export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('fantasy');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 40) {
@@ -2746,14 +3561,17 @@ export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // Supernatural World (Fetches top popular Supernatural anime)
 export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('supernatural');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 40) {
@@ -2765,14 +3583,17 @@ export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // Seasonal Romance Anime (Fetches top popular Romance anime from a given season and year)
 export async function getSeasonalRomanceAnimeAniList(year: number, season: string): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('romance');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($year: Int, $season: MediaSeason) {
       Page(page: 1, perPage: 20) {
@@ -2784,14 +3605,17 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
   `;
   try {
     const data = await fetchAniList(query, { year, season });
-    return data.data.Page.media as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // Sci-Fi Anime (Fetches top popular Sci-Fi anime)
 export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('scifi');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 40) {
@@ -2803,10 +3627,10 @@ export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // Evergreen Anime Curated List (25 titles)
@@ -2891,6 +3715,37 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
   } catch {
     return [] as AniListMedia[];
   }
+}
+
+// ─── Anime Reviews Fetcher (Jikan API with Memory Cache) ─────────────────────
+export async function getAnimeReviews(malId: number | string): Promise<any[]> {
+  if (!malId) return [];
+  const cleanId = String(malId).replace(/^(kitsu-|al-)/, '');
+  const numId = Number(cleanId);
+  if (isNaN(numId) || numId <= 0 || numId > 65000) return [];
+
+  try {
+    const data = await fetchJikan(`/anime/${numId}/reviews`, GLOBAL_CACHE_TIME, 6000);
+    if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
+      return data.data.map((r: any) => ({
+        id: r.mal_id,
+        mal_id: r.mal_id,
+        user: {
+          username: r.user?.username || 'AnimeFan',
+          image: r.user?.images?.jpg?.image_url || null,
+        },
+        score: r.score || null,
+        date: r.date || new Date().toISOString(),
+        review: r.review || '',
+        tags: r.tags || [],
+        isSpoiler: r.is_spoiler || false,
+        reactions: r.reactions || { overall: 0, nice: 0, love_it: 0 },
+      }));
+    }
+  } catch (err: any) {
+    console.warn(`[getAnimeReviews] Failed for ${malId}:`, err?.message);
+  }
+  return [];
 }
 
 

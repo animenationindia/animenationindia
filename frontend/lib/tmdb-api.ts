@@ -253,3 +253,50 @@ export async function getTMDBAnimeData(title: string, year?: number): Promise<TM
   tmdbInFlight.set(cacheKey, promise);
   return promise;
 }
+
+/**
+ * Fetch anime trailers from TMDB as secondary/tertiary fallback
+ */
+export async function getTMDBAnimeTrailers(limit = 12): Promise<any[]> {
+  try {
+    const res = await fetchWithTimeout(
+      `${TMDB_BASE_URL}/discover/tv?api_key=${TMDB_API_KEY}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`,
+      { next: { revalidate: 86400 } },
+      3000
+    );
+    if (!res || !res.ok) return [];
+    const json = await res.json();
+    const shows = json.results || [];
+
+    const trailers: any[] = [];
+    for (const show of shows.slice(0, limit)) {
+      try {
+        const vRes = await fetchWithTimeout(
+          `${TMDB_BASE_URL}/tv/${show.id}/videos?api_key=${TMDB_API_KEY}`,
+          { next: { revalidate: 86400 } },
+          2000
+        );
+        if (vRes && vRes.ok) {
+          const vData = await vRes.json();
+          const tr = (vData.results || []).find((v: any) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'))
+            || (vData.results || []).find((v: any) => v.site === 'YouTube');
+          if (tr?.key) {
+            trailers.push({
+              id: show.id,
+              title: { english: show.name, romaji: show.original_name || show.name },
+              trailer: {
+                id: tr.key,
+                site: 'youtube',
+                thumbnail: show.backdrop_path ? `${IMAGE_BASE_URL}/w780${show.backdrop_path}` : `https://i.ytimg.com/vi/${tr.key}/hqdefault.jpg`
+              }
+            });
+          }
+        }
+      } catch {}
+    }
+    return trailers;
+  } catch (err) {
+    logError('getTMDBAnimeTrailers', err);
+    return [];
+  }
+}
