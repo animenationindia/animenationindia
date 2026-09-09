@@ -222,6 +222,10 @@ function toEnglishTitle(raw, fallback = 'Anime') {
       const cleanRest = cleanJapaneseSuffixes(rest.replace(/^[:\-\s]+/, ''));
       if (!cleanRest) return rule.replacement;
 
+      if (rule.replacement.toLowerCase().includes(cleanRest.toLowerCase())) {
+        return rule.replacement;
+      }
+
       if (/^(Season|\d+|Part|Movie|The Movie|Episode)/i.test(cleanRest)) {
         return `${rule.replacement} ${cleanRest}`;
       }

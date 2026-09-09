@@ -3474,8 +3474,11 @@ export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// Inspired by Sword Art Online (Primary BFF /api/anime/11757/recommendations)
+// Inspired by Sword Art Online (Loaded from Atlas with BFF Fallback)
 export async function getSimilarToSAOAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('similar_sao');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const recs = await fetchBFF<any[]>('/api/anime/11757/recommendations');
     if (recs && Array.isArray(recs) && recs.length > 0) {
