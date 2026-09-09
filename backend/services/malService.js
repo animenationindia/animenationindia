@@ -29,7 +29,7 @@ const memoryCache = new Map();
 const inFlightRequests = new Map();
 const DEFAULT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
-async function fetchMAL(endpoint, ttlMs = DEFAULT_CACHE_TTL, timeoutMs = 5000) {
+async function fetchMAL(endpoint, ttlMs = DEFAULT_CACHE_TTL, timeoutMs = 12000) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const cacheKey = `mal:${cleanEndpoint}`;
 
@@ -82,7 +82,19 @@ async function getAnimeDetails(id) {
 
   const fields = 'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_episodes,start_season,broadcast,source,average_episode_duration,rating,pictures,background,related_anime,related_manga,recommendations,studios,statistics';
   
-  const raw = await fetchMAL(`/anime/${numId}?fields=${encodeURIComponent(fields)}`, 6 * 60 * 60 * 1000);
+  let raw = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      raw = await fetchMAL(`/anime/${numId}?fields=${encodeURIComponent(fields)}`, 6 * 60 * 60 * 1000);
+      if (raw && raw.id) break;
+    } catch (err) {
+      if (attempt === 3) {
+        console.warn(`[MAL] getAnimeDetails failed after 3 attempts for ${numId}:`, err.message);
+        return null;
+      }
+      await new Promise(r => setTimeout(r, 800 * attempt));
+    }
+  }
   if (!raw || !raw.id) return null;
 
   const formatMap = { tv: 'TV', movie: 'Movie', ova: 'OVA', ona: 'ONA', special: 'Special', music: 'Music' };

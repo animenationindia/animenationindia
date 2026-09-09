@@ -3496,8 +3496,11 @@ export async function getSimilarToSAOAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// The Fantasy Zone (Fetches top popular Fantasy anime: Primary BFF /api/anime/search/query?q=Fantasy)
+// The Fantasy Zone (Loaded from Atlas with BFF Fallback)
 export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('fantasy');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Fantasy&limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
@@ -3505,44 +3508,19 @@ export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  const query = `
-    query {
-      Page(page: 1, perPage: 40) {
-        media(genre: "Fantasy", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query);
-    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
-  } catch {}
-
   return [] as AniListMedia[];
 }
 
-// Supernatural World (Fetches top popular Supernatural anime: Primary BFF /api/anime/search/query?q=Supernatural)
+// Supernatural World (Loaded from Atlas with BFF Fallback)
 export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('supernatural');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Supernatural&limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
       return bffData.map(formatToAniListMedia).filter(Boolean);
     }
-  } catch {}
-
-  const query = `
-    query {
-      Page(page: 1, perPage: 40) {
-        media(genre: "Supernatural", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query);
-    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
   } catch {}
 
   return [] as AniListMedia[];
@@ -3603,8 +3581,11 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
   ] as AniListMedia[];
 }
 
-// Sci-Fi Anime (Primary BFF /api/anime/search/query?q=Sci-Fi)
+// Sci-Fi Anime (Loaded from Atlas with BFF Fallback)
 export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('scifi');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Sci-Fi&limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
@@ -3612,25 +3593,14 @@ export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  const query = `
-    query {
-      Page(page: 1, perPage: 40) {
-        media(genre: "Sci-Fi", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query);
-    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
-  } catch {}
-
   return [] as AniListMedia[];
 }
 
-// Evergreen Anime Curated List (Primary BFF /api/anime/ranking/favorite)
+// Evergreen Anime Curated List (Loaded from Atlas with BFF Fallback)
 export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('evergreen');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/ranking/favorite?limit=25');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
@@ -3638,31 +3608,14 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  const ids = [
-    1889, 20665, 120, 21420, 2001, 269, 20755, 101190, 918, 5114, 
-    9253, 11061, 1535, 1575, 4181, 1, 19, 4224, 20464, 21507, 
-    205, 30, 9989, 8769, 270
-  ];
-  const query = `
-    query ($ids: [Int]) {
-      Page(page: 1, perPage: 25) {
-        media(id_in: $ids, type: ANIME) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query, { ids });
-    const mediaList = data.data.Page.media as AniListMedia[];
-    return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-  } catch {
-    return [] as AniListMedia[];
-  }
+  return [] as AniListMedia[];
 }
 
-// Must Watch For My Hero Academia Fans (Primary BFF /api/anime/31964/recommendations)
+// Must Watch For My Hero Academia Fans (Loaded from Atlas with BFF Fallback)
 export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('similar_mha');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const recs = await fetchBFF<any[]>('/api/anime/31964/recommendations');
     if (recs && Array.isArray(recs) && recs.length > 0) {
@@ -3680,8 +3633,11 @@ export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// Hidden Gems Curated List (Primary BFF /api/anime/ranking/all?offset=50)
+// Hidden Gems Curated List (Loaded from Atlas with BFF Fallback)
 export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('hidden_gems');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/ranking/all?limit=24&offset=50');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
@@ -3689,26 +3645,7 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  const ids = [
-    21519, 106286, 145904, 1689, 16782, 9760, 433, 256, 10516, 20972, 
-    20607, 98707, 7785, 2246, 3297, 457, 10165, 109268, 16664, 5681
-  ];
-  const query = `
-    query ($ids: [Int]) {
-      Page(page: 1, perPage: 20) {
-        media(id_in: $ids, type: ANIME) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query, { ids });
-    const mediaList = data.data.Page.media as AniListMedia[];
-    return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-  } catch {
-    return [] as AniListMedia[];
-  }
+  return [] as AniListMedia[];
 }
 
 // ─── Anime Reviews Fetcher (BFF with Jikan & Memory Cache) ───────────────────
