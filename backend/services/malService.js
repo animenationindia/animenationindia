@@ -234,8 +234,18 @@ async function getSearchSuggestions(query, limit = 5) {
 }
 
 async function getTopManga(rankingType = 'all', limit = 24, offset = 0) {
+  let type = rankingType;
+  let lim = limit;
+  let off = offset;
+
+  if (typeof rankingType === 'number') {
+    lim = rankingType;
+    type = 'all';
+    off = limit || 0;
+  }
+
   const fields = 'id,title,main_picture,mean,rank,popularity,genres,media_type,num_chapters,num_volumes,authors{node{first_name,last_name}}';
-  const raw = await fetchMAL(`/manga/ranking?ranking_type=${rankingType}&limit=${limit}&offset=${offset}&fields=${encodeURIComponent(fields)}`, 60 * 60 * 1000);
+  const raw = await fetchMAL(`/manga/ranking?ranking_type=${type}&limit=${lim}&offset=${off}&fields=${encodeURIComponent(fields)}`, 60 * 60 * 1000);
   
   if (!raw || !Array.isArray(raw.data)) return [];
 

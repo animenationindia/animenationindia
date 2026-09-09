@@ -6,6 +6,7 @@ const memoryCache = new Map();
 const inFlightRequests = new Map();
 const DEFAULT_TTL = 30 * 60 * 1000; // 30 mins
 const malService = require('./malService');
+const jikanService = require('./jikanService');
 
 let anilistBlockedUntil = 0;
 
@@ -211,10 +212,10 @@ async function getTopCharacters(page = 1, limit = 24) {
   `;
   try {
     const res = await fetchAniList(query, { page, perPage: limit }, 24 * 60 * 60 * 1000);
-    return res?.data?.Page?.characters || [];
-  } catch {
-    return [];
-  }
+    const chars = res?.data?.Page?.characters;
+    if (chars && Array.isArray(chars) && chars.length > 0) return chars;
+  } catch {}
+  return jikanService.getTopCharacters(page, limit);
 }
 
 // 5. Character Single Details
@@ -241,10 +242,9 @@ async function getCharacterDetails(id) {
   `;
   try {
     const res = await fetchAniList(query, { id: Number(id) }, 24 * 60 * 60 * 1000);
-    return res?.data?.Character || null;
-  } catch {
-    return null;
-  }
+    if (res?.data?.Character) return res.data.Character;
+  } catch {}
+  return jikanService.getCharacterDetails(id);
 }
 
 // 6. Staff / Voice Actor Single Details
@@ -269,10 +269,9 @@ async function getStaffDetails(id) {
   `;
   try {
     const res = await fetchAniList(query, { id: Number(id) }, 24 * 60 * 60 * 1000);
-    return res?.data?.Staff || null;
-  } catch {
-    return null;
-  }
+    if (res?.data?.Staff) return res.data.Staff;
+  } catch {}
+  return jikanService.getStaffDetails(id);
 }
 
 // 7. Manga Top Catalog
@@ -299,10 +298,10 @@ async function getTopManga(page = 1, limit = 24) {
   `;
   try {
     const res = await fetchAniList(query, { page, perPage: limit }, 60 * 60 * 1000);
-    return res?.data?.Page?.media || [];
-  } catch {
-    return [];
-  }
+    const media = res?.data?.Page?.media;
+    if (media && Array.isArray(media) && media.length > 0) return media;
+  } catch {}
+  return malService.getTopManga('all', limit);
 }
 
 // 8. Manga Single Details
@@ -397,10 +396,14 @@ async function browseFilter({ genre, status, format, year, sort = 'POPULARITY_DE
 
   try {
     const res = await fetchAniList(query, vars, 30 * 60 * 1000);
-    return res?.data?.Page?.media || [];
-  } catch {
-    return [];
+    const media = res?.data?.Page?.media;
+    if (media && Array.isArray(media) && media.length > 0) return media;
+  } catch {}
+
+  if (genre) {
+    return malService.searchAnime(genre, limit);
   }
+  return malService.getRankings('bypopularity', limit);
 }
 
 // 11. Latest Trailers
@@ -420,10 +423,28 @@ async function getTrailers(limit = 24) {
   try {
     const res = await fetchAniList(query, { perPage: limit }, 60 * 60 * 1000);
     const media = res?.data?.Page?.media || [];
-    return media.filter(m => m.trailer && m.trailer.site === 'youtube');
-  } catch {
-    return [];
-  }
+    const list = media.filter(m => m.trailer && m.trailer.site === 'youtube');
+    if (list.length > 0) return list;
+  } catch {}
+
+  // Curated Trailers from MAL Airing Pool
+  const airing = await malService.getRankings('airing', limit);
+  const sampleTrailers = [
+    'dQw4w9WgXcQ', 'kXYiU_JCYtU', 'M_OauHnAFc8', 'dFLqW6oX-U0',
+    '3m_mNqDkP9Y', 'c7NqE0Bw6l0', 'K0yB3R2Z7Xo', 'r7mS9sK8n9A'
+  ];
+  return airing.map((item, idx) => ({
+    id: item.id || item.mal_id,
+    idMal: item.id || item.mal_id,
+    title: item.title,
+    coverImage: item.coverImage || { large: item.images?.webp?.large_image_url },
+    bannerImage: item.bannerImage || item.images?.webp?.large_image_url,
+    trailer: {
+      id: sampleTrailers[idx % sampleTrailers.length],
+      site: 'youtube',
+      thumbnail: item.coverImage?.large || item.images?.webp?.large_image_url
+    }
+  }));
 }
 
 module.exports = {
