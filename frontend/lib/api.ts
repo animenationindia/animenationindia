@@ -3385,8 +3385,32 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
   ] as AniListMedia[];
 }
 
-// Anime Not For Kids Curated List (Primary BFF Dark Fantasy / bypopularity)
+// Anime Not For Kids Curated List (25 Curated Mature Titles)
 export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
+  const ids = [
+    1570, 137909, 101367, 170890, 21613, 153845, 147571, 10087, 136707, 166828,
+    138522, 156039, 111322, 169417, 130586, 146065, 6682, 1292, 153629, 21131,
+    129898, 166372, 144553, 155011, 103632
+  ];
+
+  const query = `
+    query ($ids: [Int]) {
+      Page(page: 1, perPage: 25) {
+        media(id_in: $ids, type: ANIME) {
+          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+        }
+      }
+    }
+  `;
+
+  try {
+    const data = await fetchAniList(query, { ids });
+    const mediaList = data?.data?.Page?.media as AniListMedia[];
+    if (mediaList && Array.isArray(mediaList) && mediaList.length > 0) {
+      return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    }
+  } catch {}
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Dark%20Fantasy&limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
