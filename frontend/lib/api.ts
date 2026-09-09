@@ -571,6 +571,81 @@ export interface AniListExtra {
   } | null;
 }
 
+// ─── High-Speed Backend BFF Helper with Official MAL v2 5-Key Pool ───────────
+export async function fetchBFF<T>(endpoint: string, revalidate = 1800, timeoutMs = 4000): Promise<T | null> {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const cacheKey = `bff:${cleanEndpoint}`;
+
+  const cached = apiMemoryCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < MEMORY_CACHE_TTL) && revalidate !== 0) {
+    return cached.data as T;
+  }
+
+  const tryFetch = async (baseUrl: string) => {
+    try {
+      const res = await fetch(`${baseUrl}${cleanEndpoint}`, {
+        next: { revalidate },
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json && (json.success !== false || json.data !== undefined)) {
+          return (json.data !== undefined ? json.data : json) as T;
+        }
+      }
+    } catch {}
+    return null;
+  };
+
+  let data = await tryFetch(BACKEND_BASE_URL);
+  if (!data && !BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
+    data = await tryFetch('http://localhost:5000');
+  }
+
+  if (data) {
+    apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+    return data;
+  }
+
+  return null;
+}
+
+export function formatToAniListMedia(item: any): AniListMedia {
+  if (!item) return null as any;
+  const id = item.id || item.mal_id || item.idMal;
+  const englishTitle = item.title_english || item.title?.english || (typeof item.title === 'string' ? item.title : null);
+  const romajiTitle = item.title?.romaji || item.title_japanese || (typeof item.title === 'string' ? item.title : 'Anime');
+  const coverUrl = item.coverImage?.extraLarge || item.coverImage?.large || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.images?.webp?.image_url || item.images?.jpg?.image_url || '/placeholder-poster.png';
+  const bannerUrl = item.bannerImage || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || coverUrl;
+  const score = item.averageScore || (typeof item.score === 'number' ? Math.round(item.score * 10) : (typeof item.mean === 'number' ? Math.round(item.mean * 10) : null));
+  const genres = Array.isArray(item.genres) 
+    ? item.genres.map((g: any) => (typeof g === 'string' ? g : (g.name || '')))
+    : [];
+
+  return {
+    id: Number(id),
+    idMal: Number(item.idMal || item.mal_id || id),
+    title: {
+      english: englishTitle,
+      romaji: romajiTitle
+    },
+    coverImage: {
+      extraLarge: coverUrl,
+      large: coverUrl
+    },
+    bannerImage: bannerUrl,
+    description: item.description || item.synopsis || null,
+    episodes: item.episodes || item.num_episodes || null,
+    format: item.format || item.type || 'TV',
+    status: item.status || 'FINISHED',
+    averageScore: score,
+    genres: genres.filter(Boolean),
+    seasonYear: item.seasonYear || item.year || (item.start_date ? new Date(item.start_date).getFullYear() : null),
+    startDate: item.startDate || (item.start_date ? { year: new Date(item.start_date).getFullYear() } : null)
+  };
+}
+
 export async function getScheduleAniList(start: number, end: number, page = 1): Promise<AiringSchedule[]> {
   const query = `
     query ($page: Int, $start: Int, $end: Int) {
@@ -966,8 +1041,15 @@ export async function getPastMonthReleasesAniList(page = 1) {
   return { airingSchedules: [] as AiringSchedule[], pageInfo: { hasNextPage: false, currentPage: 1, lastPage: 1, total: 0 } };
 }
 
-// ২. Top Rated / All-Time Popular Anime (Primary: AniList, Backup: Jikan, No MongoDB)
+// ২. Top Rated / All-Time Popular Anime (Primary: BFF / Official MAL v2, Backup: AniList / Jikan)
 export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/all?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
   const query = `
     query {
       Page(page: 1, perPage: 12) {
@@ -988,22 +1070,7 @@ export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
   try {
     const jikanData = await fetchJikan('/top/anime?filter=bypopularity&limit=12', GLOBAL_CACHE_TIME, 2500);
     if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
-      return jikanData.data.map((item: any) => ({
-        id: item.mal_id,
-        idMal: item.mal_id,
-        title: { english: item.title_english || item.title, romaji: item.title },
-        coverImage: {
-          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          large: item.images?.jpg?.large_image_url
-        },
-        averageScore: item.score ? Math.round(item.score * 10) : null,
-        format: item.type || 'TV',
-        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
-        episodes: item.episodes,
-        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null),
-        genres: (item.genres || []).map((g: any) => g.name),
-        description: item.synopsis || ''
-      })) as AniListMedia[];
+      return jikanData.data.map(formatToAniListMedia).filter(Boolean);
     }
   } catch {}
 
@@ -1012,10 +1079,19 @@ export async function getTopAnimeAniList(): Promise<AniListMedia[]> {
 
 // ৩. Trending Anime (Updated for Home Page Grid)
 export async function getTrendingAnimeAniList(limit: number = 10): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('trending');
-  if (cachedFromAtlas.length > 0) {
-    return cachedFromAtlas.slice(0, limit);
-  }
+  try {
+    const bffData = await fetchBFF<any[]>(`/api/trending?limit=${limit}`);
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.slice(0, limit).map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  try {
+    const malData = await fetchBFF<any[]>(`/api/anime/ranking/airing?limit=${limit}`);
+    if (malData && Array.isArray(malData) && malData.length > 0) {
+      return malData.slice(0, limit).map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -1028,19 +1104,35 @@ export async function getTrendingAnimeAniList(limit: number = 10): Promise<AniLi
   `;
   try {
     const data = await fetchAniList(query);
-    const mediaList = data.data.Page.media as AniListMedia[];
-    const animeWithBanners = mediaList.filter((anime) => anime.bannerImage !== null);
-    if (limit > 10) {
+    const mediaList = data?.data?.Page?.media as AniListMedia[];
+    if (mediaList && mediaList.length > 0) {
       return mediaList.slice(0, limit);
     }
-    return animeWithBanners.slice(0, limit);
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // ৩.২ Popular Anime Page (With Pagination)
 export async function getPopularAnimePageAniList(page: number = 1): Promise<{ media: AniListMedia[], pageInfo: any }> {
+  try {
+    const offset = (page - 1) * 24;
+    const bffData = await fetchBFF<any[]>(`/api/anime/ranking/bypopularity?limit=24&offset=${offset}`);
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      const media = bffData.map(formatToAniListMedia).filter(Boolean);
+      return {
+        media,
+        pageInfo: {
+          total: 500,
+          currentPage: page,
+          lastPage: 20,
+          hasNextPage: page < 20,
+          perPage: 24
+        }
+      };
+    }
+  } catch {}
+
   const query = `
     query ($page: Int) {
       Page(page: $page, perPage: 24) { 
@@ -1067,64 +1159,26 @@ export async function getPopularAnimePageAniList(page: number = 1): Promise<{ me
     }
   } catch {}
 
-  // Fallback 1: Jikan /top/anime?filter=bypopularity
-  try {
-    const jikanData = await fetchJikan(`/top/anime?filter=bypopularity&page=${page}&limit=24`, GLOBAL_CACHE_TIME, 2500);
-    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
-      const media = jikanData.data.map((item: any) => ({
-        id: item.mal_id,
-        idMal: item.mal_id,
-        title: { english: item.title_english || item.title, romaji: item.title },
-        coverImage: {
-          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          large: item.images?.jpg?.large_image_url
-        },
-        bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-        description: item.synopsis || '',
-        episodes: item.episodes,
-        format: item.type || 'TV',
-        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
-        averageScore: item.score ? Math.round(item.score * 10) : null,
-        genres: (item.genres || []).map((g: any) => g.name),
-        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
-      })) as AniListMedia[];
-
-      return {
-        media,
-        pageInfo: {
-          total: jikanData.pagination?.items?.total || 240,
-          currentPage: page,
-          lastPage: jikanData.pagination?.last_visible_page || 10,
-          hasNextPage: jikanData.pagination?.has_next_page || false,
-          perPage: 24
-        }
-      };
-    }
-  } catch {}
-
-  // Fallback 2: Atlas curated 'popular' & 'trending'
-  const popularAtlas = await fetchCuratedSectionFromAtlas('popular');
-  const trendingAtlas = await fetchCuratedSectionFromAtlas('trending');
-  const combined = [...popularAtlas, ...trendingAtlas];
-  if (combined.length > 0) {
-    return {
-      media: combined.slice(0, 24),
-      pageInfo: {
-        total: combined.length,
-        currentPage: 1,
-        lastPage: 1,
-        hasNextPage: false,
-        perPage: 24
-      }
-    };
-  }
-
   return { media: [], pageInfo: { currentPage: 1, lastPage: 1, hasNextPage: false, total: 0 } };
 }
 
 
-// ৩.১ Top Airing Anime (For Hero Slider: AniList Primary + MongoDB Atlas Trending / Curated Fallback)
+// ৩.১ Top Airing Anime (For Hero Slider: Primary BFF / Official MAL v2 Airing + AniList Fallback)
 export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
+  try {
+    const bffData = await fetchBFF<any[]>('/api/hero');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.slice(0, 10).map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  try {
+    const malData = await fetchBFF<any[]>('/api/anime/ranking/airing?limit=15');
+    if (malData && Array.isArray(malData) && malData.length > 0) {
+      return malData.slice(0, 10).map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
   const query = `
     query {
       Page(page: 1, perPage: 25) { 
@@ -1147,46 +1201,7 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  // Fallback 1: MongoDB Atlas Auto-Updating Currently Streaming/Trending Collection (/api/trending)
-  try {
-    const res = await fetch(`${BACKEND_BASE_URL}/api/trending`, {
-      next: { revalidate: 3600 },
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-        const mappedTrending: AniListMedia[] = json.data.map((item: any) => ({
-          id: item.mal_id,
-          idMal: item.mal_id,
-          title: {
-            english: item.title_english || item.title,
-            romaji: item.title || item.title_english
-          },
-          coverImage: {
-            extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.bannerImage,
-            large: item.images?.jpg?.large_image_url || item.bannerImage
-          },
-          bannerImage: item.bannerImage || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          description: item.synopsis || '',
-          averageScore: item.score ? Math.round(item.score * 10) : null,
-          format: 'TV',
-          status: 'RELEASING',
-          genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name)
-        }));
-        return mappedTrending.slice(0, 10);
-      }
-    }
-  } catch (err: any) {
-    console.warn('[getTopAiringAnimeAniList] /api/trending fallback error:', err.message);
-  }
-
-  // Fallback 2: Atlas Curated (kickstart / shounen / evergreen)
-  const atlasKickstart = await fetchCuratedSectionFromAtlas('kickstart');
-  if (atlasKickstart.length > 0) return atlasKickstart.slice(0, 10);
-  const atlasShounen = await fetchCuratedSectionFromAtlas('shounen');
-  if (atlasShounen.length > 0) return atlasShounen.slice(0, 10);
-  return await fetchCuratedSectionFromAtlas('evergreen');
+  return [] as AniListMedia[];
 }
 
 // ৪. Details Page এর জন্য Full Info (BFF / Official MAL -> AniList -> Jikan)
@@ -1499,8 +1514,15 @@ export async function getAniListExtraInfo(idMal: number): Promise<AniListExtra |
   }
 }
 
-// ৭. New Releases (Recently Added)
+// ৭. New Releases (Recently Added: Primary BFF / Official MAL v2 Airing + AniList Fallback)
 export async function getNewReleasesAniList(): Promise<AniListMedia[]> {
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/airing?limit=15');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
   const query = `
     query {
       Page(page: 1, perPage: 15) {
@@ -1512,14 +1534,21 @@ export async function getNewReleasesAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// ৭.১ Current Season (Simulcast)
+// ৭.১ Current Season (Simulcast: Primary BFF / Official MAL v2 Airing + AniList Fallback)
 export async function getCurrentSeasonAniList(): Promise<AniListMedia[]> {
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/airing?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
   const query = `
     query {
       Page(page: 1, perPage: 24) {
@@ -1531,16 +1560,20 @@ export async function getCurrentSeasonAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// ৮. Upcoming (Next Season)
+// ৮. Upcoming (Next Season: Primary BFF / Official MAL v2 Upcoming + AniList Fallback)
 export async function getUpcomingAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('upcoming');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/upcoming?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -1553,16 +1586,27 @@ export async function getUpcomingAnimeAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// ৯. Popular Dubbed
+// ৯. Popular Dubbed (Primary BFF / Official MAL v2 bypopularity + AniList Fallback)
 export async function getPopularDubbedAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('popular_dubbed');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/dubbed?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  try {
+    const malData = await fetchBFF<any[]>('/api/anime/ranking/bypopularity?limit=24');
+    if (malData && Array.isArray(malData) && malData.length > 0) {
+      return malData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -1575,14 +1619,26 @@ export async function getPopularDubbedAniList(): Promise<AniListMedia[]> {
   `;
   try {
     const data = await fetchAniList(query);
-    return data.data.Page.media as AniListMedia[];
-  } catch { 
-    return [] as AniListMedia[]; 
-  }
+    if (data?.data?.Page?.media) return data.data.Page.media as AniListMedia[];
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
 // ১০. Top Characters
 export async function getTopCharactersAniList(page: number = 1): Promise<CharacterItem[]> {
+  try {
+    const bffData = await fetchBFF<any[]>(`/api/characters/top?page=${page}&limit=24`);
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map((c: any) => ({
+        id: c.id || c.mal_id,
+        name: { full: c.name?.full || c.name || 'Character' },
+        image: { large: c.image?.large || c.images?.jpg?.image_url || '/placeholder-poster.png' },
+        favourites: c.favourites || c.favorites || 10000
+      }));
+    }
+  } catch {}
+
   const query = `query($page:Int){Page(page:$page,perPage:24){characters(sort:FAVOURITES_DESC){id name{full} image{large} favourites}}}`;
   try {
     const data = await fetchAniList(query, { page });
@@ -1591,7 +1647,6 @@ export async function getTopCharactersAniList(page: number = 1): Promise<Charact
     }
   } catch {}
 
-  // Fallback: Jikan top characters with default list
   return (await getTopCharactersJikan()) as CharacterItem[];
 }
 
@@ -1605,12 +1660,28 @@ export async function getTopStaffAniList(page: number = 1): Promise<StaffItem[]>
     }
   } catch {}
 
-  // Fallback: Jikan top people with default list
   return (await getTopPeopleJikan()) as StaffItem[];
 }
 
-// ১৩. Search Anime (With Pagination)
+// ১৩. Search Anime (With Pagination: Primary BFF / Official MAL v2 + AniList Fallback)
 export async function searchAnimeAniList(queryText: string, page: number = 1) {
+  try {
+    const bffData = await fetchBFF<any[]>(`/api/anime/search/query?q=${encodeURIComponent(queryText)}&limit=24`);
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      const media = bffData.map(formatToAniListMedia).filter(Boolean);
+      return {
+        media,
+        pageInfo: {
+          total: media.length,
+          currentPage: page,
+          lastPage: 1,
+          hasNextPage: false,
+          perPage: 24
+        }
+      };
+    }
+  } catch {}
+
   const query = `
     query ($search: String, $page: Int) {
       Page(page: $page, perPage: 24) {
@@ -1628,11 +1699,12 @@ export async function searchAnimeAniList(queryText: string, page: number = 1) {
   `;
   try {
     const data = await fetchAniList(query, { search: queryText, page: page }, 0);
-    return data.data.Page; 
+    if (data?.data?.Page) return data.data.Page;
   } catch (e) { 
     console.error("Search Error:", e);
-    return { media: [] as AniListMedia[], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } }; 
   }
+
+  return { media: [] as AniListMedia[], pageInfo: { total: 0, currentPage: page, lastPage: 1, hasNextPage: false } }; 
 }
 
 // ১৪. Advanced Filter Anime (Strict Safe Content - Hentai Blocked)
@@ -1653,6 +1725,46 @@ export async function getFilteredAnimeAniList(params: {
   // Strict non-hentai genres filter
   const cleanGenres = (genres || []).filter(g => g.toLowerCase() !== 'hentai');
   const cleanTags = (tags || []).filter(t => t.toLowerCase() !== 'hentai');
+
+  // Try Backend BFF Browse Filter first
+  try {
+    const bffGenre = cleanGenres[0] || (cleanTags.length > 0 ? cleanTags[0] : '');
+    const bffData = await fetchBFF<any[]>(`/api/browse/filter?genre=${encodeURIComponent(bffGenre)}&status=${status || ''}&format=${format || ''}&year=${seasonYear || ''}&sort=${sort}&page=${page}&limit=${perPage}`);
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      const media = bffData.map(formatToAniListMedia).filter(isSafeContent);
+      return {
+        media,
+        pageInfo: {
+          total: 240,
+          currentPage: page,
+          lastPage: 10,
+          hasNextPage: page < 10,
+          perPage
+        }
+      };
+    }
+  } catch {}
+
+  // Fallback to Official MAL Search if genre is present
+  if (cleanGenres.length > 0 || cleanTags.length > 0) {
+    try {
+      const q = cleanGenres[0] || cleanTags[0];
+      const malSearch = await fetchBFF<any[]>(`/api/anime/search/query?q=${encodeURIComponent(q)}&limit=${perPage}`);
+      if (malSearch && Array.isArray(malSearch) && malSearch.length > 0) {
+        const media = malSearch.map(formatToAniListMedia).filter(isSafeContent);
+        return {
+          media,
+          pageInfo: {
+            total: media.length,
+            currentPage: page,
+            lastPage: 1,
+            hasNextPage: false,
+            perPage
+          }
+        };
+      }
+    } catch {}
+  }
 
   // Build dynamic filters with strictly isAdult: false
   let queryArgs = `$page: Int, $perPage: Int`;
@@ -1694,72 +1806,23 @@ export async function getFilteredAnimeAniList(params: {
     console.warn("Filter API AniList unavailable, executing fallback:", e);
   }
 
-  // ─── Resilient Fallback Engine for Filters & Browse Pages ───────────
+  // Fallback to top rankings
   try {
-    let fallbackMedia: AniListMedia[] = [];
-
-    if (status === 'NOT_YET_RELEASED') {
-      fallbackMedia = await fetchCuratedSectionFromAtlas('upcoming');
-      if (fallbackMedia.length === 0) {
-        const jikanUpcoming = await fetchJikan(`/seasons/upcoming?limit=24`, GLOBAL_CACHE_TIME, 2500);
-        if (jikanUpcoming?.data && Array.isArray(jikanUpcoming.data)) {
-          fallbackMedia = jikanUpcoming.data.map((item: any) => ({
-            id: item.mal_id,
-            idMal: item.mal_id,
-            title: { english: item.title_english || item.title, romaji: item.title },
-            coverImage: {
-              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-              large: item.images?.jpg?.large_image_url
-            },
-            bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-            description: item.synopsis || '',
-            episodes: item.episodes,
-            format: item.type || 'TV',
-            status: 'NOT_YET_RELEASED',
-            averageScore: null,
-            genres: (item.genres || []).map((g: any) => g.name),
-            seasonYear: item.year || null
-          })) as AniListMedia[];
-        }
-      }
-    } else if (format === 'TV') {
-      fallbackMedia = await fetchCuratedSectionFromAtlas('top_tv');
-    } else if (format === 'MOVIE') {
-      fallbackMedia = await fetchCuratedSectionFromAtlas('top_movies');
-    } else if (sort === 'TRENDING_DESC') {
-      fallbackMedia = await fetchCuratedSectionFromAtlas('trending');
-    } else if (cleanGenres.length > 0) {
-      const g = cleanGenres[0].toLowerCase();
-      if (g.includes('shounen') || g.includes('action')) fallbackMedia = await fetchCuratedSectionFromAtlas('shounen');
-      else if (g.includes('romance')) fallbackMedia = await fetchCuratedSectionFromAtlas('romance');
-      else if (g.includes('fantasy')) fallbackMedia = await fetchCuratedSectionFromAtlas('fantasy');
-      else if (g.includes('sci')) fallbackMedia = await fetchCuratedSectionFromAtlas('scifi');
-      else if (g.includes('supernatural')) fallbackMedia = await fetchCuratedSectionFromAtlas('supernatural');
-      else if (g.includes('sport')) fallbackMedia = await fetchCuratedSectionFromAtlas('sports');
-    }
-
-    if (fallbackMedia.length === 0) {
-      fallbackMedia = await fetchCuratedSectionFromAtlas('popular');
-    }
-
-    if (fallbackMedia.length === 0) {
-      fallbackMedia = await fetchCuratedSectionFromAtlas('kickstart');
-    }
-
-    if (fallbackMedia.length > 0) {
+    const malRank = await fetchBFF<any[]>(`/api/anime/ranking/bypopularity?limit=${perPage}`);
+    if (malRank && Array.isArray(malRank) && malRank.length > 0) {
+      const media = malRank.map(formatToAniListMedia).filter(isSafeContent);
       return {
-        media: fallbackMedia.slice(0, perPage),
+        media,
         pageInfo: {
-          total: fallbackMedia.length,
+          total: media.length,
           currentPage: page,
-          lastPage: Math.ceil(fallbackMedia.length / perPage) || 1,
-          hasNextPage: false
+          lastPage: 1,
+          hasNextPage: false,
+          perPage
         }
       };
     }
-  } catch (err: any) {
-    console.error("Error in getFilteredAnimeAniList fallback:", err?.message);
-  }
+  } catch {}
 
   return { media: [], pageInfo: { total: 0, currentPage: 1, lastPage: 1, hasNextPage: false } };
 }
@@ -3103,10 +3166,14 @@ export async function searchMangaJikan(
   }
 }
 
-// ৭. Top Movies (For Homepage Lists: Primary Atlas Cache, AniList, Backup Jikan)
+// ৭. Top Movies (For Homepage Lists: Primary BFF / Official MAL v2 movie + Backup AniList)
 export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('top_movies');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/movie?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3124,33 +3191,12 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  // Backup: Jikan /top/anime?type=movie
-  try {
-    const jikanData = await fetchJikan('/top/anime?type=movie&limit=4', GLOBAL_CACHE_TIME, 2500);
-    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
-      return jikanData.data.map((item: any) => ({
-        id: item.mal_id,
-        idMal: item.mal_id,
-        title: { english: item.title_english || item.title, romaji: item.title },
-        coverImage: {
-          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          large: item.images?.jpg?.large_image_url
-        },
-        averageScore: item.score ? Math.round(item.score * 10) : null,
-        format: 'MOVIE',
-        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
-        episodes: item.episodes || 1,
-        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
-      })) as AniListMedia[];
-    }
-  } catch {}
-
   return [
     {
       id: 199,
       idMal: 199,
       title: { english: 'Spirited Away', romaji: 'Sen to Chihiro no Kamikakushi' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx199-m4XbO4e2b02G.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx199-m4XbO4e2b02G.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/6/79597.jpg', large: 'https://cdn.myanimelist.net/images/anime/6/79597.jpg' },
       averageScore: 89,
       format: 'MOVIE',
       status: 'FINISHED',
@@ -3161,7 +3207,7 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
       id: 6682,
       idMal: 32281,
       title: { english: 'Your Name.', romaji: 'Kimi no Na wa.' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx6682-gO4K2pQ240O1.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx6682-gO4K2pQ240O1.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/5/87048.jpg', large: 'https://cdn.myanimelist.net/images/anime/5/87048.jpg' },
       averageScore: 88,
       format: 'MOVIE',
       status: 'FINISHED',
@@ -3172,7 +3218,7 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
       id: 20954,
       idMal: 28851,
       title: { english: 'A Silent Voice', romaji: 'Koe no Katachi' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-UMhPBIELtBiy.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx20954-UMhPBIELtBiy.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1122/96442.jpg', large: 'https://cdn.myanimelist.net/images/anime/1122/96442.jpg' },
       averageScore: 88,
       format: 'MOVIE',
       status: 'FINISHED',
@@ -3183,7 +3229,7 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
       id: 164,
       idMal: 164,
       title: { english: 'Princess Mononoke', romaji: 'Mononoke Hime' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx164-q83eYv5g4O92.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx164-q83eYv5g4O92.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/7/75919.jpg', large: 'https://cdn.myanimelist.net/images/anime/7/75919.jpg' },
       averageScore: 87,
       format: 'MOVIE',
       status: 'FINISHED',
@@ -3193,10 +3239,14 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
   ] as AniListMedia[];
 }
 
-// ৮. Top TV Series (For Homepage Lists: Primary Atlas Cache, AniList, Backup Jikan)
+// ৮. Top TV Series (For Homepage Lists: Primary BFF / Official MAL v2 tv + Backup AniList)
 export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('top_tv');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/tv?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3214,33 +3264,12 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  // Backup: Jikan /top/anime?type=tv
-  try {
-    const jikanData = await fetchJikan('/top/anime?type=tv&limit=4', GLOBAL_CACHE_TIME, 2500);
-    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
-      return jikanData.data.map((item: any) => ({
-        id: item.mal_id,
-        idMal: item.mal_id,
-        title: { english: item.title_english || item.title, romaji: item.title },
-        coverImage: {
-          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          large: item.images?.jpg?.large_image_url
-        },
-        averageScore: item.score ? Math.round(item.score * 10) : null,
-        format: 'TV',
-        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
-        episodes: item.episodes,
-        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
-      })) as AniListMedia[];
-    }
-  } catch {}
-
   return [
     {
       id: 154587,
       idMal: 52991,
       title: { english: 'Frieren: Beyond Journey\'s End', romaji: 'Sousou no Frieren' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx154587-k2hGqT3y1242.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx154587-k2hGqT3y1242.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg', large: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg' },
       averageScore: 91,
       format: 'TV',
       status: 'FINISHED',
@@ -3251,7 +3280,7 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
       id: 5114,
       idMal: 5114,
       title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-1073845.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx5114-1073845.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1223/96541.jpg', large: 'https://cdn.myanimelist.net/images/anime/1223/96541.jpg' },
       averageScore: 90,
       format: 'TV',
       status: 'FINISHED',
@@ -3262,7 +3291,7 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
       id: 9253,
       idMal: 9253,
       title: { english: 'Steins;Gate', romaji: 'Steins;Gate' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx9253-30G7e7191242.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx9253-30G7e7191242.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1935/127974.jpg', large: 'https://cdn.myanimelist.net/images/anime/1935/127974.jpg' },
       averageScore: 89,
       format: 'TV',
       status: 'FINISHED',
@@ -3273,7 +3302,7 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
       id: 16498,
       idMal: 16498,
       title: { english: 'Attack on Titan', romaji: 'Shingeki no Kyojin' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-73IhOXpJZiMF.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx16498-73IhOXpJZiMF.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/10/47347.jpg', large: 'https://cdn.myanimelist.net/images/anime/10/47347.jpg' },
       averageScore: 89,
       format: 'TV',
       status: 'FINISHED',
@@ -3283,10 +3312,14 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
   ] as AniListMedia[];
 }
 
-// ৯. Year Awards/Contenders (For Homepage Lists: Primary Atlas Cache, AniList, Backup Jikan)
+// ৯. Year Awards/Contenders (For Homepage Lists: Primary BFF / Official MAL v2 + Backup AniList)
 export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('year_awards');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/all?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query ($year: Int) {
@@ -3304,33 +3337,12 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
     }
   } catch {}
 
-  // Backup: Jikan /top/anime?filter=airing
-  try {
-    const jikanData = await fetchJikan('/top/anime?filter=airing&limit=4', GLOBAL_CACHE_TIME, 2500);
-    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
-      return jikanData.data.map((item: any) => ({
-        id: item.mal_id,
-        idMal: item.mal_id,
-        title: { english: item.title_english || item.title, romaji: item.title },
-        coverImage: {
-          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          large: item.images?.jpg?.large_image_url
-        },
-        averageScore: item.score ? Math.round(item.score * 10) : null,
-        format: item.type || 'TV',
-        status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
-        episodes: item.episodes,
-        seasonYear: item.year || (item.aired?.from ? new Date(item.aired.from).getFullYear() : null)
-      })) as AniListMedia[];
-    }
-  } catch {}
-
   return [
     {
       id: 176274,
       idMal: 58567,
       title: { english: 'Solo Leveling Season 2 -Arise from the Shadow-', romaji: 'Ore dake Level Up na Ken Season 2' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx176274-P9kL21901242.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx176274-P9kL21901242.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg', large: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg' },
       averageScore: 88,
       format: 'TV',
       status: 'RELEASING',
@@ -3341,7 +3353,7 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
       id: 179304,
       idMal: 59192,
       title: { english: 'Demon Slayer: Infinity Castle', romaji: 'Kimetsu no Yaiba: Mugen Jou-hen' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgLd.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101922-WBsBl0ClmgLd.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg', large: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' },
       averageScore: 90,
       format: 'MOVIE',
       status: 'NOT_YET_RELEASED',
@@ -3352,7 +3364,7 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
       id: 172944,
       idMal: 57371,
       title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man Movie: Reze-hen' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx127230-FloXNReUPeMw.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx127230-FloXNReUPeMw.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1806/126216.jpg', large: 'https://cdn.myanimelist.net/images/anime/1806/126216.jpg' },
       averageScore: 88,
       format: 'MOVIE',
       status: 'NOT_YET_RELEASED',
@@ -3363,7 +3375,7 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
       id: 172945,
       idMal: 57372,
       title: { english: 'Jujutsu Kaisen: Culling Game', romaji: 'Jujutsu Kaisen: Shimetsu Kaiyuu' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4p56j61.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx113415-bbBWj4p56j61.jpg' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1171/109222.jpg', large: 'https://cdn.myanimelist.net/images/anime/1171/109222.jpg' },
       averageScore: 89,
       format: 'TV',
       status: 'NOT_YET_RELEASED',
@@ -3373,66 +3385,45 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
   ] as AniListMedia[];
 }
 
-// Curated sections loaded from Atlas via top-level helper
-
-// Anime Not For Kids Curated List (25 titles)
+// Anime Not For Kids Curated List (Primary BFF Dark Fantasy / bypopularity)
 export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('not_for_kids');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
-
-  const query = `
-    query ($ids: [Int]) {
-      Page(page: 1, perPage: 25) {
-        media(id_in: $ids, type: ANIME) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  const ids = [
-    1570, 137909, 101367, 170890, 21613, 153845, 147571, 10087, 136707, 166828,
-    138522, 156039, 111322, 169417, 130586, 146065, 6682, 1292, 153629, 21131,
-    129898, 166372, 144553, 155011, 103632
-  ];
   try {
-    const data = await fetchAniList(query, { ids });
-    return (data?.data?.Page?.media || []) as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Dark%20Fantasy&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  try {
+    const malData = await fetchBFF<any[]>('/api/anime/ranking/bypopularity?limit=24');
+    if (malData && Array.isArray(malData) && malData.length > 0) {
+      return malData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// Kickstart Your Anime Journey Curated List (25 titles)
+// Kickstart Your Anime Journey Curated List (Primary BFF bypopularity)
 export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('kickstart');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
-
-  const query = `
-    query ($ids: [Int]) {
-      Page(page: 1, perPage: 25) {
-        media(id_in: $ids, type: ANIME) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  const ids = [
-    154587, 5114, 16498, 1535, 108465, 113415, 11061, 20954, 21519, 9253,
-    199, 140960, 150672, 21459, 112641, 127230, 21087, 101922, 21234, 20464,
-    97986, 101348, 1575, 19, 1
-  ];
   try {
-    const data = await fetchAniList(query, { ids });
-    return (data?.data?.Page?.media || []) as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/bypopularity?limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// The Shounen Zone (Fetches top popular Shounen anime)
+// The Shounen Zone (Fetches top popular Shounen anime: Primary BFF /api/anime/search/query?q=Shounen)
 export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('shounen');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Shounen&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3451,10 +3442,14 @@ export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// The Sports Zone (Fetches top popular Sports anime)
+// The Sports Zone (Fetches top popular Sports anime: Primary BFF /api/anime/search/query?q=Sports)
 export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('sports');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Sports&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3473,39 +3468,33 @@ export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// Inspired by Sword Art Online (Fetches recommendations for SAO: 11757)
+// Inspired by Sword Art Online (Primary BFF /api/anime/11757/recommendations)
 export async function getSimilarToSAOAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('similar_sao');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
-
-  const query = `
-    query ($id: Int) {
-      Media(id: $id, type: ANIME) {
-        recommendations(page: 1, perPage: 40, sort: RATING_DESC) {
-          nodes {
-            mediaRecommendation {
-              id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-            }
-          }
-        }
-      }
-    }
-  `;
   try {
-    const data = await fetchAniList(query, { id: 11757 });
-    const mediaList = (data.data?.Media?.recommendations?.nodes || [])
-      .map((node: any) => node.mediaRecommendation)
-      .filter((media: any) => media !== null && media !== undefined);
-    return mediaList as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    const recs = await fetchBFF<any[]>('/api/anime/11757/recommendations');
+    if (recs && Array.isArray(recs) && recs.length > 0) {
+      return recs.map((r: any) => formatToAniListMedia(r.entry || r)).filter(Boolean);
+    }
+  } catch {}
+
+  try {
+    const searchData = await fetchBFF<any[]>('/api/anime/search/query?q=Isekai&limit=24');
+    if (searchData && Array.isArray(searchData) && searchData.length > 0) {
+      return searchData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// The Fantasy Zone (Fetches top popular Fantasy anime)
+// The Fantasy Zone (Fetches top popular Fantasy anime: Primary BFF /api/anime/search/query?q=Fantasy)
 export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('fantasy');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Fantasy&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3524,10 +3513,14 @@ export async function getFantasyZoneAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// Supernatural World (Fetches top popular Supernatural anime)
+// Supernatural World (Fetches top popular Supernatural anime: Primary BFF /api/anime/search/query?q=Supernatural)
 export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('supernatural');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Supernatural&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3546,10 +3539,14 @@ export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]
   return [] as AniListMedia[];
 }
 
-// Seasonal Romance Anime (Fetches top popular Romance anime from a given season and year)
+// Seasonal Romance Anime (Primary BFF /api/anime/search/query?q=Romance)
 export async function getSeasonalRomanceAnimeAniList(year: number, season: string): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('romance');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Romance&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query ($year: Int, $season: MediaSeason) {
@@ -3565,14 +3562,13 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
     if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
   } catch {}
 
-  // High-res Fallback Top Romance Anime
   return [
     {
       id: 101921,
       idMal: 37999,
       title: { english: 'Kaguya-sama: Love Is War', romaji: 'Kaguya-sama wa Kokurasetai' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101921-V46j9245yPq2.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101921-V46j9245yPq2.jpg' },
-      bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/101921-pfsH1k1G8p2P.jpg',
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1295/106551.jpg', large: 'https://cdn.myanimelist.net/images/anime/1295/106551.jpg' },
+      bannerImage: 'https://cdn.myanimelist.net/images/anime/1295/106551.jpg',
       description: 'Miyuki Shirogane and Kaguya Shinomiya lead the prestigious student council. The first to confess loses!',
       episodes: 12,
       format: 'TV',
@@ -3585,8 +3581,8 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
       id: 153152,
       idMal: 52578,
       title: { english: 'The Dangers in My Heart', romaji: 'Boku no Kokoro no Yabai Yatsu' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx153152-xK9m9Kk5Y7e7.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx153152-xK9m9Kk5Y7e7.jpg' },
-      bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/153152-HlV7qj8vWqK2.jpg',
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1544/133604.jpg', large: 'https://cdn.myanimelist.net/images/anime/1544/133604.jpg' },
+      bannerImage: 'https://cdn.myanimelist.net/images/anime/1544/133604.jpg',
       description: 'Kyoutarou Ichikawa and class idol Anna Yamada develop a heartwarming romance.',
       episodes: 12,
       format: 'TV',
@@ -3594,28 +3590,18 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
       averageScore: 88,
       genres: ['Comedy', 'Romance', 'Slice of Life'],
       seasonYear: 2023
-    },
-    {
-      id: 124080,
-      idMal: 42897,
-      title: { english: 'Horimiya', romaji: 'Horimiya' },
-      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx124080-mFm6wf4n9Fvy.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx124080-mFm6wf4n9Fvy.jpg' },
-      bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/124080-60b6E0yB8w8l.jpg',
-      description: 'Kyouko Hori and Izumi Miyamura lead double lives. When they accidentally discover each other\'s secrets, an unforgettable love begins.',
-      episodes: 13,
-      format: 'TV',
-      status: 'FINISHED',
-      averageScore: 82,
-      genres: ['Comedy', 'Romance', 'Slice of Life'],
-      seasonYear: 2021
     }
   ] as AniListMedia[];
 }
 
-// Sci-Fi Anime (Fetches top popular Sci-Fi anime)
+// Sci-Fi Anime (Primary BFF /api/anime/search/query?q=Sci-Fi)
 export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('scifi');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Sci-Fi&limit=24');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
   const query = `
     query {
@@ -3634,11 +3620,20 @@ export async function getSciFiAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// Evergreen Anime Curated List (25 titles)
+// Evergreen Anime Curated List (Primary BFF /api/anime/ranking/favorite)
 export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('evergreen');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/favorite?limit=25');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
+  const ids = [
+    1889, 20665, 120, 21420, 2001, 269, 20755, 101190, 918, 5114, 
+    9253, 11061, 1535, 1575, 4181, 1, 19, 4224, 20464, 21507, 
+    205, 30, 9989, 8769, 270
+  ];
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 25) {
@@ -3648,11 +3643,6 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
       }
     }
   `;
-  const ids = [
-    1889, 20665, 120, 21420, 2001, 269, 20755, 101190, 918, 5114, 
-    9253, 11061, 1535, 1575, 4181, 1, 19, 4224, 20464, 21507, 
-    205, 30, 9989, 8769, 270
-  ];
   try {
     const data = await fetchAniList(query, { ids });
     const mediaList = data.data.Page.media as AniListMedia[];
@@ -3662,40 +3652,38 @@ export async function getEvergreenAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
-// Must Watch For My Hero Academia Fans (Fetches recommendations for MHA: 21459)
+// Must Watch For My Hero Academia Fans (Primary BFF /api/anime/31964/recommendations)
 export async function getSimilarToMHAAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('similar_mha');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
-
-  const query = `
-    query ($id: Int) {
-      Media(id: $id, type: ANIME) {
-        recommendations(page: 1, perPage: 40, sort: RATING_DESC) {
-          nodes {
-            mediaRecommendation {
-              id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-            }
-          }
-        }
-      }
-    }
-  `;
   try {
-    const data = await fetchAniList(query, { id: 21459 });
-    const mediaList = (data.data?.Media?.recommendations?.nodes || [])
-      .map((node: any) => node.mediaRecommendation)
-      .filter((media: any) => media !== null && media !== undefined);
-    return mediaList as AniListMedia[];
-  } catch {
-    return [] as AniListMedia[];
-  }
+    const recs = await fetchBFF<any[]>('/api/anime/31964/recommendations');
+    if (recs && Array.isArray(recs) && recs.length > 0) {
+      return recs.map((r: any) => formatToAniListMedia(r.entry || r)).filter(Boolean);
+    }
+  } catch {}
+
+  try {
+    const searchData = await fetchBFF<any[]>('/api/anime/search/query?q=Super%20Power&limit=24');
+    if (searchData && Array.isArray(searchData) && searchData.length > 0) {
+      return searchData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
+
+  return [] as AniListMedia[];
 }
 
-// Hidden Gems Curated List (20 titles including Makoto Shinkai movies and underrated gems)
+// Hidden Gems Curated List (Primary BFF /api/anime/ranking/all?offset=50)
 export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
-  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('hidden_gems');
-  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+  try {
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/all?limit=24&offset=50');
+    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
+      return bffData.map(formatToAniListMedia).filter(Boolean);
+    }
+  } catch {}
 
+  const ids = [
+    21519, 106286, 145904, 1689, 16782, 9760, 433, 256, 10516, 20972, 
+    20607, 98707, 7785, 2246, 3297, 457, 10165, 109268, 16664, 5681
+  ];
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 20) {
@@ -3705,10 +3693,6 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
       }
     }
   `;
-  const ids = [
-    21519, 106286, 145904, 1689, 16782, 9760, 433, 256, 10516, 20972, 
-    20607, 98707, 7785, 2246, 3297, 457, 10165, 109268, 16664, 5681
-  ];
   try {
     const data = await fetchAniList(query, { ids });
     const mediaList = data.data.Page.media as AniListMedia[];
@@ -3718,7 +3702,7 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
   }
 }
 
-// ─── Anime Reviews Fetcher (Jikan API with Memory Cache) ─────────────────────
+// ─── Anime Reviews Fetcher (BFF with Jikan & Memory Cache) ───────────────────
 export async function getAnimeReviews(malId: number | string): Promise<any[]> {
   if (!malId) return [];
   const cleanId = String(malId).replace(/^(kitsu-|al-)/, '');
@@ -3726,7 +3710,27 @@ export async function getAnimeReviews(malId: number | string): Promise<any[]> {
   if (isNaN(numId) || numId <= 0 || numId > 65000) return [];
 
   try {
-    const data = await fetchJikan(`/anime/${numId}/reviews`, GLOBAL_CACHE_TIME, 6000);
+    const bffReviews = await fetchBFF<any[]>(`/api/anime/${numId}/reviews`);
+    if (bffReviews && Array.isArray(bffReviews) && bffReviews.length > 0) {
+      return bffReviews.map((r: any) => ({
+        id: r.mal_id || r.id,
+        mal_id: r.mal_id || r.id,
+        user: {
+          username: r.user?.username || 'AnimeFan',
+          image: r.user?.images?.jpg?.image_url || null,
+        },
+        score: r.score || null,
+        date: r.date || new Date().toISOString(),
+        review: r.review || '',
+        tags: r.tags || [],
+        isSpoiler: r.is_spoiler || false,
+        reactions: r.reactions || { overall: 0, nice: 0, love_it: 0 },
+      }));
+    }
+  } catch {}
+
+  try {
+    const data = await fetchJikan(`/anime/${numId}/reviews`, GLOBAL_CACHE_TIME, 5000);
     if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
       return data.data.map((r: any) => ({
         id: r.mal_id,
@@ -3748,6 +3752,7 @@ export async function getAnimeReviews(malId: number | string): Promise<any[]> {
   }
   return [];
 }
+
 
 
 
