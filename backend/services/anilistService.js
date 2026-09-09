@@ -7,7 +7,9 @@ const inFlightRequests = new Map();
 const DEFAULT_TTL = 30 * 60 * 1000; // 30 mins
 const malService = require('./malService');
 
-async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutMs = 4000) {
+let anilistBlockedUntil = 0;
+
+async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutMs = 3000) {
   const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
   const cached = memoryCache.get(cacheKey);
@@ -15,32 +17,45 @@ async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutM
     return cached.data;
   }
 
+  if (Date.now() < anilistBlockedUntil) {
+    if (cached) return cached.data;
+    throw new Error('AniList is temporarily disabled (Cloudflare/403 Block on Datacenter IP)');
+  }
+
   if (inFlightRequests.has(cacheKey)) {
     return inFlightRequests.get(cacheKey);
   }
 
   const execute = async () => {
-    const res = await fetch(ANILIST_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)'
-      },
-      body: JSON.stringify({ query, variables }),
-      signal: AbortSignal.timeout(timeoutMs)
-    });
+    try {
+      const res = await fetch(ANILIST_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)'
+        },
+        body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(timeoutMs)
+      });
 
-    if (!res.ok) {
+      if (!res.ok) {
+        if (res.status === 403 || res.status === 429) {
+          anilistBlockedUntil = Date.now() + 15 * 60 * 1000; // block for 15 minutes
+        }
+        if (cached) return cached.data;
+        throw new Error(`AniList HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      if (data && data.data) {
+        memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+      }
+      return data;
+    } catch (err) {
       if (cached) return cached.data;
-      throw new Error(`AniList HTTP ${res.status}: ${res.statusText}`);
+      throw err;
     }
-
-    const data = await res.json();
-    if (data && data.data) {
-      memoryCache.set(cacheKey, { data, timestamp: Date.now() });
-    }
-    return data;
   };
 
   const promise = execute().finally(() => {
@@ -78,7 +93,7 @@ async function getTrending(limit = 12) {
     const media = res?.data?.Page?.media;
     if (media && Array.isArray(media) && media.length > 0) return media;
   } catch (err) {
-    console.warn('[AniList getTrending Fallback to MAL]:', err.message);
+    // Seamless fallback to MAL v2 5-Key Pool
   }
   return malService.getRankings('airing', limit);
 }
@@ -110,7 +125,7 @@ async function getPopular(limit = 12) {
     const media = res?.data?.Page?.media;
     if (media && Array.isArray(media) && media.length > 0) return media;
   } catch (err) {
-    console.warn('[AniList getPopular Fallback to MAL]:', err.message);
+    // Seamless fallback to MAL v2 5-Key Pool
   }
   return malService.getRankings('bypopularity', limit);
 }
