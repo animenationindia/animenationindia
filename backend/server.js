@@ -1540,21 +1540,74 @@ app.get('/api/anime/season/:year/:season', async (req, res) => {
 });
 
 
+// 🌟 Chinese Donghua Exclusion Helper (Ensures 100% Japanese Anime) 🌟
+const CHINESE_STUDIOS = [
+  'bilibili', 'tencent', 'sparkly key', 'foch film', 'haoliners', 
+  'colored pencil', 'b.cmay', 'rooftop animation', 'paper plane', 
+  'cg year', 'byment', 'l²studio', 'wonder cat', 'samsara', 'tianying',
+  'shanghai', 'beijing', 'hangzhou', 'guangdong', 'b.c.may', 'sheng ying',
+  'haoliners animation league', 'sparkly key animation studio', 'build dream',
+  'motion magic', 'red dog culture house', 'original force', 'cmc media'
+];
+
+const KNOWN_DONGHUA_IDS = [
+  61607, 55809, 60988, 51039, 56524, 58494, 57713, 58518, 58349, 54930, 49830, 39893, 40730, 37255, 33237, 59953, 51836, 63240, 47405, 51289
+];
+
+const CHINESE_TITLE_PATTERN = /^(Link Click|Renegade Immortal|Heaven Official|Battle Through The Heavens|Swallowed Star|Soul Land|Perfect World|A Will Eternal|Martial Universe|Throne of Seal|Immortal and Martial|A Record of Mortal|Grandmaster of Demonic|Daily Life of the Immortal King|The King's Avatar|Scissor Seven|Fog Hill|Tales of Demons|Against the Gods|Shrouding the Heavens|Peerless Battle|Legend of Xianwu|A Herbivorous Dragon|Big Brother|Island of Siliang|Stellar Transformation|Great Ruler|Martial God Asura|Wanmei Shijie|Doupo|Douluo|Shiguang Dailiren|Tian Guan Ci Fu|Mo Dao Zu Shi|Tunshi Xingkong|Tales of Herding)/i;
+
+function isChineseDonghua(node, alt = {}, studios = []) {
+  if (KNOWN_DONGHUA_IDS.includes(node?.id)) return true;
+  if (Array.isArray(studios) && studios.some(s => CHINESE_STUDIOS.some(cs => String(s).toLowerCase().includes(cs)))) return true;
+  if (CHINESE_TITLE_PATTERN.test(node?.title || '') || CHINESE_TITLE_PATTERN.test(alt?.en || '') || CHINESE_TITLE_PATTERN.test(alt?.english || '')) return true;
+  if (Array.isArray(alt?.synonyms) && alt.synonyms.some(syn => CHINESE_TITLE_PATTERN.test(syn))) return true;
+  return false;
+}
+
 app.get('/api/trending', async (req, res) => {
   try {
-    const list = await anilistService.getTrending(15);
-    if (list && list.length > 0) {
-      return res.json({ data: list });
+    const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season,synopsis,status,broadcast,studios';
+    const malRes = await malService.fetchMAL(`/anime/ranking?ranking_type=airing&limit=45&fields=${encodeURIComponent(fields)}`, 30 * 60 * 1000);
+    if (malRes && Array.isArray(malRes.data)) {
+      const filteredJapanese = malRes.data.filter(entry => {
+        const node = entry.node || {};
+        const alt = node.alternative_titles || {};
+        const studios = (node.studios || []).map(s => s.name || '');
+        return !isChineseDonghua(node, alt, studios);
+      });
+
+      const list = filteredJapanese.slice(0, 20).map((entry) => {
+        const node = entry.node || {};
+        const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+        const alt = node.alternative_titles || {};
+        const titles = normalizeTitleObject({ english: alt.en, romaji: node.title, native: alt.ja });
+        return {
+          id: node.id,
+          idMal: node.id,
+          title: titles,
+          coverImage: { large: cover, extraLarge: cover },
+          bannerImage: cover,
+          format: (node.media_type || 'TV').toUpperCase(),
+          averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : 85,
+          seasonYear: node.start_season?.year || new Date().getFullYear(),
+          genres: (node.genres || []).map(g => g.name),
+          episodes: node.num_episodes || null,
+          isDubbed: true
+        };
+      });
+
+      if (list.length > 0) return res.json({ data: list });
     }
-    const malList = await malService.getRankings('airing', 15);
-    return res.json({ data: malList });
+
+    const anilistList = await anilistService.getTrending(20);
+    return res.json({ data: anilistList });
   } catch (error) { 
     console.error('Trending Fetch Error:', error);
     res.status(500).json({ message: "Internal server error" }); 
   }
 });
 
-// 🌟 Crunchyroll-Style Spotlight / Airing Hero API 🌟
+// 🌟 Crunchyroll-Style Japanese Spotlight & Airing Hero API 🌟
 const heroMemoryCache = { data: null, timestamp: 0 };
 
 app.get('/api/hero', async (req, res) => {
@@ -1563,15 +1616,22 @@ app.get('/api/hero', async (req, res) => {
       return res.json(heroMemoryCache.data);
     }
 
-    const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season,synopsis,status,broadcast';
-    const malRes = await malService.fetchMAL(`/anime/ranking?ranking_type=airing&limit=15&fields=${encodeURIComponent(fields)}`, 15 * 60 * 1000);
+    const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season,synopsis,status,broadcast,studios';
+    const malRes = await malService.fetchMAL(`/anime/ranking?ranking_type=airing&limit=45&fields=${encodeURIComponent(fields)}`, 15 * 60 * 1000);
     
     let items = [];
     if (malRes && Array.isArray(malRes.data)) {
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const todayDay = days[new Date().getDay()];
 
-      items = malRes.data.map((entry, index) => {
+      const filteredJapanese = malRes.data.filter(entry => {
+        const node = entry.node || {};
+        const alt = node.alternative_titles || {};
+        const studios = (node.studios || []).map(s => s.name || '');
+        return !isChineseDonghua(node, alt, studios);
+      });
+
+      items = filteredJapanese.slice(0, 15).map((entry, index) => {
         const node = entry.node || {};
         const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
         const alt = node.alternative_titles || {};
