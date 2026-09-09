@@ -61,6 +61,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'kitsu.app',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.kitsu.app',
+      },
+      {
+        protocol: 'https',
+        hostname: 'media.kitsu.app',
+      },
+      {
+        protocol: 'https',
         hostname: 'animecorner.me',
       },
       {

@@ -89,14 +89,19 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
         
         {/* Link wraps image and hover overlay */}
         <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative z-10">
-          {coverImage && (
-            <img 
-              src={coverImage} 
-              alt={title} 
-              loading={priority ? "eager" : "lazy"}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-          )}
+          <img 
+            src={coverImage || '/placeholder-poster.png'} 
+            alt={title} 
+            loading={priority ? "eager" : "lazy"}
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('placeholder-poster.png')) {
+                target.src = '/placeholder-poster.png';
+              }
+            }}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
 
           {anime.badgeText && (
             <div className="absolute top-0 left-0 bg-[#000000]/80 px-2 py-1 text-[10px] font-bold text-[#a0a0a0] uppercase tracking-wider z-20 rounded-br-lg border-b border-r border-[#2A2B30]/50 shadow-md">

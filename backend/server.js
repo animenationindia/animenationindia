@@ -246,6 +246,60 @@ app.get('/api/jikan/proxy', async (req, res) => {
   }
 });
 
+// ============================================================================
+// 🔥 High-Speed Official MyAnimeList (MAL) API Proxy (10-Min In-Memory Cache) 🔥
+// ============================================================================
+const malProxyCache = new Map();
+const MAL_PROXY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+const MAL_CLIENT_ID = process.env.MAL_CLIENT_ID || 'f6cd787eb297c144b5cebd2ef50026c3';
+
+app.get('/api/mal/proxy', async (req, res) => {
+  try {
+    let endpoint = req.query.endpoint || req.query.path;
+    if (!endpoint) {
+      const match = req.originalUrl.match(/\/api\/mal\/proxy\?(?:endpoint|path)=(.+)/);
+      if (match && match[1]) {
+        endpoint = decodeURIComponent(match[1]);
+      }
+    }
+
+    if (!endpoint || typeof endpoint !== 'string') {
+      return res.status(400).json({ error: 'Endpoint query parameter is required (e.g. /anime/5114?fields=...)' });
+    }
+
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const cached = malProxyCache.get(cleanEndpoint);
+    if (cached && (Date.now() - cached.timestamp < MAL_PROXY_CACHE_TTL)) {
+      return res.json(cached.data);
+    }
+
+    const targetUrl = `https://api.myanimelist.net/v2${cleanEndpoint}`;
+    const malRes = await fetch(targetUrl, {
+      headers: {
+        'X-MAL-CLIENT-ID': MAL_CLIENT_ID,
+        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
+        'Accept': 'application/json'
+      },
+      signal: AbortSignal.timeout(6000)
+    });
+
+    if (!malRes.ok) {
+      if (cached) return res.json(cached.data);
+      const errText = await malRes.text();
+      return res.status(malRes.status).json({ error: errText || `MAL API Error: ${malRes.status}` });
+    }
+
+    const data = await malRes.json();
+    if (data) {
+      malProxyCache.set(cleanEndpoint, { data, timestamp: Date.now() });
+    }
+    return res.status(200).json(data);
+  } catch (err) {
+    console.error('MAL Proxy Error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
@@ -797,7 +851,7 @@ app.post('/api/watchlist', verifyToken, async (req, res) => {
     const watchlistItem = await Watchlist.findOneAndUpdate(
       { userId, mal_id: anime.mal_id },
       { userId, mal_id: anime.mal_id, animeData: anime },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     res.status(201).json({ message: "Saved to your collection!" });
   } catch (error) {
@@ -857,7 +911,7 @@ app.post('/api/ratings', verifyToken, async (req, res) => {
         animeImage: animeImage || '', 
         updatedAt: new Date() 
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     res.json({ success: true, message: `Rated ${score}/10!`, rating });
@@ -1712,7 +1766,7 @@ app.get('/api/articles/:slug', async (req, res) => {
     const article = await Article.findOneAndUpdate(
       { slug: slug.toLowerCase() },
       { $inc: { views: 1 } },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
 
     if (!article) {

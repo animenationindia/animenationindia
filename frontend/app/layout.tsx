@@ -54,25 +54,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth" className="overflow-x-hidden dark" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var savedTheme = localStorage.getItem('theme');
-                  var theme = savedTheme ? savedTheme : 'dark';
-                  if (theme === 'dark') {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.classList.remove('light');
-                  } else {
-                    document.documentElement.classList.add('light');
-                    document.documentElement.classList.remove('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <meta name="referrer" content="no-referrer" />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`
+            (function() {
+              try {
+                var savedTheme = localStorage.getItem('theme');
+                var theme = savedTheme ? savedTheme : 'dark';
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                } else {
+                  document.documentElement.classList.add('light');
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            })();
+          `}
+        </Script>
       </head>
       <body suppressHydrationWarning className="bg-[#050716] text-[#ffffff] min-h-screen flex flex-col font-sans selection:bg-[#ff4dd2] selection:text-white overflow-x-hidden w-full max-w-[100vw] pb-[60px] md:pb-0">
         <ScrollToTop />

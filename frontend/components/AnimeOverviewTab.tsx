@@ -211,7 +211,7 @@ export default function AnimeOverviewTab({
               {displayCharacters.map((c: any, index: number) => {
                 const charId = c.character?.mal_id || c.character?.id;
                 const charName = c.character?.name || 'Character';
-                const charImage = c.character?.images?.webp?.image_url || c.character?.images?.jpg?.image_url || '/placeholder.png';
+                const charImage = c.character?.images?.webp?.image_url || c.character?.images?.jpg?.image_url || c.character?.images?.large || c.character?.image || '/placeholder-poster.png';
                 
                 const japaneseVA = c.voice_actors?.find((va: any) => va.language === 'Japanese') || c.voice_actors?.[0];
                 const vaId = japaneseVA?.person?.mal_id || japaneseVA?.person?.id;
@@ -220,7 +220,7 @@ export default function AnimeOverviewTab({
 
                 return (
                   <div
-                    key={charId || index}
+                    key={`${charId || 'char'}-${index}`}
                     className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-white/15 transition-all group"
                   >
                     {/* Character Column */}
@@ -232,6 +232,13 @@ export default function AnimeOverviewTab({
                         <img
                           src={charImage}
                           alt={charName}
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (!target.src.includes('placeholder-poster.png')) {
+                              target.src = '/placeholder-poster.png';
+                            }
+                          }}
                           className="w-full h-full object-cover group-hover/char:scale-110 transition-transform duration-500"
                         />
                       </div>
@@ -264,6 +271,10 @@ export default function AnimeOverviewTab({
                             <img
                               src={vaImage}
                               alt={vaName || 'Voice Actor'}
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = 'none';
+                              }}
                               className="w-full h-full object-cover group-hover/va:scale-110 transition-transform duration-500"
                             />
                           ) : (
@@ -308,11 +319,11 @@ export default function AnimeOverviewTab({
 
                 return (
                   <div 
-                    key={rev.id || idx} 
+                    key={`${rev.id || 'rev'}-${idx}`} 
                     className="bg-[#0e0f1d] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors space-y-3"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/10 flex-shrink-0">
                           {rev.user?.image ? (
                             <img src={rev.user.image} alt={rev.user.username} className="w-full h-full object-cover" />
@@ -327,7 +338,7 @@ export default function AnimeOverviewTab({
                             <span className="truncate">{rev.user?.username || 'Anime Fan'}</span>
                             {rev.tags?.map((tag: string, tIdx: number) => (
                               <span 
-                                key={tIdx} 
+                                key={`${tag}-${tIdx}`} 
                                 className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-[#ff4dd2]/15 text-[#ff4dd2] border border-[#ff4dd2]/30"
                               >
                                 {tag}

@@ -145,9 +145,16 @@ function ScheduleAnimeCard({
           
           {coverImage && (
             <img 
-              src={coverImage} 
+              src={coverImage || '/placeholder-poster.png'} 
               alt={title} 
               loading="lazy" 
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.currentTarget;
+                if (!target.src.includes('placeholder-poster.png')) {
+                  target.src = '/placeholder-poster.png';
+                }
+              }}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
             />
           )}
@@ -306,7 +313,19 @@ function ScheduleTimelineRow({ item, timezoneOffsetHours }: { item: AiringSchedu
       {/* Poster */}
       <div className="w-14 h-20 md:w-16 md:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1b2e] border border-white/10 relative">
         {coverImage && (
-          <img src={coverImage} alt={title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+          <img 
+            src={coverImage || '/placeholder-poster.png'} 
+            alt={title} 
+            loading="lazy" 
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              const target = e.currentTarget;
+              if (!target.src.includes('placeholder-poster.png')) {
+                target.src = '/placeholder-poster.png';
+              }
+            }}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+          />
         )}
       </div>
 
@@ -1224,7 +1243,18 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
                 {/* Poster */}
                 <div className="w-24 h-36 rounded-xl overflow-hidden flex-shrink-0 bg-[#1a1b2e] border border-white/10 relative">
                   {previewItem.media.coverImage?.large && (
-                    <img src={previewItem.media.coverImage.large} alt="Poster" className="w-full h-full object-cover" />
+                    <img 
+                      src={previewItem.media.coverImage.large || '/placeholder-poster.png'} 
+                      alt="Poster" 
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        if (!target.src.includes('placeholder-poster.png')) {
+                          target.src = '/placeholder-poster.png';
+                        }
+                      }}
+                      className="w-full h-full object-cover" 
+                    />
                   )}
                 </div>
 

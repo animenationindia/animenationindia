@@ -3,6 +3,19 @@
 import { logError } from './logger';
 import { fetchKitsuCharacters } from './kitsu-api';
 import { DEFAULT_GENRES_LIST } from './genres-data';
+import { 
+  getOfficialMALAnimeDetails, 
+  getOfficialMALRecommendations, 
+  getOfficialMALRankings, 
+  searchOfficialMAL 
+} from './mal-api';
+
+export { 
+  getOfficialMALAnimeDetails, 
+  getOfficialMALRecommendations, 
+  getOfficialMALRankings, 
+  searchOfficialMAL 
+};
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
@@ -1265,6 +1278,10 @@ export async function getAnimeFullDetails(id: string) {
 
           if (malId && malId <= 65000) {
             try {
+              const malOfficial = await getOfficialMALAnimeDetails(malId);
+              if (malOfficial && isSafeContent(malOfficial)) return malOfficial;
+            } catch {}
+            try {
               const jikanRes = await fetchJikan(`/anime/${malId}/full`);
               if (jikanRes?.data && isSafeContent(jikanRes.data)) return jikanRes.data;
             } catch {}
@@ -1314,6 +1331,16 @@ export async function getAnimeFullDetails(id: string) {
         if (extra && isSafeContent(extra)) {
           if (extra.idMal && extra.idMal <= 65000) {
             try {
+              const malOfficial = await getOfficialMALAnimeDetails(extra.idMal);
+              if (malOfficial && isSafeContent(malOfficial)) {
+                // Blend with AniList banner if available
+                if (extra.bannerImage && !malOfficial.bannerImage) {
+                  malOfficial.bannerImage = extra.bannerImage;
+                }
+                return malOfficial;
+              }
+            } catch {}
+            try {
               const jikanRes = await fetchJikan(`/anime/${extra.idMal}/full`);
               if (jikanRes?.data && isSafeContent(jikanRes.data)) return jikanRes.data;
             } catch {}
@@ -1351,13 +1378,15 @@ export async function getAnimeFullDetails(id: string) {
 
   // CASE 3: Standard MAL ID (numId <= 65000)
   if (isMalNumeric) {
-    // 1. Try Jikan API (primary for MAL IDs)
+    // 1. Tier 1: Official MyAnimeList API v2 (Primary Direct Provider)
     try {
-      const res = await fetchJikan(`/anime/${id}/full`);
-      if (res?.data && isSafeContent(res.data)) return res.data;
+      const malOfficial = await getOfficialMALAnimeDetails(numId);
+      if (malOfficial && isSafeContent(malOfficial)) {
+        return malOfficial;
+      }
     } catch {}
 
-    // 2. Fallback to AniList Direct Query if Jikan is rate-limited or times out
+    // 2. Tier 2: AniList Direct Query (Secondary Provider)
     try {
       const extra = await getAniListExtraInfo(numId);
       if (extra && isSafeContent(extra)) {
@@ -1383,7 +1412,13 @@ export async function getAnimeFullDetails(id: string) {
       }
     } catch {}
 
-    // 3. Fallback to Kitsu Mapping Resolver if both Jikan & AniList failed
+    // 3. Tier 3: Jikan API (Fallback Provider)
+    try {
+      const res = await fetchJikan(`/anime/${id}/full`);
+      if (res?.data && isSafeContent(res.data)) return res.data;
+    } catch {}
+
+    // 4. Tier 4: Fallback to Kitsu Mapping Resolver if all above failed
     try {
       const kitsuAnime = await resolveKitsuAnimeByExternalId(numId);
       if (kitsuAnime && isSafeContent(kitsuAnime)) {
@@ -1904,18 +1939,28 @@ export async function getJikanAnimeByGenre(genreId: string, page = 1, orderBy = 
   }
 }
 
-// 15. Recommendations (Multi-Tier Fallback: AniList -> Jikan)
+// 15. Recommendations (Multi-Tier Fallback: Official MAL -> AniList -> Jikan)
 export async function getAnimeRecommendations(id: string | number, anilistId?: number): Promise<any[]> {
   const numMalId = Number(id);
   const resolvedAniListId = anilistId || numMalId;
 
   const providers = [
     {
-      name: 'AniList Recommendations (Primary)',
+      name: 'Official MAL Recommendations (Primary)',
+      fn: async () => {
+        if (!isNaN(numMalId) && numMalId > 0 && numMalId <= 65000) {
+          const recs = await getOfficialMALRecommendations(numMalId);
+          return recs && recs.length > 0 ? recs : null;
+        }
+        return null;
+      }
+    },
+    {
+      name: 'AniList Recommendations (Secondary Fallback)',
       fn: async () => fetchAniListRecommendationsFallback(resolvedAniListId)
     },
     {
-      name: 'Jikan Recommendations (Secondary Fallback)',
+      name: 'Jikan Recommendations (Tertiary Fallback)',
       fn: async () => {
         const data = await fetchJikan(`/anime/${id}/recommendations`, GLOBAL_CACHE_TIME, 2000);
         return data?.data && Array.isArray(data.data) && data.data.length > 0

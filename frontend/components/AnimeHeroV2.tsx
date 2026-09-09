@@ -235,6 +235,10 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
           <img
             src={bannerImage}
             alt={englishTitle}
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.currentTarget as HTMLElement).style.display = 'none';
+            }}
             className="w-full h-full object-cover object-center opacity-30 lg:opacity-40 filter blur-[1px] scale-105"
           />
         ) : (
@@ -265,6 +269,13 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
               <img
                 src={posterImage}
                 alt={englishTitle}
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.src.includes('placeholder-poster.png')) {
+                    target.src = '/placeholder-poster.png';
+                  }
+                }}
                 className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
               />
               {/* Quick Watch Link Floating on Poster */}
@@ -288,6 +299,10 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
                 <img
                   src={tmdbData.logoUrl}
                   alt={englishTitle}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
                   className="max-h-20 sm:max-h-24 w-auto object-contain filter drop-shadow-[0_10px_25px_rgba(0,0,0,0.85)] hover:scale-105 transition-transform duration-300"
                 />
               </div>
@@ -407,9 +422,9 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
                         </div>
                         {langInfo.dubLanguages.length > 0 ? (
                           <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
-                            {langInfo.dubLanguages.map((d) => (
+                            {langInfo.dubLanguages.map((d, idx) => (
                               <span
-                                key={d.name}
+                                key={`${d.name}-${idx}`}
                                 className="inline-flex items-center gap-1.5 bg-[#ff4dd2]/10 border border-[#ff4dd2]/30 text-[#ff4dd2] px-2.5 py-1 rounded-lg text-xs font-bold"
                               >
                                 <span>{d.flag}</span>
@@ -428,9 +443,9 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
                           Subtitles Available ({langInfo.subLanguages.length})
                         </span>
                         <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                          {langInfo.subLanguages.map((s) => (
+                          {langInfo.subLanguages.map((s, idx) => (
                             <span
-                              key={s.name}
+                              key={`${s.name}-${idx}`}
                               className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-gray-200 px-2.5 py-1 rounded-lg text-xs font-semibold"
                             >
                               <span>{s.flag}</span>
@@ -447,9 +462,9 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
                             🇮🇳 Official Streaming Partners
                           </span>
                           <div className="flex flex-wrap gap-2">
-                            {(tmdbData?.watchProvidersIndia?.length ? tmdbData.watchProvidersIndia : tmdbData?.watchProvidersGlobal || []).map((p) => (
+                            {(tmdbData?.watchProvidersIndia?.length ? tmdbData.watchProvidersIndia : tmdbData?.watchProvidersGlobal || []).map((p, idx) => (
                               <div
-                                key={p.name}
+                                key={`${p.name}-${idx}`}
                                 className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-xl text-xs font-bold text-white shadow-sm"
                               >
                                 {p.logoUrl && (
@@ -495,7 +510,7 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
                 const genreName = typeof g === 'string' ? g : g.name;
                 return (
                   <Link
-                    key={i}
+                    key={`${genreName}-${i}`}
                     href={`/browse?genre=${encodeURIComponent(genreName)}`}
                     className="bg-white/5 hover:bg-white/10 hover:border-[#ff4dd2]/40 text-gray-300 hover:text-white text-[11px] font-bold px-3 py-1 rounded-full border border-white/10 transition-all duration-300 shadow-sm"
                   >
