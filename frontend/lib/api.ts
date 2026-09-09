@@ -3387,16 +3387,19 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
 
 // Anime Not For Kids Curated List (25 Curated Mature Titles)
 export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('not_for_kids');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const ids = [
-    1570, 137909, 101367, 170890, 21613, 153845, 147571, 10087, 136707, 166828,
-    138522, 156039, 111322, 169417, 130586, 146065, 6682, 1292, 153629, 21131,
-    129898, 166372, 144553, 155011, 103632
+    33, 19, 37521, 777, 42310, 44511, 22319, 35120, 226, 22535,
+    16498, 1818, 6880, 889, 37520, 38668, 384, 11111, 7724, 1292,
+    10087, 34599, 13601, 22199, 40748
   ];
 
   const query = `
     query ($ids: [Int]) {
       Page(page: 1, perPage: 25) {
-        media(id_in: $ids, type: ANIME) {
+        media(idMal_in: $ids, type: ANIME) {
           id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
         }
       }
@@ -3407,21 +3410,14 @@ export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
     const data = await fetchAniList(query, { ids });
     const mediaList = data?.data?.Page?.media as AniListMedia[];
     if (mediaList && Array.isArray(mediaList) && mediaList.length > 0) {
-      return mediaList.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+      return mediaList.sort((a, b) => ids.indexOf(a.idMal || a.id) - ids.indexOf(b.idMal || b.id));
     }
   } catch {}
 
   try {
-    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Dark%20Fantasy&limit=24');
+    const bffData = await fetchBFF<any[]>('/api/anime/ranking/bypopularity?limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
       return bffData.map(formatToAniListMedia).filter(Boolean);
-    }
-  } catch {}
-
-  try {
-    const malData = await fetchBFF<any[]>('/api/anime/ranking/bypopularity?limit=24');
-    if (malData && Array.isArray(malData) && malData.length > 0) {
-      return malData.map(formatToAniListMedia).filter(Boolean);
     }
   } catch {}
 
