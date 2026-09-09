@@ -3459,27 +3459,16 @@ export async function getShounenZoneAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// The Sports Zone (Fetches top popular Sports anime: Primary BFF /api/anime/search/query?q=Sports)
+// The Sports Zone (Loaded from Atlas with BFF Fallback)
 export async function getSportsZoneAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('sports');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Sports&limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
       return bffData.map(formatToAniListMedia).filter(Boolean);
     }
-  } catch {}
-
-  const query = `
-    query {
-      Page(page: 1, perPage: 40) {
-        media(genre: "Sports", sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
-        }
-      }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query);
-    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
   } catch {}
 
   return [] as AniListMedia[];
