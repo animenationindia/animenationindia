@@ -3429,8 +3429,11 @@ export async function getNotForKidsAnimeAniList(): Promise<AniListMedia[]> {
   return [] as AniListMedia[];
 }
 
-// Kickstart Your Anime Journey Curated List (Primary BFF bypopularity)
+// Kickstart Your Anime Journey Curated List (Loaded from Atlas with BFF Fallback)
 export async function getKickstartJourneyAnimeAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('kickstart');
+  if (cachedFromAtlas && cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   try {
     const bffData = await fetchBFF<any[]>('/api/anime/ranking/bypopularity?limit=24');
     if (bffData && Array.isArray(bffData) && bffData.length > 0) {
