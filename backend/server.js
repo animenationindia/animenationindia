@@ -16,9 +16,9 @@ const sanitizeHtml = require('sanitize-html');
 const malService = require('./services/malService');
 const anilistService = require('./services/anilistService');
 const tmdbService = require('./services/tmdbService');
-const themesService = require('./services/themesService');
 const newsService = require('./services/newsService');
 const jikanService = require('./services/jikanService');
+const { toEnglishTitle, normalizeTitleObject } = require('./services/titleCleaner');
 
 // 🔥 Email Pathanor Setup (Nodemailer) 🔥
 const transporter = nodemailer.createTransport({
@@ -1539,19 +1539,6 @@ app.get('/api/anime/season/:year/:season', async (req, res) => {
   }
 });
 
-app.get('/api/hero', async (req, res) => {
-  try {
-    const list = await anilistService.getTrending(10);
-    if (list && list.length > 0) {
-      return res.json({ data: list });
-    }
-    const malList = await malService.getRankings('airing', 10);
-    return res.json({ data: malList });
-  } catch (error) { 
-    console.error('Hero Fetch Error:', error);
-    res.status(500).json({ message: "Internal server error" }); 
-  }
-});
 
 app.get('/api/trending', async (req, res) => {
   try {
@@ -1564,6 +1551,72 @@ app.get('/api/trending', async (req, res) => {
   } catch (error) { 
     console.error('Trending Fetch Error:', error);
     res.status(500).json({ message: "Internal server error" }); 
+  }
+});
+
+// 🌟 Crunchyroll-Style Spotlight / Airing Hero API 🌟
+const heroMemoryCache = { data: null, timestamp: 0 };
+
+app.get('/api/hero', async (req, res) => {
+  try {
+    if (heroMemoryCache.data && (Date.now() - heroMemoryCache.timestamp < 15 * 60 * 1000)) {
+      return res.json(heroMemoryCache.data);
+    }
+
+    const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season,synopsis,status,broadcast';
+    const malRes = await malService.fetchMAL(`/anime/ranking?ranking_type=airing&limit=15&fields=${encodeURIComponent(fields)}`, 15 * 60 * 1000);
+    
+    let items = [];
+    if (malRes && Array.isArray(malRes.data)) {
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const todayDay = days[new Date().getDay()];
+
+      items = malRes.data.map((entry, index) => {
+        const node = entry.node || {};
+        const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+        const alt = node.alternative_titles || {};
+        const titles = normalizeTitleObject({ english: alt.en, romaji: node.title, native: alt.ja });
+        const broadcastDay = node.broadcast?.day_of_the_week?.toLowerCase();
+        const isAiringToday = broadcastDay === todayDay;
+
+        return {
+          id: node.id,
+          idMal: node.id,
+          title: titles,
+          coverImage: { extraLarge: cover, large: cover },
+          bannerImage: cover,
+          description: node.synopsis || '',
+          format: (node.media_type || 'TV').toUpperCase(),
+          status: node.status || 'Currently Airing',
+          averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : 85,
+          seasonYear: node.start_season?.year || new Date().getFullYear(),
+          genres: (node.genres || []).map(g => g.name),
+          episodes: node.num_episodes || null,
+          broadcast: node.broadcast || null,
+          isAiringToday,
+          airingDay: node.broadcast?.day_of_the_week || null,
+          airingTime: node.broadcast?.start_time || null,
+          isDubbed: true,
+          order: index + 1
+        };
+      });
+    }
+
+    if (items.length > 0) {
+      heroMemoryCache.data = items;
+      heroMemoryCache.timestamp = Date.now();
+      return res.json(items);
+    }
+
+    const fallbackCurated = await CuratedAnime.find({ section: 'shounen' }).sort({ order: 1 }).limit(10).lean();
+    if (fallbackCurated && fallbackCurated.length > 0) {
+      return res.json(fallbackCurated);
+    }
+
+    return res.json([]);
+  } catch (error) {
+    console.error('Error fetching /api/hero:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

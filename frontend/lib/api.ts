@@ -442,6 +442,7 @@ export interface AniListMedia {
   title: {
     english: string | null;
     romaji: string;
+    native?: string | null;
   };
   coverImage: {
     extraLarge?: string;
@@ -457,6 +458,19 @@ export interface AniListMedia {
   seasonYear: number | null;
   startDate?: {
     year: number | null;
+  } | null;
+  broadcast?: {
+    day_of_the_week?: string;
+    start_time?: string;
+  } | null;
+  isAiringToday?: boolean;
+  airingDay?: string | null;
+  airingTime?: string | null;
+  isDubbed?: boolean;
+  trailer?: {
+    id: string | null;
+    site: string | null;
+    thumbnail?: string | null;
   } | null;
 }
 
@@ -1170,19 +1184,31 @@ export async function getPopularAnimePageAniList(page: number = 1): Promise<{ me
 
 // ৩.১ Top Airing Anime (For Hero Slider: Primary BFF / Official MAL v2 Airing + AniList Fallback)
 export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
-  try {
-    const bffData = await fetchBFF<any[]>('/api/hero');
-    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
-      return bffData.slice(0, 10).map(formatToAniListMedia).filter(Boolean);
-    }
-  } catch {}
+  const tryFetch = async (url: string) => {
+    try {
+      const res = await fetch(`${url}/api/hero`, {
+        next: { revalidate: 900 },
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(3500)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : (json?.data || []);
+        if (Array.isArray(list) && list.length > 0) {
+          return list as AniListMedia[];
+        }
+      }
+    } catch {}
+    return null;
+  };
 
-  try {
-    const malData = await fetchBFF<any[]>('/api/anime/ranking/airing?limit=15');
-    if (malData && Array.isArray(malData) && malData.length > 0) {
-      return malData.slice(0, 10).map(formatToAniListMedia).filter(Boolean);
-    }
-  } catch {}
+  const primary = await tryFetch(BACKEND_BASE_URL);
+  if (primary && primary.length > 0) return primary;
+
+  if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
+    const localFallback = await tryFetch('http://localhost:5000');
+    if (localFallback && localFallback.length > 0) return localFallback;
+  }
 
   const query = `
     query {

@@ -219,12 +219,22 @@ export function toEnglishTitle(raw: any, fallback = 'Anime'): string {
       if (!rest) {
         return rule.replacement;
       }
-      const cleanRest = cleanJapaneseSuffixes(rest.replace(/^[:\-\s]+/, ''));
+      let cleanRest = cleanJapaneseSuffixes(rest.replace(/^[:\-\s]+/, ''));
       if (!cleanRest) return rule.replacement;
 
       if (rule.replacement.toLowerCase().includes(cleanRest.toLowerCase())) {
         return rule.replacement;
       }
+
+      // Strip repeated franchise subtitle if already present at start of cleanRest
+      const parts = rule.replacement.split(':').map(p => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        if (part.length > 3 && cleanRest.toLowerCase().startsWith(part.toLowerCase())) {
+          cleanRest = cleanRest.slice(part.length).replace(/^[:\-\s]+/, '').trim();
+        }
+      }
+
+      if (!cleanRest) return rule.replacement;
 
       if (/^(Season|\d+|Part|Movie|The Movie|Episode)/i.test(cleanRest)) {
         return `${rule.replacement} ${cleanRest}`;
