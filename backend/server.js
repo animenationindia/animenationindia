@@ -1608,6 +1608,7 @@ app.get('/api/trending', async (req, res) => {
 });
 
 // 🌟 Crunchyroll-Style Japanese Spotlight & Airing Hero API 🌟
+// Primary: AniList GraphQL | Fallback: MyAnimeList v2 (5-Key Pool) | Tertiary: Atlas Curated
 const heroMemoryCache = { data: null, timestamp: 0 };
 
 app.get('/api/hero', async (req, res) => {
@@ -1616,58 +1617,147 @@ app.get('/api/hero', async (req, res) => {
       return res.json(heroMemoryCache.data);
     }
 
-    const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season,synopsis,status,broadcast,studios';
-    const malRes = await malService.fetchMAL(`/anime/ranking?ranking_type=airing&limit=45&fields=${encodeURIComponent(fields)}`, 15 * 60 * 1000);
-    
-    let items = [];
-    if (malRes && Array.isArray(malRes.data)) {
-      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const todayDay = days[new Date().getDay()];
+    const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayDay = days[new Date().getDay()];
 
-      const filteredJapanese = malRes.data.filter(entry => {
-        const node = entry.node || {};
-        const alt = node.alternative_titles || {};
-        const studios = (node.studios || []).map(s => s.name || '');
-        return !isChineseDonghua(node, alt, studios);
-      });
+    // ─── 1. PRIMARY SOURCE: AniList GraphQL ───
+    try {
+      const anilistQuery = `
+        query {
+          Page(page: 1, perPage: 35) {
+            media(type: ANIME, status: RELEASING, sort: [TRENDING_DESC, POPULARITY_DESC], isAdult: false) {
+              id
+              idMal
+              title { english romaji native }
+              coverImage { extraLarge large medium color }
+              bannerImage
+              description
+              averageScore
+              episodes
+              format
+              status
+              seasonYear
+              genres
+              countryOfOrigin
+              nextAiringEpisode { airingAt episode timeUntilAiring }
+              studios(isMain: true) { nodes { name } }
+            }
+          }
+        }
+      `;
+      const anilistRes = await anilistService.fetchAniList(anilistQuery, {}, 15 * 60 * 1000, 3500);
+      const mediaList = anilistRes?.data?.Page?.media;
+      if (mediaList && Array.isArray(mediaList) && mediaList.length > 0) {
+        const filteredJapanese = mediaList.filter(m => {
+          if (m.countryOfOrigin && m.countryOfOrigin !== 'JP') return false;
+          const studioNames = (m.studios?.nodes || []).map(s => s.name);
+          return !isChineseDonghua({ id: m.idMal || m.id, title: m.title?.romaji || m.title?.english }, m.title, studioNames);
+        });
 
-      items = filteredJapanese.slice(0, 15).map((entry, index) => {
-        const node = entry.node || {};
-        const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
-        const alt = node.alternative_titles || {};
-        const titles = normalizeTitleObject({ english: alt.en, romaji: node.title, native: alt.ja });
-        const broadcastDay = node.broadcast?.day_of_the_week?.toLowerCase();
-        const isAiringToday = broadcastDay === todayDay;
+        if (filteredJapanese.length > 0) {
+          const items = filteredJapanese.slice(0, 15).map((m, idx) => {
+            let isAiringToday = false;
+            let airingDay = null;
+            let airingTime = null;
+            if (m.nextAiringEpisode?.airingAt) {
+              const airingDate = new Date(m.nextAiringEpisode.airingAt * 1000);
+              airingDay = days[airingDate.getDay()];
+              isAiringToday = airingDate.toDateString() === new Date().toDateString();
+              airingTime = airingDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+            }
 
-        return {
-          id: node.id,
-          idMal: node.id,
-          title: titles,
-          coverImage: { extraLarge: cover, large: cover },
-          bannerImage: cover,
-          description: node.synopsis || '',
-          format: (node.media_type || 'TV').toUpperCase(),
-          status: node.status || 'Currently Airing',
-          averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : 85,
-          seasonYear: node.start_season?.year || new Date().getFullYear(),
-          genres: (node.genres || []).map(g => g.name),
-          episodes: node.num_episodes || null,
-          broadcast: node.broadcast || null,
-          isAiringToday,
-          airingDay: node.broadcast?.day_of_the_week || null,
-          airingTime: node.broadcast?.start_time || null,
-          isDubbed: true,
-          order: index + 1
-        };
-      });
+            return {
+              id: m.idMal || m.id,
+              idMal: m.idMal || m.id,
+              anilistId: m.id,
+              title: normalizeTitleObject(m.title),
+              coverImage: {
+                extraLarge: m.coverImage?.extraLarge || m.coverImage?.large,
+                large: m.coverImage?.large || m.coverImage?.extraLarge,
+                medium: m.coverImage?.medium
+              },
+              bannerImage: m.bannerImage || m.coverImage?.extraLarge || m.coverImage?.large || '/placeholder-poster.png',
+              description: m.description ? m.description.replace(/<[^>]*>/g, '').trim() : '',
+              format: (m.format || 'TV').toUpperCase(),
+              status: m.status || 'Currently Airing',
+              averageScore: typeof m.averageScore === 'number' ? m.averageScore : 85,
+              seasonYear: m.seasonYear || new Date().getFullYear(),
+              genres: m.genres || [],
+              episodes: m.episodes || null,
+              isAiringToday,
+              airingEpisode: m.nextAiringEpisode?.episode || null,
+              airingDay,
+              airingTime,
+              isDubbed: true,
+              order: idx + 1
+            };
+          });
+
+          if (items.length > 0) {
+            heroMemoryCache.data = items;
+            heroMemoryCache.timestamp = Date.now();
+            return res.json(items);
+          }
+        }
+      }
+    } catch (aniErr) {
+      console.warn('⚠️ /api/hero AniList Primary failed, activating MAL v2 Fallback:', aniErr.message);
     }
 
-    if (items.length > 0) {
-      heroMemoryCache.data = items;
-      heroMemoryCache.timestamp = Date.now();
-      return res.json(items);
+    // ─── 2. FALLBACK SOURCE: Official MAL v2 (5-Key Rotating Pool) ───
+    try {
+      const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season,synopsis,status,broadcast,studios';
+      const malRes = await malService.fetchMAL(`/anime/ranking?ranking_type=airing&limit=45&fields=${encodeURIComponent(fields)}`, 15 * 60 * 1000);
+      
+      if (malRes && Array.isArray(malRes.data)) {
+        const filteredJapanese = malRes.data.filter(entry => {
+          const node = entry.node || {};
+          const alt = node.alternative_titles || {};
+          const studios = (node.studios || []).map(s => s.name || '');
+          return !isChineseDonghua(node, alt, studios);
+        });
+
+        const items = filteredJapanese.slice(0, 15).map((entry, index) => {
+          const node = entry.node || {};
+          const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+          const alt = node.alternative_titles || {};
+          const titles = normalizeTitleObject({ english: alt.en, romaji: node.title, native: alt.ja });
+          const broadcastDay = node.broadcast?.day_of_the_week?.toLowerCase();
+          const isAiringToday = broadcastDay === todayDay;
+
+          return {
+            id: node.id,
+            idMal: node.id,
+            title: titles,
+            coverImage: { extraLarge: cover, large: cover },
+            bannerImage: cover,
+            description: node.synopsis || '',
+            format: (node.media_type || 'TV').toUpperCase(),
+            status: node.status || 'Currently Airing',
+            averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : 85,
+            seasonYear: node.start_season?.year || new Date().getFullYear(),
+            genres: (node.genres || []).map(g => g.name),
+            episodes: node.num_episodes || null,
+            broadcast: node.broadcast || null,
+            isAiringToday,
+            airingDay: node.broadcast?.day_of_the_week || null,
+            airingTime: node.broadcast?.start_time || null,
+            isDubbed: true,
+            order: index + 1
+          };
+        });
+
+        if (items.length > 0) {
+          heroMemoryCache.data = items;
+          heroMemoryCache.timestamp = Date.now();
+          return res.json(items);
+        }
+      }
+    } catch (malErr) {
+      console.warn('⚠️ /api/hero MAL Fallback failed:', malErr.message);
     }
 
+    // ─── 3. TERTIARY SOURCE: MongoDB Atlas Curated Collection ───
     const fallbackCurated = await CuratedAnime.find({ section: 'shounen' }).sort({ order: 1 }).limit(10).lean();
     if (fallbackCurated && fallbackCurated.length > 0) {
       return res.json(fallbackCurated);
