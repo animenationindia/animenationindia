@@ -3552,57 +3552,79 @@ export async function getSupernaturalWorldAnimeAniList(): Promise<AniListMedia[]
   return [] as AniListMedia[];
 }
 
-// Seasonal Romance Anime (Primary BFF /api/anime/search/query?q=Romance)
-export async function getSeasonalRomanceAnimeAniList(year: number, season: string): Promise<AniListMedia[]> {
-  try {
-    const bffData = await fetchBFF<any[]>('/api/anime/search/query?q=Romance&limit=24');
-    if (bffData && Array.isArray(bffData) && bffData.length > 0) {
-      return bffData.map(formatToAniListMedia).filter(Boolean);
-    }
-  } catch {}
-
-  const query = `
-    query ($year: Int, $season: MediaSeason) {
-      Page(page: 1, perPage: 20) {
-        media(genre: "Romance", seasonYear: $year, season: $season, sort: POPULARITY_DESC, type: ANIME, isAdult: false) {
-          id idMal title { romaji english } coverImage { extraLarge large } bannerImage description episodes format status averageScore genres seasonYear
+// Seasonal / Featured Romance Anime (Primary BFF /api/romance/featured)
+export async function getSeasonalRomanceAnimeAniList(year?: number, season?: string): Promise<AniListMedia[]> {
+  const tryFetch = async (url: string) => {
+    try {
+      const res = await fetch(`${url}/api/romance/featured`, {
+        next: { revalidate: 1800 },
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(3500)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json) ? json : (json?.data || []);
+        if (Array.isArray(list) && list.length > 0) {
+          return list as AniListMedia[];
         }
       }
-    }
-  `;
-  try {
-    const data = await fetchAniList(query, { year, season });
-    if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
-  } catch {}
+    } catch {}
+    return null;
+  };
+
+  const primary = await tryFetch(BACKEND_BASE_URL);
+  if (primary && primary.length > 0) return primary;
+
+  if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
+    const localFallback = await tryFetch('http://localhost:5000');
+    if (localFallback && localFallback.length > 0) return localFallback;
+  }
 
   return [
     {
-      id: 101921,
-      idMal: 37999,
-      title: { english: 'Kaguya-sama: Love Is War', romaji: 'Kaguya-sama wa Kokurasetai' },
-      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1295/106551.jpg', large: 'https://cdn.myanimelist.net/images/anime/1295/106551.jpg' },
-      bannerImage: 'https://cdn.myanimelist.net/images/anime/1295/106551.jpg',
-      description: 'Miyuki Shirogane and Kaguya Shinomiya lead the prestigious student council. The first to confess loses!',
-      episodes: 12,
-      format: 'TV',
-      status: 'FINISHED',
-      averageScore: 86,
-      genres: ['Comedy', 'Psychological', 'Romance'],
-      seasonYear: 2019
-    },
-    {
-      id: 153152,
+      id: 52578,
       idMal: 52578,
       title: { english: 'The Dangers in My Heart', romaji: 'Boku no Kokoro no Yabai Yatsu' },
-      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1544/133604.jpg', large: 'https://cdn.myanimelist.net/images/anime/1544/133604.jpg' },
-      bannerImage: 'https://cdn.myanimelist.net/images/anime/1544/133604.jpg',
-      description: 'Kyoutarou Ichikawa and class idol Anna Yamada develop a heartwarming romance.',
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1545/133887l.webp', large: 'https://cdn.myanimelist.net/images/anime/1545/133887l.webp' },
+      bannerImage: 'https://cdn.myanimelist.net/images/anime/1545/133887l.webp',
+      description: 'Kyoutarou Ichikawa and class idol Anna Yamada develop a heartwarming and hilarious romance.',
       episodes: 12,
       format: 'TV',
       status: 'FINISHED',
       averageScore: 88,
-      genres: ['Comedy', 'Romance', 'Slice of Life'],
-      seasonYear: 2023
+      genres: ['Comedy', 'Romance', 'School', 'Slice of Life'],
+      seasonYear: 2023,
+      isDubbed: true
+    },
+    {
+      id: 43608,
+      idMal: 43608,
+      title: { english: 'Kaguya-sama: Love Is War -Ultra Romantic-', romaji: 'Kaguya-sama wa Kokurasetai: Ultra Romantic' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1295/106551l.jpg', large: 'https://cdn.myanimelist.net/images/anime/1295/106551l.jpg' },
+      bannerImage: 'https://cdn.myanimelist.net/images/anime/1295/106551l.jpg',
+      description: 'Miyuki Shirogane and Kaguya Shinomiya lead the prestigious student council. The first to confess loses!',
+      episodes: 13,
+      format: 'TV',
+      status: 'FINISHED',
+      averageScore: 90,
+      genres: ['Comedy', 'Psychological', 'Romance'],
+      seasonYear: 2022,
+      isDubbed: true
+    },
+    {
+      id: 57181,
+      idMal: 57181,
+      title: { english: 'Blue Box', romaji: 'Ao no Hako' },
+      coverImage: { extraLarge: 'https://cdn.myanimelist.net/images/anime/1744/144607l.webp', large: 'https://cdn.myanimelist.net/images/anime/1744/144607l.webp' },
+      bannerImage: 'https://cdn.myanimelist.net/images/anime/1744/144607l.webp',
+      description: 'Taiki Inomata practices badminton alongside Chinatsu Kano, the rising basketball star he admires from afar.',
+      episodes: 25,
+      format: 'TV',
+      status: 'RELEASING',
+      averageScore: 84,
+      genres: ['Romance', 'Sports', 'School', 'Shounen'],
+      seasonYear: 2024,
+      isDubbed: true
     }
   ] as AniListMedia[];
 }

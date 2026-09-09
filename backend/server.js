@@ -1620,6 +1620,80 @@ app.get('/api/hero', async (req, res) => {
   }
 });
 
+// 💖 Featured / Seasonal Romance Spotlight API 💖
+const romanceMemoryCache = { data: null, timestamp: 0 };
+const FEATURED_ROMANCE_MAL_IDS = [
+  52578, // The Dangers in My Heart
+  43608, // Kaguya-sama: Love Is War -Ultra Romantic-
+  57181, // Blue Box
+  48736, // My Dress-Up Darling
+  42897, // Horimiya
+  55866, // A Sign of Affection
+  37450, // Rascal Does Not Dream of Bunny Girl Senpai
+  23273, // Your Lie in April
+  39547, // My Teen Romantic Comedy SNAFU Climax!
+  42938, // Fruits Basket: The Final
+  4224,  // Toradora!
+  50796, // Insomniacs After School
+  52305, // Tomo-chan Is a Girl!
+  50739, // The Angel Next Door Spoils Me Rotten
+  56038  // Kimi ni Todoke: From Me to You Season 3
+];
+
+app.get('/api/romance/featured', async (req, res) => {
+  try {
+    if (romanceMemoryCache.data && (Date.now() - romanceMemoryCache.timestamp < 30 * 60 * 1000)) {
+      return res.json({ success: true, count: romanceMemoryCache.data.length, data: romanceMemoryCache.data });
+    }
+
+    const items = await Promise.all(
+      FEATURED_ROMANCE_MAL_IDS.map(async (malId) => {
+        try {
+          const detail = await malService.getAnimeDetails(malId);
+          if (!detail) return null;
+          const cover = detail.images?.webp?.large_image_url || detail.images?.jpg?.large_image_url || '/placeholder-poster.png';
+          const cleanTitle = toEnglishTitle(detail.title_english || detail.title);
+          return {
+            id: detail.id,
+            idMal: detail.id,
+            title: {
+              english: cleanTitle,
+              romaji: cleanTitle
+            },
+            coverImage: {
+              large: cover,
+              extraLarge: cover
+            },
+            bannerImage: cover,
+            description: detail.synopsis || '',
+            format: (detail.type || 'TV').toUpperCase(),
+            status: detail.status || 'Finished Airing',
+            averageScore: typeof detail.score === 'number' ? Math.round(detail.score * 10) : 85,
+            seasonYear: detail.year || (detail.aired?.from ? new Date(detail.aired.from).getFullYear() : 2024),
+            genres: (detail.genres || []).map(g => g.name || g),
+            episodes: detail.episodes || null,
+            isDubbed: true
+          };
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const validItems = items.filter(Boolean);
+    if (validItems.length > 0) {
+      romanceMemoryCache.data = validItems;
+      romanceMemoryCache.timestamp = Date.now();
+      return res.json({ success: true, count: validItems.length, data: validItems });
+    }
+
+    return res.json({ success: true, count: 0, data: [] });
+  } catch (error) {
+    console.error('Error fetching featured romance:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
 // 🔥 High-Speed Curated Sections API (Loaded from Atlas with In-Memory Cache) 🔥
 const curatedMemoryCache = new Map();
 
