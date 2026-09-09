@@ -129,26 +129,75 @@ async function ThemeZonesSection({
       <SectionSlider title="Supernatural & Mystery" data={safeSupernaturalAnime as any} type="anime" viewAllLink="" />
 
       {romanceSeasonalAnime && (
-        <div className="relative w-full h-[250px] md:h-[350px] rounded-3xl overflow-hidden my-4 border border-white/10 group shadow-2xl">
-          <img src={romanceSeasonalAnime.bannerImage || romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large} alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050716] via-[#050716]/80 to-transparent flex flex-col justify-center px-6 md:px-12">
-            <span className="text-[#ff4dd2] text-xs font-bold uppercase tracking-widest mb-2">Featured Seasonal Romance</span>
-            <h3 className="text-2xl md:text-4xl font-extrabold text-white max-w-xl line-clamp-2">
-              {romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
-            </h3>
-            <p className="text-gray-400 text-xs md:text-sm max-w-md line-clamp-2 mt-2">
-              {sanitizeDescription(romanceSeasonalAnime.description)}
-            </p>
-            <div className="mt-4">
-              <Link
-                href={`/series/${romanceSeasonalAnime.idMal || romanceSeasonalAnime.id}`}
-                className="inline-block px-6 py-2.5 bg-[#ff4dd2] hover:bg-[#ff7be0] text-black font-bold rounded-xl text-xs uppercase tracking-wider transition-all"
-              >
-                Explore Details
-              </Link>
-            </div>
+        <section className="relative w-full overflow-hidden rounded-3xl border border-[#ff4dd2]/20 bg-gradient-to-r from-[#050716] via-[#050716]/85 to-transparent my-4 group shadow-[0_20px_50px_rgba(255,77,210,0.15)] hover:border-[#ff4dd2]/40 transition-all duration-500">
+          {/* Ornate Pink Border Corners */}
+          <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-[#ff4dd2]/40 pointer-events-none z-20 rounded-tl-md"></div>
+          <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-[#ff4dd2]/40 pointer-events-none z-20 rounded-br-md"></div>
+
+          {/* Background Backdrop Image */}
+          <div className="absolute inset-0 w-full h-full z-0">
+            <img
+              src={romanceSeasonalAnime.bannerImage || romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large}
+              alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover object-center opacity-35 group-hover:scale-105 group-hover:opacity-45 transition-all duration-700 ease-out"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050716] via-[#050716]/85 to-transparent z-10" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-transparent to-transparent z-10" />
           </div>
-        </div>
+
+          {/* Content Layout */}
+          <div className="relative z-20 px-8 py-10 md:py-14 md:px-14 flex flex-col md:flex-row items-center justify-between gap-8 w-full">
+            {/* Left Column: Info & Buttons */}
+            <div className="flex flex-col items-center md:items-start text-center md:text-left max-w-2xl">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="px-3 py-1 bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] text-xs font-black uppercase tracking-[0.2em] rounded-full shadow-[0_0_15px_rgba(255,77,210,0.3)]">
+                  💖 FEATURED SEASONAL ROMANCE
+                </span>
+                {romanceSeasonalAnime.averageScore && (
+                  <span className="px-2.5 py-1 bg-white/10 text-yellow-300 text-xs font-bold rounded-full flex items-center gap-1 border border-white/10">
+                    ★ {Math.round(romanceSeasonalAnime.averageScore / 10 * 10) / 10 || (romanceSeasonalAnime.averageScore / 10).toFixed(1)}
+                  </span>
+                )}
+              </div>
+
+              <h3 className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-wide uppercase leading-tight mb-3 drop-shadow-lg group-hover:text-[#ff7be0] transition-colors">
+                {romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
+              </h3>
+
+              <p className="text-gray-300 text-xs md:text-sm line-clamp-3 leading-relaxed mb-6 max-w-xl">
+                {sanitizeDescription(romanceSeasonalAnime.description)}
+              </p>
+
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <Link
+                  href={`/watch/${romanceSeasonalAnime.idMal || romanceSeasonalAnime.id}`}
+                  className="inline-flex items-center gap-2 bg-[#ff4dd2] hover:bg-[#ff7be0] text-black font-extrabold py-2.5 px-7 rounded-full text-xs md:text-sm uppercase tracking-wider transition-all duration-300 shadow-[0_4px_20px_rgba(255,77,210,0.4)] hover:shadow-[0_4px_30px_rgba(255,77,210,0.6)] cursor-pointer"
+                >
+                  Watch Now
+                </Link>
+                <Link
+                  href={`/series/${romanceSeasonalAnime.idMal || romanceSeasonalAnime.id}`}
+                  className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-extrabold py-2.5 px-7 rounded-full text-xs md:text-sm uppercase tracking-wider transition-all duration-300 backdrop-blur-md cursor-pointer"
+                >
+                  Explore Details
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Column: Floating 3D Artwork Cover Card */}
+            {(romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large) && (
+              <div className="hidden lg:block relative w-[170px] h-[245px] flex-shrink-0 rounded-2xl overflow-hidden border border-[#ff4dd2]/30 shadow-[0_20px_40px_rgba(255,77,210,0.2)] transform rotate-2 group-hover:rotate-0 transition-transform duration-500">
+                <img
+                  src={romanceSeasonalAnime.coverImage.extraLarge || romanceSeasonalAnime.coverImage.large}
+                  alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       <SectionSlider title="Sci-Fi & Cyberpunk" data={safeSciFiAnime as any} type="anime" viewAllLink="" />

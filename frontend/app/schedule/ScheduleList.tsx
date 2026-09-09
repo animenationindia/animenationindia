@@ -550,12 +550,14 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
   const groupedSchedule = useMemo(() => {
     const map: Record<number, AiringSchedule[]> = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
     schedule.forEach(item => {
-      const date = new Date(item.airingAt * 1000);
+      const date = new Date((item.airingAt + timezoneOffsetHours * 3600) * 1000);
       const dayOfWeek = date.getDay();
-      map[dayOfWeek].push(item);
+      if (map[dayOfWeek]) {
+        map[dayOfWeek].push(item);
+      }
     });
     return map;
-  }, [schedule]);
+  }, [schedule, timezoneOffsetHours]);
 
   // Spotlight Item
   const nextAiringItem = useMemo(() => {

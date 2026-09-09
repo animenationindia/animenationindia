@@ -5,26 +5,39 @@ import { fetchKitsuCharacters } from './kitsu-api';
 import { DEFAULT_GENRES_LIST } from './genres-data';
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animenationindia.onrender.com';
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
 const ANILIST_PROXY_URL = `${BACKEND_BASE_URL}/api/anilist/proxy`;
 const JIKAN_API_URL = 'https://api.jikan.moe/v4';
+const JIKAN_PROXY_URL = `${BACKEND_BASE_URL}/api/jikan/proxy`;
 
 // ─── Curated Sections Helper (Loaded from MongoDB Atlas with 1-Hour ISR) ─────
 export async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<AniListMedia[]> {
-  try {
-    const res = await fetch(`${BACKEND_BASE_URL}/api/curated/${sectionKey}`, {
-      next: { revalidate: 3600 },
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        return json.data as AniListMedia[];
+  const tryFetch = async (url: string) => {
+    try {
+      const res = await fetch(`${url}/api/curated/${sectionKey}`, {
+        next: { revalidate: 3600 },
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(3000)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          return json.data as AniListMedia[];
+        }
       }
-    }
-  } catch (err: any) {
-    console.warn(`[fetchCuratedSectionFromAtlas] Failed to fetch section ${sectionKey}:`, err.message);
+    } catch {}
+    return null;
+  };
+
+  const primary = await tryFetch(BACKEND_BASE_URL);
+  if (primary && primary.length > 0) return primary;
+
+  // Fallback to localhost:5000 if BACKEND_BASE_URL is not localhost
+  if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
+    const localFallback = await tryFetch('http://localhost:5000');
+    if (localFallback && localFallback.length > 0) return localFallback;
   }
+
   return [];
 }
 
@@ -77,9 +90,8 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    const isServer = typeof window === 'undefined';
-    const targetUrl = isServer ? ANILIST_PROXY_URL : ANILIST_API_URL;
-    const fallbackUrl = isServer ? ANILIST_API_URL : ANILIST_PROXY_URL;
+    const targetUrl = ANILIST_PROXY_URL;
+    const fallbackUrl = ANILIST_API_URL;
 
     const fetchOptions: any = {
       method: 'POST',
@@ -144,9 +156,29 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
   }
 
   const executeFetch = async () => {
+    const isServer = typeof window === 'undefined';
+    const proxyTarget = `${JIKAN_PROXY_URL}?endpoint=${encodeURIComponent(endpoint)}`;
+
+    // Try Backend Proxy First (Fast In-Memory Cache on Backend)
+    try {
+      const proxyRes = await fetch(proxyTarget, {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs),
+        cache: 'no-store'
+      });
+
+      if (proxyRes.ok) {
+        const data = await proxyRes.json();
+        if (data && (data.data || data.pagination)) {
+          apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+          return data;
+        }
+      }
+    } catch {}
+
+    // Fallback: Direct Jikan API call with retry
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-
     const fetchOptions: any = { signal: controller.signal, cache: 'no-store' };
 
     try {
@@ -160,7 +192,7 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
           const retryRes = await fetch(`${JIKAN_API_URL}${endpoint}`, fetchOptions);
           if (retryRes.ok) {
             const data = await retryRes.json();
-            if (data && data.data) {
+            if (data && (data.data || data.pagination)) {
               apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
             }
             return data;
@@ -183,7 +215,7 @@ export async function fetchJikan(endpoint: string, revalidate = GLOBAL_CACHE_TIM
       }
       
       const data = await res.json();
-      if (data && data.data) {
+      if (data && (data.data || data.pagination)) {
         apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
       }
       return data;
@@ -555,70 +587,119 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
     if (combined.length > 0) return combined;
   } catch {}
 
-  // Fallback 1: Jikan /schedules
+  // Fallback 1: Live Backend Normalized Schedule Engine (MongoDB Atlas)
   try {
-    const jikanData = await fetchJikan('/schedules?limit=25', GLOBAL_CACHE_TIME, 2500);
-    if (jikanData?.data && Array.isArray(jikanData.data) && jikanData.data.length > 0) {
-      return jikanData.data.map((item: any, idx: number) => ({
-        id: item.mal_id,
-        airingAt: start + (idx % 7) * 86400 + ((idx * 3600) % 86400),
-        episode: item.episodes ? Math.min(item.episodes, (idx % 12) + 1) : (idx % 12) + 1,
-        media: {
-          id: item.mal_id,
-          idMal: item.mal_id,
-          title: { english: item.title_english || item.title, romaji: item.title },
-          coverImage: {
-            extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-            large: item.images?.jpg?.large_image_url
-          },
-          bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-          averageScore: item.score ? Math.round(item.score * 10) : null,
-          episodes: item.episodes,
-          format: item.type || 'TV',
-          status: item.status || 'Releasing',
-          genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name),
-          seasonYear: item.year || new Date().getFullYear(),
-          studios: item.studios?.[0] ? { nodes: [{ name: item.studios[0].name }] } : null,
-          description: item.synopsis || ''
-        }
-      }));
-    }
-  } catch {}
-
-  // Fallback 2: MongoDB Atlas /api/trending
-  try {
-    const res = await fetch(`${BACKEND_BASE_URL}/api/trending`, {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/schedule?start=${start}&end=${end}`, {
       next: { revalidate: 3600 },
-      headers: { 'Accept': 'application/json' }
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(3000)
     });
     if (res.ok) {
       const json = await res.json();
       if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-        return json.data.map((item: any, idx: number) => ({
+        return json.data;
+      }
+    }
+  } catch {}
+
+  // Fallback 2: Direct Jikan Airing Schedules with real broadcast parsing
+  try {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const jikanSchedules = await Promise.all(
+      days.map(d => fetchJikan(`/schedules?filter=${d}&limit=25`, GLOBAL_CACHE_TIME, 2500).catch(() => null))
+    );
+
+    const DAYS_MAP: Record<string, number> = {
+      sunday: 0, sundays: 0, sun: 0,
+      monday: 1, mondays: 1, mon: 1,
+      tuesday: 2, tuesdays: 2, tue: 2,
+      wednesday: 3, wednesdays: 3, wed: 3,
+      thursday: 4, thursdays: 4, thu: 4,
+      friday: 5, fridays: 5, fri: 5,
+      saturday: 6, saturdays: 6, sat: 6
+    };
+
+    const parsedList: AiringSchedule[] = [];
+    const seen = new Set<number>();
+    const mondayDate = new Date(start * 1000);
+
+    jikanSchedules.forEach((dayRes, dayIdx) => {
+      if (!dayRes?.data || !Array.isArray(dayRes.data)) return;
+      const targetDay = dayIdx === 6 ? 0 : dayIdx + 1; // 0=Sun, 1=Mon...6=Sat
+
+      dayRes.data.forEach((item: any) => {
+        if (!item?.mal_id || seen.has(item.mal_id)) return;
+        seen.add(item.mal_id);
+
+        let dayOfWeek = targetDay;
+        let hour = 18;
+        let minute = 0;
+
+        if (item.broadcast) {
+          if (item.broadcast.day) {
+            const d = String(item.broadcast.day).toLowerCase().trim();
+            if (DAYS_MAP[d] !== undefined) dayOfWeek = DAYS_MAP[d];
+          }
+          if (item.broadcast.time) {
+            const parts = String(item.broadcast.time).split(':');
+            if (parts.length >= 2) {
+              hour = parseInt(parts[0], 10) || 18;
+              minute = parseInt(parts[1], 10) || 0;
+            }
+          }
+        }
+
+        const dayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const airingDate = new Date(Date.UTC(
+          mondayDate.getUTCFullYear(),
+          mondayDate.getUTCMonth(),
+          mondayDate.getUTCDate() + dayOffset,
+          hour - 9, // JST to UTC
+          minute,
+          0
+        ));
+        const airingAt = Math.floor(airingDate.getTime() / 1000);
+
+        let calculatedEpisode = 1;
+        if (item.aired?.from) {
+          const fromEpoch = Math.floor(new Date(item.aired.from).getTime() / 1000);
+          if (airingAt >= fromEpoch) {
+            const weeksElapsed = Math.floor((airingAt - fromEpoch) / (7 * 86400));
+            calculatedEpisode = Math.max(1, weeksElapsed + 1);
+          }
+        }
+        const episode = item.episodes ? Math.min(item.episodes, calculatedEpisode) : calculatedEpisode;
+
+        parsedList.push({
           id: item.mal_id,
-          airingAt: start + (idx % 7) * 86400 + 3600 * ((idx % 10) + 10),
-          episode: (idx % 12) + 1,
+          airingAt,
+          episode,
           media: {
             id: item.mal_id,
             idMal: item.mal_id,
-            title: { english: item.title_english || item.title, romaji: item.title },
-            coverImage: {
-              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.bannerImage,
-              large: item.images?.jpg?.large_image_url || item.bannerImage
+            title: {
+              english: item.title_english || item.title,
+              romaji: item.title_japanese || item.title
             },
-            bannerImage: item.bannerImage || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+            coverImage: {
+              extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+              large: item.images?.jpg?.large_image_url || item.images?.webp?.image_url
+            },
+            bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
             averageScore: item.score ? Math.round(item.score * 10) : null,
-            episodes: 12,
-            format: 'TV',
-            status: 'Releasing',
+            episodes: item.episodes || null,
+            format: item.type || 'TV',
+            status: item.status || 'Currently Airing',
             genres: (item.genres || []).map((g: any) => typeof g === 'string' ? g : g.name),
-            seasonYear: new Date().getFullYear(),
-            studios: null,
+            seasonYear: item.year || new Date().getFullYear(),
+            studios: item.studios?.[0] ? { nodes: [{ name: item.studios[0].name }] } : null,
             description: item.synopsis || ''
           }
-        }));
-      }
-    }
+        });
+      });
+    });
+
+    if (parsedList.length > 0) return parsedList;
   } catch {}
 
   return [] as AiringSchedule[];
@@ -3355,8 +3436,11 @@ export async function searchMangaJikan(
   }
 }
 
-// ৭. Top Movies (For Homepage Lists: Primary AniList, Backup Jikan)
+// ৭. Top Movies (For Homepage Lists: Primary Atlas Cache, AniList, Backup Jikan)
 export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('top_movies');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 4) {
@@ -3394,11 +3478,59 @@ export async function getTopMoviesAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  return [] as AniListMedia[];
+  return [
+    {
+      id: 199,
+      idMal: 199,
+      title: { english: 'Spirited Away', romaji: 'Sen to Chihiro no Kamikakushi' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx199-m4XbO4e2b02G.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx199-m4XbO4e2b02G.jpg' },
+      averageScore: 89,
+      format: 'MOVIE',
+      status: 'FINISHED',
+      episodes: 1,
+      seasonYear: 2001
+    },
+    {
+      id: 6682,
+      idMal: 32281,
+      title: { english: 'Your Name.', romaji: 'Kimi no Na wa.' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx6682-gO4K2pQ240O1.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx6682-gO4K2pQ240O1.jpg' },
+      averageScore: 88,
+      format: 'MOVIE',
+      status: 'FINISHED',
+      episodes: 1,
+      seasonYear: 2016
+    },
+    {
+      id: 20954,
+      idMal: 28851,
+      title: { english: 'A Silent Voice', romaji: 'Koe no Katachi' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-UMhPBIELtBiy.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx20954-UMhPBIELtBiy.jpg' },
+      averageScore: 88,
+      format: 'MOVIE',
+      status: 'FINISHED',
+      episodes: 1,
+      seasonYear: 2016
+    },
+    {
+      id: 164,
+      idMal: 164,
+      title: { english: 'Princess Mononoke', romaji: 'Mononoke Hime' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx164-q83eYv5g4O92.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx164-q83eYv5g4O92.jpg' },
+      averageScore: 87,
+      format: 'MOVIE',
+      status: 'FINISHED',
+      episodes: 1,
+      seasonYear: 1997
+    }
+  ] as AniListMedia[];
 }
 
-// ৮. Top TV Series (For Homepage Lists: Primary AniList, Backup Jikan)
+// ৮. Top TV Series (For Homepage Lists: Primary Atlas Cache, AniList, Backup Jikan)
 export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('top_tv');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query {
       Page(page: 1, perPage: 4) {
@@ -3436,11 +3568,59 @@ export async function getTopTVSeriesAniList(): Promise<AniListMedia[]> {
     }
   } catch {}
 
-  return [] as AniListMedia[];
+  return [
+    {
+      id: 154587,
+      idMal: 52991,
+      title: { english: 'Frieren: Beyond Journey\'s End', romaji: 'Sousou no Frieren' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx154587-k2hGqT3y1242.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx154587-k2hGqT3y1242.jpg' },
+      averageScore: 91,
+      format: 'TV',
+      status: 'FINISHED',
+      episodes: 28,
+      seasonYear: 2023
+    },
+    {
+      id: 5114,
+      idMal: 5114,
+      title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-1073845.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx5114-1073845.jpg' },
+      averageScore: 90,
+      format: 'TV',
+      status: 'FINISHED',
+      episodes: 64,
+      seasonYear: 2009
+    },
+    {
+      id: 9253,
+      idMal: 9253,
+      title: { english: 'Steins;Gate', romaji: 'Steins;Gate' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx9253-30G7e7191242.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx9253-30G7e7191242.jpg' },
+      averageScore: 89,
+      format: 'TV',
+      status: 'FINISHED',
+      episodes: 24,
+      seasonYear: 2011
+    },
+    {
+      id: 16498,
+      idMal: 16498,
+      title: { english: 'Attack on Titan', romaji: 'Shingeki no Kyojin' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-73IhOXpJZiMF.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx16498-73IhOXpJZiMF.jpg' },
+      averageScore: 89,
+      format: 'TV',
+      status: 'FINISHED',
+      episodes: 25,
+      seasonYear: 2013
+    }
+  ] as AniListMedia[];
 }
 
-// ৯. Year Awards/Contenders (For Homepage Lists: Primary AniList, Backup Jikan)
+// ৯. Year Awards/Contenders (For Homepage Lists: Primary Atlas Cache, AniList, Backup Jikan)
 export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]> {
+  const cachedFromAtlas = await fetchCuratedSectionFromAtlas('year_awards');
+  if (cachedFromAtlas.length > 0) return cachedFromAtlas;
+
   const query = `
     query ($year: Int) {
       Page(page: 1, perPage: 4) {
@@ -3478,7 +3658,52 @@ export async function getYearAwardsAniList(year: number): Promise<AniListMedia[]
     }
   } catch {}
 
-  return [] as AniListMedia[];
+  return [
+    {
+      id: 176274,
+      idMal: 58567,
+      title: { english: 'Solo Leveling Season 2 -Arise from the Shadow-', romaji: 'Ore dake Level Up na Ken Season 2' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx176274-P9kL21901242.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx176274-P9kL21901242.jpg' },
+      averageScore: 88,
+      format: 'TV',
+      status: 'RELEASING',
+      episodes: 13,
+      seasonYear: 2026
+    },
+    {
+      id: 179304,
+      idMal: 59192,
+      title: { english: 'Demon Slayer: Infinity Castle', romaji: 'Kimetsu no Yaiba: Mugen Jou-hen' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-WBsBl0ClmgLd.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101922-WBsBl0ClmgLd.jpg' },
+      averageScore: 90,
+      format: 'MOVIE',
+      status: 'NOT_YET_RELEASED',
+      episodes: 1,
+      seasonYear: 2026
+    },
+    {
+      id: 172944,
+      idMal: 57371,
+      title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man Movie: Reze-hen' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx127230-FloXNReUPeMw.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx127230-FloXNReUPeMw.jpg' },
+      averageScore: 88,
+      format: 'MOVIE',
+      status: 'NOT_YET_RELEASED',
+      episodes: 1,
+      seasonYear: 2026
+    },
+    {
+      id: 172945,
+      idMal: 57372,
+      title: { english: 'Jujutsu Kaisen: Culling Game', romaji: 'Jujutsu Kaisen: Shimetsu Kaiyuu' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4p56j61.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx113415-bbBWj4p56j61.jpg' },
+      averageScore: 89,
+      format: 'TV',
+      status: 'NOT_YET_RELEASED',
+      episodes: 24,
+      seasonYear: 2026
+    }
+  ] as AniListMedia[];
 }
 
 // Curated sections loaded from Atlas via top-level helper
@@ -3673,7 +3898,51 @@ export async function getSeasonalRomanceAnimeAniList(year: number, season: strin
     if (data?.data?.Page?.media?.length > 0) return data.data.Page.media as AniListMedia[];
   } catch {}
 
-  return [] as AniListMedia[];
+  // High-res Fallback Top Romance Anime
+  return [
+    {
+      id: 101921,
+      idMal: 37999,
+      title: { english: 'Kaguya-sama: Love Is War', romaji: 'Kaguya-sama wa Kokurasetai' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101921-V46j9245yPq2.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101921-V46j9245yPq2.jpg' },
+      bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/101921-pfsH1k1G8p2P.jpg',
+      description: 'Miyuki Shirogane and Kaguya Shinomiya lead the prestigious student council. The first to confess loses!',
+      episodes: 12,
+      format: 'TV',
+      status: 'FINISHED',
+      averageScore: 86,
+      genres: ['Comedy', 'Psychological', 'Romance'],
+      seasonYear: 2019
+    },
+    {
+      id: 153152,
+      idMal: 52578,
+      title: { english: 'The Dangers in My Heart', romaji: 'Boku no Kokoro no Yabai Yatsu' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx153152-xK9m9Kk5Y7e7.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx153152-xK9m9Kk5Y7e7.jpg' },
+      bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/153152-HlV7qj8vWqK2.jpg',
+      description: 'Kyoutarou Ichikawa and class idol Anna Yamada develop a heartwarming romance.',
+      episodes: 12,
+      format: 'TV',
+      status: 'FINISHED',
+      averageScore: 88,
+      genres: ['Comedy', 'Romance', 'Slice of Life'],
+      seasonYear: 2023
+    },
+    {
+      id: 124080,
+      idMal: 42897,
+      title: { english: 'Horimiya', romaji: 'Horimiya' },
+      coverImage: { extraLarge: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx124080-mFm6wf4n9Fvy.jpg', large: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx124080-mFm6wf4n9Fvy.jpg' },
+      bannerImage: 'https://s4.anilist.co/file/anilistcdn/media/anime/banner/124080-60b6E0yB8w8l.jpg',
+      description: 'Kyouko Hori and Izumi Miyamura lead double lives. When they accidentally discover each other\'s secrets, an unforgettable love begins.',
+      episodes: 13,
+      format: 'TV',
+      status: 'FINISHED',
+      averageScore: 82,
+      genres: ['Comedy', 'Romance', 'Slice of Life'],
+      seasonYear: 2021
+    }
+  ] as AniListMedia[];
 }
 
 // Sci-Fi Anime (Fetches top popular Sci-Fi anime)

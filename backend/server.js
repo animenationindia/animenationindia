@@ -154,23 +154,95 @@ app.get('/api/health', (req, res) => res.json({
   timestamp: new Date().toISOString()
 }));
 
-// 🔥 AniList GraphQL Proxy (Bypasses Cloudflare Worker IP block from AniList) 🔥
-app.post('/api/anilist/proxy', async (req, res) => {
+// ============================================================================
+// 🔥 High-Speed GraphQL Proxy for AniList (10-Min In-Memory Cache) 🔥
+// ============================================================================
+const anilistProxyCache = new Map();
+const ANILIST_PROXY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+
+app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) => {
   try {
-    const response = await fetch('https://graphql.anilist.co', {
+    const { query, variables } = req.body;
+    if (!query) {
+      return res.status(400).json({ error: 'GraphQL query is required' });
+    }
+
+    const cacheKey = JSON.stringify({ query, variables });
+    const cached = anilistProxyCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < ANILIST_PROXY_CACHE_TTL)) {
+      return res.json(cached.data);
+    }
+
+    const aniRes = await fetch('https://graphql.anilist.co', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)'
       },
-      body: JSON.stringify(req.body)
+      body: JSON.stringify({ query, variables }),
+      signal: AbortSignal.timeout(8000)
     });
-    const data = await response.json();
-    return res.status(response.status).json(data);
-  } catch (error) {
-    console.error('❌ AniList Proxy Error:', error.message);
-    return res.status(500).json({ error: error.message });
+
+    const data = await aniRes.json();
+    if (aniRes.ok && data?.data) {
+      anilistProxyCache.set(cacheKey, { data, timestamp: Date.now() });
+    }
+    return res.status(aniRes.status).json(data);
+  } catch (err) {
+    console.error('AniList Proxy Error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================================
+// 🔥 High-Speed Jikan Proxy (5-Min In-Memory Cache & Rate-Limit Shield) 🔥
+// ============================================================================
+const jikanProxyCache = new Map();
+const JIKAN_PROXY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+
+app.get('/api/jikan/proxy', async (req, res) => {
+  try {
+    let endpoint = req.query.endpoint || req.query.path;
+    if (!endpoint) {
+      const match = req.originalUrl.match(/\/api\/jikan\/proxy\?(?:endpoint|path)=(.+)/);
+      if (match && match[1]) {
+        endpoint = decodeURIComponent(match[1]);
+      }
+    }
+
+    if (!endpoint || typeof endpoint !== 'string') {
+      return res.status(400).json({ error: 'Endpoint query parameter is required (e.g. /top/anime?limit=10)' });
+    }
+
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const cached = jikanProxyCache.get(cleanEndpoint);
+    if (cached && (Date.now() - cached.timestamp < JIKAN_PROXY_CACHE_TTL)) {
+      return res.json(cached.data);
+    }
+
+    const targetUrl = `https://api.jikan.moe/v4${cleanEndpoint}`;
+    const jikanRes = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
+        'Accept': 'application/json'
+      },
+      signal: AbortSignal.timeout(6000)
+    });
+
+    if (jikanRes.status === 429 || jikanRes.status >= 500) {
+      if (cached) return res.json(cached.data);
+      return res.status(jikanRes.status).json({ error: `Jikan API returned ${jikanRes.status}` });
+    }
+
+    const data = await jikanRes.json();
+    if (jikanRes.ok && data) {
+      jikanProxyCache.set(cleanEndpoint, { data, timestamp: Date.now() });
+    }
+    return res.status(jikanRes.status).json(data);
+  } catch (err) {
+    console.error('Jikan Proxy Error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 });
 
@@ -179,6 +251,8 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('🔥 MongoDB Atlas Connected Successfully!');
     seedInitialArticles();
+    syncScheduleData();
+    setInterval(syncScheduleData, 30 * 60 * 1000);
   })
   .catch((err) => console.error('MongoDB Error: ', err));
 
@@ -370,6 +444,199 @@ const curatedAnimeSchema = new mongoose.Schema({
 curatedAnimeSchema.index({ section: 1, order: 1 });
 curatedAnimeSchema.index({ section: 1, id: 1 }, { unique: true });
 const CuratedAnime = mongoose.model('CuratedAnime', curatedAnimeSchema);
+
+// ==========================================
+// 📅 LIVE AIRING SCHEDULE ENGINE & SCHEMA
+// ==========================================
+const DAYS_MAP = {
+  sunday: 0, sundays: 0, sun: 0,
+  monday: 1, mondays: 1, mon: 1,
+  tuesday: 2, tuesdays: 2, tue: 2,
+  wednesday: 3, wednesdays: 3, wed: 3,
+  thursday: 4, thursdays: 4, thu: 4,
+  friday: 5, fridays: 5, fri: 5,
+  saturday: 6, saturdays: 6, sat: 6
+};
+
+const scheduleAnimeSchema = new mongoose.Schema({
+  mal_id: { type: Number, required: true, unique: true, index: true },
+  title: String,
+  title_english: String,
+  title_japanese: String,
+  images: Object,
+  broadcast: Object,
+  dayOfWeek: { type: Number, default: 1, index: true }, // 0=Sun..6=Sat
+  airingTime: { type: String, default: '18:00' },
+  score: Number,
+  episodes: Number,
+  format: String,
+  status: String,
+  genres: [String],
+  studios: [String],
+  synopsis: String,
+  airedFrom: String,
+  updatedAt: { type: Date, default: Date.now }
+}, {
+  timestamps: true
+});
+const ScheduleAnime = mongoose.models.ScheduleAnime || mongoose.model('ScheduleAnime', scheduleAnimeSchema);
+
+function parseBroadcast(broadcast, fallbackDay = 1) {
+  let dayOfWeek = fallbackDay;
+  let airingTime = '18:00';
+  if (broadcast) {
+    if (broadcast.day) {
+      const d = broadcast.day.toLowerCase().trim();
+      if (DAYS_MAP[d] !== undefined) dayOfWeek = DAYS_MAP[d];
+    }
+    if (broadcast.time) {
+      airingTime = broadcast.time;
+    }
+  }
+  return { dayOfWeek, airingTime };
+}
+
+function calculateScheduleForWeek(animeList, targetMondayEpoch) {
+  const mondayDate = new Date(targetMondayEpoch * 1000);
+
+  return animeList.map(item => {
+    const dayOfWeek = item.dayOfWeek !== undefined ? item.dayOfWeek : 1;
+    const timeParts = (item.airingTime || '18:00').split(':');
+    const hour = parseInt(timeParts[0], 10) || 18;
+    const minute = parseInt(timeParts[1], 10) || 0;
+
+    const dayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const airingDate = new Date(Date.UTC(
+      mondayDate.getUTCFullYear(),
+      mondayDate.getUTCMonth(),
+      mondayDate.getUTCDate() + dayOffset,
+      hour - 9, // JST to UTC
+      minute,
+      0
+    ));
+
+    const airingAt = Math.floor(airingDate.getTime() / 1000);
+
+    let calculatedEpisode = 1;
+    if (item.airedFrom) {
+      const fromEpoch = Math.floor(new Date(item.airedFrom).getTime() / 1000);
+      if (airingAt >= fromEpoch) {
+        const weeksElapsed = Math.floor((airingAt - fromEpoch) / (7 * 86400));
+        calculatedEpisode = Math.max(1, weeksElapsed + 1);
+      }
+    }
+    const episode = item.episodes ? Math.min(item.episodes, calculatedEpisode) : calculatedEpisode;
+
+    return {
+      id: item.mal_id,
+      airingAt,
+      episode,
+      media: {
+        id: item.mal_id,
+        idMal: item.mal_id,
+        title: {
+          english: item.title_english || item.title,
+          romaji: item.title_japanese || item.title
+        },
+        coverImage: {
+          extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+          large: item.images?.jpg?.large_image_url || item.images?.webp?.image_url
+        },
+        bannerImage: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
+        averageScore: item.score ? Math.round(item.score * 10) : null,
+        episodes: item.episodes || null,
+        format: item.format || 'TV',
+        status: item.status || 'Currently Airing',
+        genres: item.genres || [],
+        seasonYear: new Date(item.airedFrom || Date.now()).getFullYear(),
+        studios: item.studios?.[0] ? { nodes: [{ name: item.studios[0] }] } : null,
+        description: item.synopsis || ''
+      }
+    };
+  });
+}
+
+// In-Memory cache for Schedule
+let scheduleCache = {
+  lastUpdated: 0,
+  data: []
+};
+
+async function syncScheduleData() {
+  try {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const fetchedItems = [];
+    const seen = new Set();
+
+    for (const day of days) {
+      try {
+        const res = await fetch(`https://api.jikan.moe/v4/schedules?filter=${day}&limit=25`, {
+          headers: jikanHeaders
+        });
+        if (res.ok) {
+          const json = await res.json();
+          (json.data || []).forEach(item => {
+            if (!seen.has(item.mal_id)) {
+              seen.add(item.mal_id);
+              item._targetDay = DAYS_MAP[day];
+              fetchedItems.push(item);
+            }
+          });
+        }
+        await delay(500);
+      } catch (e) {}
+    }
+
+    try {
+      const resTop = await fetch('https://api.jikan.moe/v4/top/anime?filter=airing&limit=25', {
+        headers: jikanHeaders
+      });
+      if (resTop.ok) {
+        const json = await resTop.json();
+        (json.data || []).forEach(item => {
+          if (!seen.has(item.mal_id)) {
+            seen.add(item.mal_id);
+            fetchedItems.push(item);
+          }
+        });
+      }
+    } catch (e) {}
+
+    if (fetchedItems.length > 0) {
+      for (const item of fetchedItems) {
+        const { dayOfWeek, airingTime } = parseBroadcast(item.broadcast, item._targetDay !== undefined ? item._targetDay : 1);
+        await ScheduleAnime.findOneAndUpdate(
+          { mal_id: item.mal_id },
+          {
+            mal_id: item.mal_id,
+            title: item.title,
+            title_english: item.title_english || item.title,
+            title_japanese: item.title_japanese || item.title,
+            images: item.images,
+            broadcast: item.broadcast,
+            dayOfWeek,
+            airingTime,
+            score: item.score || null,
+            episodes: item.episodes || null,
+            format: item.type || 'TV',
+            status: item.status || 'Currently Airing',
+            genres: (item.genres || []).map(g => g.name),
+            studios: (item.studios || []).map(s => s.name),
+            synopsis: item.synopsis || '',
+            airedFrom: item.aired?.from || null,
+            updatedAt: new Date()
+          },
+          { upsert: true, returnDocument: 'after' }
+        );
+      }
+      scheduleCache.data = await ScheduleAnime.find().lean();
+      scheduleCache.lastUpdated = Date.now();
+      console.log(`✅ Schedule Synced: ${scheduleCache.data.length} anime in database.`);
+    }
+  } catch (error) {
+    console.error('Schedule Sync Error:', error.message);
+  }
+}
 
 // Auto-seed initial high-quality anime articles if collection is empty
 async function seedInitialArticles() {
@@ -1244,46 +1511,6 @@ app.get('/api/hero', async (req, res) => {
   }
 });
 
-// ============================================================================
-// 🔥 High-Speed GraphQL Proxy for AniList (Bypasses Cloudflare Workers IP Blocks) 🔥
-// ============================================================================
-const anilistProxyCache = new Map();
-const ANILIST_PROXY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
-
-app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) => {
-  try {
-    const { query, variables } = req.body;
-    if (!query) {
-      return res.status(400).json({ error: 'GraphQL query is required' });
-    }
-
-    const cacheKey = JSON.stringify({ query, variables });
-    const cached = anilistProxyCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp < ANILIST_PROXY_CACHE_TTL)) {
-      return res.json(cached.data);
-    }
-
-    const aniRes = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ query, variables }),
-      signal: AbortSignal.timeout(8000)
-    });
-
-    const data = await aniRes.json();
-    if (aniRes.ok && data?.data) {
-      anilistProxyCache.set(cacheKey, { data, timestamp: Date.now() });
-    }
-    return res.status(aniRes.status).json(data);
-  } catch (err) {
-    console.error('AniList Proxy Error:', err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
-
 app.get('/api/trending', async (req, res) => {
   try {
     const savedTrending = await TrendingAnime.find();
@@ -1581,16 +1808,49 @@ app.get('/api/curated', async (req, res) => {
   }
 });
 
-// 2. GET /api/curated/:section - Get curated anime for a specific section
-app.get('/api/curated/:section', async (req, res) => {
+// ==========================================
+// 📅 AIRING SCHEDULE API ROUTES
+// ==========================================
+
+// 1. GET /api/schedule - Get real airing schedule for a given week epoch
+app.get('/api/schedule', async (req, res) => {
   try {
-    const { section } = req.params;
-    const animeList = await CuratedAnime.find({ section }).sort({ order: 1 }).lean();
-    res.json({ success: true, data: animeList });
+    const { start, end } = req.query;
+    let targetMondayEpoch;
+
+    if (start) {
+      targetMondayEpoch = parseInt(start, 10);
+    } else {
+      const now = new Date();
+      const currentDay = now.getDay();
+      const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;
+      const mondayDate = new Date(now);
+      mondayDate.setDate(now.getDate() - distanceToMonday);
+      mondayDate.setHours(0, 0, 0, 0);
+      targetMondayEpoch = Math.floor(mondayDate.getTime() / 1000);
+    }
+
+    if (!scheduleCache.data || scheduleCache.data.length === 0 || Date.now() - scheduleCache.lastUpdated > 30 * 60 * 1000) {
+      scheduleCache.data = await ScheduleAnime.find().lean();
+      scheduleCache.lastUpdated = Date.now();
+    }
+
+    if (!scheduleCache.data || scheduleCache.data.length === 0) {
+      syncScheduleData();
+    }
+
+    const calculated = calculateScheduleForWeek(scheduleCache.data || [], targetMondayEpoch);
+    res.json({ success: true, count: calculated.length, data: calculated });
   } catch (error) {
-    console.error(`Curated Anime [${req.params.section}] Fetch Error:`, error);
-    res.status(500).json({ success: false, message: 'Failed to fetch curated section' });
+    console.error('API /api/schedule Error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
+});
+
+// 2. POST /api/schedule/sync - Trigger live sync in background
+app.post('/api/schedule/sync', async (req, res) => {
+  syncScheduleData();
+  res.json({ success: true, message: 'Live schedule sync started' });
 });
 
 // 3. GET /api/reviews - Get recent community anime reviews (Cached)

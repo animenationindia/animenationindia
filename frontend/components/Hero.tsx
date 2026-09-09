@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Navigation, Pagination } from 'swiper/modules';
-import { Play, Tv, Film } from 'lucide-react';
+import { Play, Tv, Film, Flame, Sparkles } from 'lucide-react';
 import WatchlistDropdown from './WatchlistDropdown';
 import TrailerModal from './TrailerModal';
 import { sanitizeHTML } from '../lib/sanitize';
@@ -30,6 +30,7 @@ interface HeroAnime {
   format: string | null;
   averageScore: number | null;
   seasonYear?: number | null;
+  genres?: string[] | null;
   trailer?: {
     id: string | null;
     site: string | null;
@@ -41,6 +42,7 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
   const [autoScroll, setAutoScroll] = useState(true);
   const [activeTrailer, setActiveTrailer] = useState<{ id: string; title: string } | null>(null);
   const [logosMap, setLogosMap] = useState<Record<number, string>>({});
+  const [backdropsMap, setBackdropsMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const scrollSetting = localStorage.getItem('autoScrollEnabled');
@@ -51,14 +53,15 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Fetch TMDB ClearArt logos for the top hero anime
+  // Fetch TMDB ClearArt 4K logos and Ultra HD Cinema Backdrops
   useEffect(() => {
     if (!animeList || animeList.length === 0) return;
 
     let isMounted = true;
-    const fetchLogos = async () => {
+    const fetchLogosAndBackdrops = async () => {
       const topItems = animeList.slice(0, 8);
-      const newMap: Record<number, string> = {};
+      const newLogoMap: Record<number, string> = {};
+      const newBackdropMap: Record<number, string> = {};
 
       await Promise.all(topItems.map(async (anime) => {
         const title = anime.title.english || anime.title.romaji;
@@ -67,14 +70,24 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
           const res = await fetch(`https://api.tmdb.org/3/search/tv?api_key=2bca404e6766fc6ac7cb29ae38db027f&query=${cleanTitle}`);
           if (res.ok) {
             const data = await res.json();
-            const tmdbId = data.results?.[0]?.id;
+            const first = data.results?.[0];
+            const tmdbId = first?.id;
+
+            if (first?.backdrop_path) {
+              newBackdropMap[anime.id] = `https://image.tmdb.org/t/p/original${first.backdrop_path}`;
+            }
+
             if (tmdbId) {
               const imgRes = await fetch(`https://api.tmdb.org/3/tv/${tmdbId}/images?api_key=2bca404e6766fc6ac7cb29ae38db027f&include_image_language=en,ja,null`);
               if (imgRes.ok) {
                 const imgData = await imgRes.json();
                 const logo = (imgData.logos || []).find((l: any) => l.iso_639_1 === 'en' || !l.iso_639_1) || imgData.logos?.[0];
                 if (logo?.file_path) {
-                  newMap[anime.id] = `https://image.tmdb.org/t/p/original${logo.file_path}`;
+                  newLogoMap[anime.id] = `https://image.tmdb.org/t/p/original${logo.file_path}`;
+                }
+                const bestBackdrop = (imgData.backdrops || []).sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
+                if (bestBackdrop?.file_path) {
+                  newBackdropMap[anime.id] = `https://image.tmdb.org/t/p/original${bestBackdrop.file_path}`;
                 }
               }
             }
@@ -82,12 +95,17 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
         } catch {}
       }));
 
-      if (isMounted && Object.keys(newMap).length > 0) {
-        setLogosMap(prev => ({ ...prev, ...newMap }));
+      if (isMounted) {
+        if (Object.keys(newLogoMap).length > 0) {
+          setLogosMap(prev => ({ ...prev, ...newLogoMap }));
+        }
+        if (Object.keys(newBackdropMap).length > 0) {
+          setBackdropsMap(prev => ({ ...prev, ...newBackdropMap }));
+        }
       }
     };
 
-    fetchLogos();
+    fetchLogosAndBackdrops();
     return () => { isMounted = false; };
   }, [animeList]);
 
@@ -124,7 +142,8 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
       >
         {animeList.map((anime, index) => {
           const title = anime.title.english || anime.title.romaji;
-          const backgroundImage = anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large;
+          const rawBg = backdropsMap[anime.id] || anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large;
+          const backgroundImage = rawBg;
           const linkId = anime.idMal || anime.id;
           const logoUrl = logosMap[anime.id];
           const trailerId = anime.trailer?.id && anime.trailer?.site === 'youtube' ? anime.trailer.id : null;
@@ -133,28 +152,43 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
             <SwiperSlide key={`hero-${anime.id}-${index}`}>
               <div className="relative w-full h-full">
                 
-                {/* Full Width Background Image */}
-                <div className="absolute inset-0 w-full h-full">
+                {/* Full Width Ultra HD 4K Background Image */}
+                <div className="absolute inset-0 w-full h-full overflow-hidden">
                   {backgroundImage && (
                     <img 
                       src={backgroundImage} 
                       alt={title} 
                       loading={index === 0 ? "eager" : "lazy"}
                       fetchPriority={index === 0 ? "high" : "auto"}
-                      className="absolute inset-0 w-full h-full object-cover object-center md:object-[center_20%]" 
+                      decoding="async"
+                      className="absolute inset-0 w-full h-full object-cover object-top md:object-[center_22%] filter contrast-[1.05] brightness-[0.92] saturate-[1.1] transition-transform duration-1000" 
                     />
                   )}
-                  {/* Deep Space Dark Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#050716]/98 via-[#050716]/70 to-transparent z-10"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-transparent to-transparent z-10"></div>
+                  {/* Cinematic Multi-Directional Gradient overlays */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#050716] via-[#050716]/80 md:via-[#050716]/60 to-transparent z-10"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-[#050716]/30 to-transparent z-10"></div>
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#050716]/60 via-transparent to-transparent z-10"></div>
                 </div>
 
                 <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] h-full relative z-20">
                   <div className="w-full md:w-3/5 lg:w-1/2 flex flex-col justify-end md:justify-center h-full pb-16 md:pb-0">
                     
+                    {/* 🌟 Otaku Trending Rank Flame Badge */}
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] md:text-[11px] font-black uppercase tracking-widest bg-gradient-to-r from-[#ff6400]/25 via-[#ff4dd2]/20 to-[#ff4dd2]/25 text-white border border-[#ff4dd2]/40 shadow-[0_0_15px_rgba(255,77,210,0.35)] backdrop-blur-md">
+                        <Flame size={13} className="text-[#ff6400] fill-[#ff6400] animate-pulse" />
+                        #{index + 1} Trending Now
+                      </span>
+                      {anime.seasonYear && (
+                        <span className="text-[10px] md:text-[11px] font-bold text-gray-300 bg-white/10 border border-white/10 px-2.5 py-0.5 rounded-full backdrop-blur-md">
+                          {anime.seasonYear}
+                        </span>
+                      )}
+                    </div>
+
                     {/* Official ClearArt Logo or Stylized Title */}
                     {logoUrl ? (
-                      <div className="mb-4 max-w-[320px] sm:max-w-[400px] md:max-w-[460px] h-16 sm:h-24 md:h-28 flex items-center">
+                      <div className="mb-3 max-w-[320px] sm:max-w-[400px] md:max-w-[460px] h-16 sm:h-24 md:h-28 flex items-center">
                         <img
                           src={logoUrl}
                           alt={title}
@@ -162,12 +196,13 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
                         />
                       </div>
                     ) : (
-                      <h1 className="font-bebas text-4xl md:text-6xl lg:text-7xl text-white mb-3 line-clamp-2 leading-none uppercase drop-shadow-2xl">
+                      <h1 className="font-bebas text-4xl md:text-6xl lg:text-7xl text-white mb-2 line-clamp-2 leading-none uppercase drop-shadow-2xl">
                         {title}
                       </h1>
                     )}
 
-                    <div className="flex items-center gap-3 mb-3 text-[13px] font-semibold text-[#a0a0a0]">
+                    {/* 📊 Meta Row with Format, Score, Status & Clickable Genre Tags */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 mb-3 text-[12px] md:text-[13px] font-semibold text-[#a0a0a0]">
                       <span className="text-[#050716] bg-[#ff4dd2] px-2 py-0.5 rounded-md font-black text-xs uppercase shadow-md shadow-[#ff4dd2]/30">
                         {anime.format || 'TV'}
                       </span>
@@ -180,6 +215,21 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
                         <span className="text-xs text-gray-300 font-semibold uppercase tracking-wider">
                           • {anime.status.replace(/_/g, ' ')}
                         </span>
+                      )}
+
+                      {/* 🏷️ Clickable Genre Pills */}
+                      {anime.genres && anime.genres.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 ml-1">
+                          {anime.genres.slice(0, 3).map((g) => (
+                            <Link
+                              key={g}
+                              href={`/genre/${encodeURIComponent(g.toLowerCase())}`}
+                              className="inline-flex items-center text-[10px] md:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-[#ff4dd2] text-gray-200 hover:text-black border border-white/10 hover:border-[#ff4dd2] transition-all duration-300 backdrop-blur-md cursor-pointer hover:scale-105"
+                            >
+                              {g}
+                            </Link>
+                          ))}
+                        </div>
                       )}
                     </div>
 

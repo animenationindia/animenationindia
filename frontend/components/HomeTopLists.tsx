@@ -51,16 +51,20 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
           </div>
 
           <div className="flex flex-col gap-4 mt-2">
-            {topMovies.slice(0, 4).map((anime) => {
+            {topMovies.slice(0, 4).map((anime, index) => {
               const linkId = anime.idMal || anime.id;
-              const title = anime.title.english || anime.title.romaji;
+              const title = anime.title?.english || anime.title?.romaji || 'Anime Movie';
+              const image = anime.coverImage?.large || anime.coverImage?.extraLarge || '';
               return (
-                <div key={anime.id} className="flex items-center gap-4 group/item">
-                  <Link href={`/series/${linkId}`} className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
-                    <img src={anime.coverImage.large} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                  </Link>
+                <div key={anime.id || index} className="flex items-center gap-4 group/item">
+                  <div className="relative flex-shrink-0">
+                    {renderRankBadge(index + 1)}
+                    <Link href={`/series/${linkId}`} className="relative block w-12 h-16 rounded-xl overflow-hidden border border-white/10 group-hover/item:border-[#ff4dd2]/40 hover:scale-105 transition-all duration-300">
+                      {image && <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
+                    </Link>
+                  </div>
                   <div className="flex flex-col gap-1 min-w-0">
-                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
+                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white group-hover/item:text-[#ff4dd2] transition-colors line-clamp-1">
                       {title}
                     </Link>
                     <span className="text-xs text-[#ff4dd2] font-bold flex items-center gap-1">
@@ -74,7 +78,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
         </div>
 
         {/* Column 2: Top TV Series */}
-        <div className="bg-[#0b0c20]/60 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex flex-col gap-5">
+        <div className="bg-[#0b0c20]/60 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex flex-col gap-5 hover:border-white/10 transition-colors">
           <div className="flex flex-col gap-2.5 items-start">
             <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
               📺 Top TV Series
@@ -88,16 +92,20 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
           </div>
 
           <div className="flex flex-col gap-4 mt-2">
-            {topTV.slice(0, 4).map((anime) => {
+            {topTV.slice(0, 4).map((anime, index) => {
               const linkId = anime.idMal || anime.id;
-              const title = anime.title.english || anime.title.romaji;
+              const title = anime.title?.english || anime.title?.romaji || 'Anime Series';
+              const image = anime.coverImage?.large || anime.coverImage?.extraLarge || '';
               return (
-                <div key={anime.id} className="flex items-center gap-4 group/item">
-                  <Link href={`/series/${linkId}`} className="relative w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-white/10 hover:scale-105 transition-transform duration-300">
-                    <img src={anime.coverImage.large} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                  </Link>
+                <div key={anime.id || index} className="flex items-center gap-4 group/item">
+                  <div className="relative flex-shrink-0">
+                    {renderRankBadge(index + 1)}
+                    <Link href={`/series/${linkId}`} className="relative block w-12 h-16 rounded-xl overflow-hidden border border-white/10 group-hover/item:border-[#ff4dd2]/40 hover:scale-105 transition-all duration-300">
+                      {image && <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
+                    </Link>
+                  </div>
                   <div className="flex flex-col gap-1 min-w-0">
-                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
+                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white group-hover/item:text-[#ff4dd2] transition-colors line-clamp-1">
                       {title}
                     </Link>
                     <span className="text-xs text-[#ff4dd2] font-bold flex items-center gap-1">
@@ -111,7 +119,7 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
         </div>
 
         {/* Column 3: Awards */}
-        <div className="bg-[#0b0c20]/60 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex flex-col gap-5">
+        <div className="bg-[#0b0c20]/60 backdrop-blur-md rounded-3xl p-6 border border-white/5 shadow-[0_15px_30px_rgba(0,0,0,0.4)] flex flex-col gap-5 hover:border-white/10 transition-colors">
           <div className="flex flex-col gap-2.5 items-start">
             <h3 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
               🏆 {year} Awards
@@ -121,17 +129,18 @@ export default function HomeTopLists({ topMovies, topTV, awards, year }: HomeTop
           <div className="flex flex-col gap-4 mt-2">
             {awards.slice(0, 4).map((anime, index) => {
               const linkId = anime.idMal || anime.id;
-              const title = anime.title.english || anime.title.romaji;
+              const title = anime.title?.english || anime.title?.romaji || 'Anime Award Contender';
+              const image = anime.coverImage?.large || anime.coverImage?.extraLarge || '';
               return (
-                <div key={anime.id} className="flex items-center gap-4 group/item">
+                <div key={anime.id || index} className="flex items-center gap-4 group/item">
                   <div className="relative flex-shrink-0">
                     {renderRankBadge(index + 1)}
-                    <Link href={`/series/${linkId}`} className="relative block w-12 h-16 rounded-xl overflow-hidden border border-white/10 hover:scale-105 transition-transform duration-300">
-                      <img src={anime.coverImage.large} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    <Link href={`/series/${linkId}`} className="relative block w-12 h-16 rounded-xl overflow-hidden border border-white/10 group-hover/item:border-[#ff4dd2]/40 hover:scale-105 transition-all duration-300">
+                      {image && <img src={image} alt={title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
                     </Link>
                   </div>
                   <div className="flex flex-col gap-1 min-w-0">
-                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white hover:text-[#ff4dd2] transition-colors line-clamp-1">
+                    <Link href={`/series/${linkId}`} className="text-sm font-bold text-white group-hover/item:text-[#ff4dd2] transition-colors line-clamp-1">
                       {title}
                     </Link>
                     <span className="text-xs text-[#ff4dd2] font-bold flex items-center gap-1">
