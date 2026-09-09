@@ -1,5 +1,6 @@
 // backend/services/malService.js
 // Official MyAnimeList API v2 Service with 5-Key Round-Robin & Deduplication
+const { toEnglishTitle, normalizeTitleObject } = require('./titleCleaner');
 
 const MAL_API_BASE = 'https://api.myanimelist.net/v2';
 
@@ -92,8 +93,8 @@ async function getAnimeDetails(id) {
   return {
     mal_id: raw.id,
     id: raw.id,
-    title: raw.title,
-    title_english: alt.en || raw.title,
+    title: toEnglishTitle(alt.en || raw.title),
+    title_english: toEnglishTitle(alt.en || raw.title),
     title_japanese: alt.ja || '',
     synopsis: raw.synopsis || '',
     images: {
@@ -129,14 +130,14 @@ async function getAnimeDetails(id) {
       entry: [{
         mal_id: rel.node?.id,
         type: 'anime',
-        name: rel.node?.title,
+        name: toEnglishTitle(rel.node?.title),
         url: `https://myanimelist.net/anime/${rel.node?.id}`
       }]
     })) : [],
     recommendations: Array.isArray(raw.recommendations) ? raw.recommendations.map(rec => ({
       entry: {
         mal_id: rec.node?.id,
-        title: rec.node?.title,
+        title: toEnglishTitle(rec.node?.alternative_titles?.en || rec.node?.title),
         images: {
           jpg: { image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium, large_image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium },
           webp: { image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium, large_image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium }
@@ -148,7 +149,7 @@ async function getAnimeDetails(id) {
 }
 
 async function getRankings(rankingType = 'all', limit = 24, offset = 0) {
-  const fields = 'id,title,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season';
+  const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season';
   const raw = await fetchMAL(`/anime/ranking?ranking_type=${rankingType}&limit=${limit}&offset=${offset}&fields=${encodeURIComponent(fields)}`, 60 * 60 * 1000);
   
   if (!raw || !Array.isArray(raw.data)) return [];
@@ -156,10 +157,12 @@ async function getRankings(rankingType = 'all', limit = 24, offset = 0) {
   return raw.data.map(item => {
     const node = item.node || {};
     const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+    const alt = node.alternative_titles || {};
+    const titles = normalizeTitleObject({ english: alt.en, romaji: node.title, native: alt.ja });
     return {
       id: node.id,
       idMal: node.id,
-      title: { english: node.title, romaji: node.title },
+      title: titles,
       coverImage: { large: cover, extraLarge: cover },
       format: (node.media_type || 'TV').toUpperCase(),
       averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : null,
@@ -172,7 +175,7 @@ async function getRankings(rankingType = 'all', limit = 24, offset = 0) {
 
 async function searchAnime(query, limit = 20) {
   if (!query || !query.trim()) return [];
-  const fields = 'id,title,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season';
+  const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_episodes,start_season';
   const raw = await fetchMAL(`/anime?q=${encodeURIComponent(query.trim())}&limit=${limit}&fields=${encodeURIComponent(fields)}`, 30 * 60 * 1000);
 
   if (!raw || !Array.isArray(raw.data)) return [];
@@ -180,10 +183,12 @@ async function searchAnime(query, limit = 20) {
   return raw.data.map(item => {
     const node = item.node || {};
     const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+    const alt = node.alternative_titles || {};
+    const titles = normalizeTitleObject({ english: alt.en, romaji: node.title, native: alt.ja });
     return {
       id: node.id,
       idMal: node.id,
-      title: { english: node.title, romaji: node.title },
+      title: titles,
       coverImage: { large: cover, extraLarge: cover },
       format: (node.media_type || 'TV').toUpperCase(),
       averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : null,
@@ -197,13 +202,13 @@ async function getRecommendations(id) {
   const numId = Number(id);
   if (!numId || isNaN(numId) || numId > 65000) return [];
 
-  const raw = await fetchMAL(`/anime/${numId}?fields=recommendations{num_recommendations,node{id,title,main_picture}}`, 12 * 60 * 60 * 1000);
+  const raw = await fetchMAL(`/anime/${numId}?fields=recommendations{num_recommendations,node{id,title,alternative_titles,main_picture}}`, 12 * 60 * 60 * 1000);
   if (!raw || !Array.isArray(raw.recommendations)) return [];
 
   return raw.recommendations.map(rec => ({
     entry: {
       mal_id: rec.node?.id,
-      title: rec.node?.title,
+      title: toEnglishTitle(rec.node?.alternative_titles?.en || rec.node?.title),
       images: {
         jpg: { image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium, large_image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium },
         webp: { image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium, large_image_url: rec.node?.main_picture?.large || rec.node?.main_picture?.medium }
@@ -215,16 +220,17 @@ async function getRecommendations(id) {
 
 async function getSearchSuggestions(query, limit = 5) {
   if (!query || !query.trim()) return [];
-  const fields = 'id,title,main_picture,mean,media_type,start_season';
+  const fields = 'id,title,alternative_titles,main_picture,mean,media_type,start_season';
   const raw = await fetchMAL(`/anime?q=${encodeURIComponent(query.trim())}&limit=${limit}&fields=${encodeURIComponent(fields)}`, 15 * 60 * 1000);
 
   if (!raw || !Array.isArray(raw.data)) return [];
 
   return raw.data.map(item => {
     const node = item.node || {};
+    const alt = node.alternative_titles || {};
     return {
       id: node.id,
-      title: node.title,
+      title: toEnglishTitle(alt.en || node.title),
       coverImage: node.main_picture?.medium || node.main_picture?.large || '/placeholder-poster.png',
       format: (node.media_type || 'TV').toUpperCase(),
       score: node.mean || null,
@@ -244,7 +250,7 @@ async function getTopManga(rankingType = 'all', limit = 24, offset = 0) {
     off = limit || 0;
   }
 
-  const fields = 'id,title,main_picture,mean,rank,popularity,genres,media_type,num_chapters,num_volumes,authors{node{first_name,last_name}}';
+  const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_chapters,num_volumes,authors{node{first_name,last_name}}';
   const raw = await fetchMAL(`/manga/ranking?ranking_type=${type}&limit=${lim}&offset=${off}&fields=${encodeURIComponent(fields)}`, 60 * 60 * 1000);
   
   if (!raw || !Array.isArray(raw.data)) return [];
@@ -252,11 +258,13 @@ async function getTopManga(rankingType = 'all', limit = 24, offset = 0) {
   return raw.data.map(item => {
     const node = item.node || {};
     const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+    const alt = node.alternative_titles || {};
     const authors = (node.authors || []).map(a => `${a.node?.first_name || ''} ${a.node?.last_name || ''}`.trim()).filter(Boolean);
+    const titles = normalizeTitleObject({ english: alt.en, romaji: node.title });
     return {
       id: node.id,
       idMal: node.id,
-      title: { english: node.title, romaji: node.title },
+      title: titles,
       coverImage: { large: cover, extraLarge: cover },
       format: (node.media_type || 'MANGA').toUpperCase(),
       averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : null,
@@ -270,7 +278,7 @@ async function getTopManga(rankingType = 'all', limit = 24, offset = 0) {
 
 async function searchManga(query, limit = 20) {
   if (!query || !query.trim()) return [];
-  const fields = 'id,title,main_picture,mean,rank,popularity,genres,media_type,num_chapters,num_volumes,authors{node{first_name,last_name}}';
+  const fields = 'id,title,alternative_titles,main_picture,mean,rank,popularity,genres,media_type,num_chapters,num_volumes,authors{node{first_name,last_name}}';
   const raw = await fetchMAL(`/manga?q=${encodeURIComponent(query.trim())}&limit=${limit}&fields=${encodeURIComponent(fields)}`, 30 * 60 * 1000);
 
   if (!raw || !Array.isArray(raw.data)) return [];
@@ -278,11 +286,13 @@ async function searchManga(query, limit = 20) {
   return raw.data.map(item => {
     const node = item.node || {};
     const cover = node.main_picture?.large || node.main_picture?.medium || '/placeholder-poster.png';
+    const alt = node.alternative_titles || {};
     const authors = (node.authors || []).map(a => `${a.node?.first_name || ''} ${a.node?.last_name || ''}`.trim()).filter(Boolean);
+    const titles = normalizeTitleObject({ english: alt.en, romaji: node.title });
     return {
       id: node.id,
       idMal: node.id,
-      title: { english: node.title, romaji: node.title },
+      title: titles,
       coverImage: { large: cover, extraLarge: cover },
       format: (node.media_type || 'MANGA').toUpperCase(),
       averageScore: typeof node.mean === 'number' ? Math.round(node.mean * 10) : null,
@@ -305,11 +315,12 @@ async function getMangaDetails(id) {
   const largePic = raw.main_picture?.large || raw.main_picture?.medium || '';
   const alt = raw.alternative_titles || {};
   const authors = (raw.authors || []).map(a => `${a.node?.first_name || ''} ${a.node?.last_name || ''}`.trim()).filter(Boolean);
+  const titles = normalizeTitleObject({ english: alt.en, romaji: raw.title, native: alt.ja });
 
   return {
     id: raw.id,
     idMal: raw.id,
-    title: { english: alt.en || raw.title, romaji: raw.title, native: alt.ja || '' },
+    title: titles,
     synopsis: raw.synopsis || '',
     description: raw.synopsis || '',
     coverImage: { large: largePic, extraLarge: largePic },

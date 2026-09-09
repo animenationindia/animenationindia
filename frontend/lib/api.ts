@@ -2,6 +2,7 @@
 // lib/api.ts
 import { logError } from './logger';
 import { DEFAULT_GENRES_LIST } from './genres-data';
+import { toEnglishTitle } from './titleCleaner';
 import { 
   getOfficialMALAnimeDetails, 
   getOfficialMALRecommendations, 
@@ -614,8 +615,12 @@ export async function fetchBFF<T>(endpoint: string, revalidate = 1800, timeoutMs
 export function formatToAniListMedia(item: any): AniListMedia {
   if (!item) return null as any;
   const id = item.id || item.mal_id || item.idMal;
-  const englishTitle = item.title_english || item.title?.english || (typeof item.title === 'string' ? item.title : null);
-  const romajiTitle = item.title?.romaji || item.title_japanese || (typeof item.title === 'string' ? item.title : 'Anime');
+  const rawEnglish = item.title?.english || item.title_english || (typeof item.title === 'string' ? item.title : null) || item.title?.romaji || item.title_japanese || 'Anime';
+  const rawRomaji = item.title?.romaji || item.title_japanese || rawEnglish || (typeof item.title === 'string' ? item.title : 'Anime');
+  
+  const englishTitle = toEnglishTitle(rawEnglish);
+  const romajiTitle = toEnglishTitle(rawRomaji);
+
   const coverUrl = item.coverImage?.extraLarge || item.coverImage?.large || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || item.images?.webp?.image_url || item.images?.jpg?.image_url || '/placeholder-poster.png';
   const bannerUrl = item.bannerImage || item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url || coverUrl;
   const score = item.averageScore || (typeof item.score === 'number' ? Math.round(item.score * 10) : (typeof item.mean === 'number' ? Math.round(item.mean * 10) : null));

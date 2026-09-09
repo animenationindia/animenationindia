@@ -13,10 +13,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { sanitizeDescription } from '../../lib/sanitize';
 import { useWatchlist } from '../../hooks/useWatchlist';
+import { toEnglishTitle } from '../../lib/titleCleaner';
 
 // ─── iCalendar (.ics) Generator Helper ─────────────────────────────────────────
 function downloadIcsReminder(item: AiringSchedule) {
-  const title = item.media.title.english || item.media.title.romaji || 'Anime Episode';
+  const title = toEnglishTitle(item.media.title.english || item.media.title.romaji, 'Anime Episode');
   const ep = item.episode;
   const startDate = new Date(item.airingAt * 1000);
   const endDate = new Date((item.airingAt + 1800) * 1000);
@@ -61,7 +62,7 @@ function ScheduleAnimeCard({
   const [mounted, setMounted] = useState(false);
   const { isInWatchlist, toggleWatchlist } = useWatchlist();
 
-  const title = item.media.title.english || item.media.title.romaji || 'Unknown Anime';
+  const title = toEnglishTitle(item.media.title.english || item.media.title.romaji, 'Unknown Anime');
   const linkId = item.media.idMal || item.media.id;
   const coverImage = item.media.coverImage?.extraLarge || item.media.coverImage?.large || '';
   const score = item.media.averageScore ? (item.media.averageScore / 10).toFixed(1) : null;
@@ -284,7 +285,7 @@ function ScheduleAnimeCard({
 
 // ─── ⏱️ TIMELINE CHRONOLOGICAL VIEW ITEM ──────────────────────────────────────
 function ScheduleTimelineRow({ item, timezoneOffsetHours }: { item: AiringSchedule; timezoneOffsetHours: number }) {
-  const title = item.media.title.english || item.media.title.romaji || 'Unknown Anime';
+  const title = toEnglishTitle(item.media.title.english || item.media.title.romaji, 'Unknown Anime');
   const linkId = item.media.idMal || item.media.id;
   const coverImage = item.media.coverImage?.large || '';
   const format = item.media.format ? item.media.format.replace('_', ' ') : 'TV';
@@ -596,7 +597,7 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
       if (onlyMyWatchlist && !isInWatchlist(linkId)) return false;
 
       // Title Search
-      const title = (item.media.title.english || item.media.title.romaji || '').toLowerCase();
+      const title = toEnglishTitle(item.media.title.english || item.media.title.romaji, '').toLowerCase();
       if (searchQuery.trim() && !title.includes(searchQuery.trim().toLowerCase())) return false;
 
       // Format filter
@@ -619,8 +620,8 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
       if (sortOrder === 'TIME_DESC') return b.airingAt - a.airingAt;
       if (sortOrder === 'SCORE_DESC') return (b.media.averageScore || 0) - (a.media.averageScore || 0);
       if (sortOrder === 'TITLE_ASC') {
-        const titleA = a.media.title.english || a.media.title.romaji || '';
-        const titleB = b.media.title.english || b.media.title.romaji || '';
+        const titleA = toEnglishTitle(a.media.title.english || a.media.title.romaji, '');
+        const titleB = toEnglishTitle(b.media.title.english || b.media.title.romaji, '');
         return titleA.localeCompare(titleB);
       }
       return a.airingAt - b.airingAt; // Default TIME_ASC
@@ -672,7 +673,7 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
     const text = [
       `📅 Anime Nation India Schedule (${dayName}):`,
       ...currentDayItems.map((item, i) => {
-        const title = item.media.title.english || item.media.title.romaji || 'Unknown Anime';
+        const title = toEnglishTitle(item.media.title.english || item.media.title.romaji, 'Unknown Anime');
         const date = new Date((item.airingAt + timezoneOffsetHours * 3600) * 1000);
         const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         return `${i + 1}. EP ${item.episode} - ${title} (${time})`;
@@ -854,7 +855,7 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
               </div>
 
               <h3 className="text-white text-xl md:text-2xl font-black truncate leading-tight">
-                {nextAiringItem.media.title.english || nextAiringItem.media.title.romaji}
+                {toEnglishTitle(nextAiringItem.media.title.english || nextAiringItem.media.title.romaji)}
               </h3>
 
               <p className="text-gray-300 text-xs md:text-sm mt-1.5 flex items-center justify-center md:justify-start gap-2">
@@ -1264,7 +1265,7 @@ export default function ScheduleList({ initialSchedule }: { initialSchedule: Air
                     EPISODE {previewItem.episode}
                   </span>
                   <h3 className="text-white text-lg font-bold line-clamp-2 mt-1 leading-tight">
-                    {previewItem.media.title.english || previewItem.media.title.romaji}
+                    {toEnglishTitle(previewItem.media.title.english || previewItem.media.title.romaji)}
                   </h3>
                   <p className="text-gray-400 text-xs mt-1">
                     Format: <span className="text-white font-bold">{previewItem.media.format}</span>

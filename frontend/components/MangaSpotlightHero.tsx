@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, BookOpen, ChevronRight, Sparkles } from 'lucide-react';
+import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface SpotlightManga {
   id: number;
@@ -45,7 +46,7 @@ export default function MangaSpotlightHero({ spotlights }: MangaSpotlightHeroPro
   if (!spotlights || spotlights.length === 0) return null;
 
   const current = spotlights[activeIndex] || spotlights[0];
-  const title = current.title.english || current.title.romaji || 'Unknown Title';
+  const title = toEnglishTitle(current.title.english || current.title.romaji, 'Unknown Title');
   const score = current.averageScore ? (current.averageScore / 10).toFixed(1) : null;
   const banner = current.bannerImage || current.coverImage.extraLarge || current.coverImage.large;
   const format = current.format || 'MANGA';

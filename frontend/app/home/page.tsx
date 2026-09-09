@@ -14,6 +14,7 @@ import HomeAnnouncementBanner from '../../components/HomeAnnouncementBanner';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { SliderSkeleton } from '../../components/SkeletonLoaders';
 import { sanitizeDescription } from '../../lib/sanitize';
+import { toEnglishTitle } from '../../lib/titleCleaner';
 import { 
   getTodayReleasesAniList, 
   getTopAnimeAniList,     
@@ -138,7 +139,7 @@ async function ThemeZonesSection({
           <div className="absolute inset-0 w-full h-full z-0">
             <img
               src={romanceSeasonalAnime.bannerImage || romanceSeasonalAnime.coverImage?.extraLarge || romanceSeasonalAnime.coverImage?.large}
-              alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
+              alt={toEnglishTitle(romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji)}
               loading="lazy"
               className="absolute inset-0 w-full h-full object-cover object-center opacity-35 group-hover:scale-105 group-hover:opacity-45 transition-all duration-700 ease-out"
             />
@@ -162,7 +163,7 @@ async function ThemeZonesSection({
               </div>
 
               <h3 className="text-2xl md:text-4xl lg:text-5xl font-extrabold text-white tracking-wide uppercase leading-tight mb-3 drop-shadow-lg group-hover:text-[#ff7be0] transition-colors">
-                {romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
+                {toEnglishTitle(romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji)}
               </h3>
 
               <p className="text-gray-300 text-xs md:text-sm line-clamp-3 leading-relaxed mb-6 max-w-xl">
@@ -190,7 +191,7 @@ async function ThemeZonesSection({
               <div className="hidden lg:block relative w-[170px] h-[245px] flex-shrink-0 rounded-2xl overflow-hidden border border-[#ff4dd2]/30 shadow-[0_20px_40px_rgba(255,77,210,0.2)] transform rotate-2 group-hover:rotate-0 transition-transform duration-500">
                 <img
                   src={romanceSeasonalAnime.coverImage.extraLarge || romanceSeasonalAnime.coverImage.large}
-                  alt={romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji}
+                  alt={toEnglishTitle(romanceSeasonalAnime.title.english || romanceSeasonalAnime.title.romaji)}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

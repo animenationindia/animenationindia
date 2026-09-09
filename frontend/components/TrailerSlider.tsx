@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay, Mousewheel } from 'swiper/modules';
 import { Play, X } from 'lucide-react';
+import { toEnglishTitle } from '../lib/titleCleaner';
 import 'swiper/css';
 import 'swiper/css/navigation';
 
@@ -50,7 +51,7 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
         className="w-full pb-6 pt-2"
       >
         {trailers.map((anime: any) => {
-          const title = anime.title.english || anime.title.romaji;
+          const title = toEnglishTitle(anime.title.english || anime.title.romaji);
           const thumbnailUrl = anime.trailer.thumbnail || `https://i.ytimg.com/vi/${anime.trailer.id}/hqdefault.jpg`;
 
           return (

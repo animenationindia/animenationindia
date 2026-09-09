@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Play, Bookmark, Check, BookOpen } from 'lucide-react';
 import { sanitizeDescription } from '../lib/sanitize';
 import { useWatchlist } from '../hooks/useWatchlist';
+import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface AnimeCardProps {
   anime: {
@@ -15,7 +16,7 @@ interface AnimeCardProps {
     title?: {
       english?: string | null;
       romaji?: string | null;
-    } | null;
+    } | string | null;
     averageScore?: number | null;
     seasonYear?: number | null;
     startDate?: {
@@ -41,7 +42,8 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
   const router = useRouter();
   const { isInWatchlist, toggleWatchlist } = useWatchlist();
 
-  const title = anime.title?.english || anime.title?.romaji || 'Unknown Title';
+  const rawTitle = typeof anime.title === 'string' ? anime.title : (anime.title?.english || anime.title?.romaji || '');
+  const title = toEnglishTitle(rawTitle, 'Unknown Title');
   const linkId = anime.idMal 
     ? anime.idMal 
     : (typeof anime.id === 'string' && (anime.id.startsWith('kitsu-') || anime.id.startsWith('al-'))

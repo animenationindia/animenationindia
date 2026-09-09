@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Search, X, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface Suggestion {
   id: number;
@@ -215,7 +216,7 @@ export default function AnimeSearchFilters({
   );
 
   const handleSuggestionClick = (anime: Suggestion) => {
-    const title = anime.title.english || anime.title.romaji || '';
+    const title = toEnglishTitle(anime.title.english || anime.title.romaji, '');
     setQuery(title);
     setShowSuggestions(false);
     setActiveSuggestion(-1);
@@ -351,7 +352,7 @@ export default function AnimeSearchFilters({
               </div>
             ) : (
               suggestions.map((anime, idx) => {
-                const title = anime.title.english || anime.title.romaji || 'Unknown';
+                const title = toEnglishTitle(anime.title.english || anime.title.romaji, 'Unknown');
                 return (
                   <button
                     key={anime.id}

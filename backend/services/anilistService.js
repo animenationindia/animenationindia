@@ -1,5 +1,5 @@
-// backend/services/anilistService.js
 // AniList GraphQL Proxy Service with Complete Catalog, Manga, Characters & Trailers
+const { toEnglishTitle, normalizeTitleObject } = require('./titleCleaner');
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 const memoryCache = new Map();
@@ -92,7 +92,9 @@ async function getTrending(limit = 12) {
     `;
     const res = await fetchAniList(query, { page: 1, perPage: limit }, 30 * 60 * 1000);
     const media = res?.data?.Page?.media;
-    if (media && Array.isArray(media) && media.length > 0) return media;
+    if (media && Array.isArray(media) && media.length > 0) {
+      return media.map(m => ({ ...m, title: normalizeTitleObject(m.title) }));
+    }
   } catch (err) {
     // Seamless fallback to MAL v2 5-Key Pool
   }
@@ -124,7 +126,9 @@ async function getPopular(limit = 12) {
     `;
     const res = await fetchAniList(query, { page: 1, perPage: limit }, 60 * 60 * 1000);
     const media = res?.data?.Page?.media;
-    if (media && Array.isArray(media) && media.length > 0) return media;
+    if (media && Array.isArray(media) && media.length > 0) {
+      return media.map(m => ({ ...m, title: normalizeTitleObject(m.title) }));
+    }
   } catch (err) {
     // Seamless fallback to MAL v2 5-Key Pool
   }
@@ -242,7 +246,13 @@ async function getCharacterDetails(id) {
   `;
   try {
     const res = await fetchAniList(query, { id: Number(id) }, 24 * 60 * 60 * 1000);
-    if (res?.data?.Character) return res.data.Character;
+    if (res?.data?.Character) {
+      const char = res.data.Character;
+      if (char.media?.nodes) {
+        char.media.nodes = char.media.nodes.map(n => ({ ...n, title: normalizeTitleObject(n.title) }));
+      }
+      return char;
+    }
   } catch {}
   return jikanService.getCharacterDetails(id);
 }
@@ -269,7 +279,16 @@ async function getStaffDetails(id) {
   `;
   try {
     const res = await fetchAniList(query, { id: Number(id) }, 24 * 60 * 60 * 1000);
-    if (res?.data?.Staff) return res.data.Staff;
+    if (res?.data?.Staff) {
+      const staff = res.data.Staff;
+      if (staff.characters?.edges) {
+        staff.characters.edges = staff.characters.edges.map(e => ({
+          ...e,
+          media: e.media ? { ...e.media, title: normalizeTitleObject(e.media.title) } : e.media
+        }));
+      }
+      return staff;
+    }
   } catch {}
   return jikanService.getStaffDetails(id);
 }
@@ -299,7 +318,9 @@ async function getTopManga(page = 1, limit = 24) {
   try {
     const res = await fetchAniList(query, { page, perPage: limit }, 60 * 60 * 1000);
     const media = res?.data?.Page?.media;
-    if (media && Array.isArray(media) && media.length > 0) return media;
+    if (media && Array.isArray(media) && media.length > 0) {
+      return media.map(m => ({ ...m, title: normalizeTitleObject(m.title) }));
+    }
   } catch {}
   return malService.getTopManga('all', limit);
 }
@@ -335,7 +356,10 @@ async function getMangaDetails(id) {
   try {
     const vars = isMal ? { idMal: numId } : { id: numId };
     const res = await fetchAniList(query, vars, 6 * 60 * 60 * 1000);
-    if (res?.data?.Media) return res.data.Media;
+    if (res?.data?.Media) {
+      const media = res.data.Media;
+      return { ...media, title: normalizeTitleObject(media.title) };
+    }
   } catch {}
 
   // Fallback to Official MAL v2 5-Key Pool
@@ -362,7 +386,9 @@ async function searchManga(search, page = 1, limit = 24) {
   try {
     const res = await fetchAniList(query, { search, page, perPage: limit }, 30 * 60 * 1000);
     const media = res?.data?.Page?.media;
-    if (media && Array.isArray(media) && media.length > 0) return media;
+    if (media && Array.isArray(media) && media.length > 0) {
+      return media.map(m => ({ ...m, title: normalizeTitleObject(m.title) }));
+    }
   } catch {}
 
   // Fallback to Official MAL v2 Search
@@ -397,7 +423,9 @@ async function browseFilter({ genre, status, format, year, sort = 'POPULARITY_DE
   try {
     const res = await fetchAniList(query, vars, 30 * 60 * 1000);
     const media = res?.data?.Page?.media;
-    if (media && Array.isArray(media) && media.length > 0) return media;
+    if (media && Array.isArray(media) && media.length > 0) {
+      return media.map(m => ({ ...m, title: normalizeTitleObject(m.title) }));
+    }
   } catch {}
 
   if (genre) {
@@ -424,7 +452,9 @@ async function getTrailers(limit = 24) {
     const res = await fetchAniList(query, { perPage: limit }, 60 * 60 * 1000);
     const media = res?.data?.Page?.media || [];
     const list = media.filter(m => m.trailer && m.trailer.site === 'youtube');
-    if (list.length > 0) return list;
+    if (list.length > 0) {
+      return list.map(m => ({ ...m, title: normalizeTitleObject(m.title) }));
+    }
   } catch {}
 
   // Curated Trailers from MAL Airing Pool

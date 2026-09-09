@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Play, Info } from 'lucide-react';
 import { sanitizeHTML } from '../lib/sanitize';
 import { motion } from 'framer-motion';
+import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface TrendingBannerProps {
   anime: {
@@ -27,7 +28,7 @@ interface TrendingBannerProps {
 export default function HomeTrendingBanner({ anime, subtitle }: TrendingBannerProps) {
   if (!anime) return null;
 
-  const title = anime.title.english || anime.title.romaji;
+  const title = toEnglishTitle(anime.title.english || anime.title.romaji);
   const backgroundImage = anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || '';
   const linkId = anime.idMal || anime.id;
 

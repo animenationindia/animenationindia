@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, useInView, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion';
 import { Star, Film } from 'lucide-react';
+import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface AnimeNode {
   id: number;
@@ -324,7 +325,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
                   >
                     <SafeCardImage
                       src={anime.coverImage.large}
-                      alt={anime.title.english || anime.title.romaji}
+                      alt={toEnglishTitle(anime.title.english || anime.title.romaji)}
                       sizes="160px"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
@@ -342,7 +343,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
                     {/* Title Overlay */}
                     <div className="absolute bottom-2 left-2 right-2">
                       <p className="text-white text-[10px] sm:text-xs font-semibold line-clamp-2 leading-tight drop-shadow-md">
-                        {anime.title.english || anime.title.romaji}
+                        {toEnglishTitle(anime.title.english || anime.title.romaji)}
                       </p>
                     </div>
                   </motion.div>

@@ -9,6 +9,7 @@ import { Play, Tv, Film, Flame, Sparkles } from 'lucide-react';
 import WatchlistDropdown from './WatchlistDropdown';
 import TrailerModal from './TrailerModal';
 import { sanitizeHTML } from '../lib/sanitize';
+import { toEnglishTitle } from '../lib/titleCleaner';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
@@ -66,7 +67,7 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
 
       await Promise.all(topItems.map(async (anime) => {
-        const title = anime.title.english || anime.title.romaji;
+        const title = toEnglishTitle(anime.title.english || anime.title.romaji);
         const cleanTitle = encodeURIComponent(title.replace(/\s*\(TV\)/gi, '').replace(/[:\-_]/g, ' ').trim());
         try {
           const res = await fetch(`${backendUrl}/api/tmdb/hero?title=${cleanTitle}`);
@@ -128,7 +129,7 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
         className="w-full h-[55vh] md:h-[60vh] lg:h-[600px]" 
       >
         {animeList.map((anime, index) => {
-          const title = anime.title.english || anime.title.romaji;
+          const title = toEnglishTitle(anime.title.english || anime.title.romaji);
           const rawBg = backdropsMap[anime.id] || anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large;
           const backgroundImage = rawBg;
           const linkId = anime.idMal || anime.id;

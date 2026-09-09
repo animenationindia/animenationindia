@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search, X, Loader2, Star, Sparkles, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchAnimeAniList } from '../lib/api';
+import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface SearchResultItem {
   id: number;
@@ -171,7 +172,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                 <div className="flex flex-col gap-1">
                   {results.map((item, idx) => {
                     const isSelected = selectedIndex === idx;
-                    const title = item.title.english || item.title.romaji || 'Anime Title';
+                    const title = toEnglishTitle(item.title.english || item.title.romaji, 'Anime Title');
                     const targetId = item.idMal || item.id;
                     const cover = item.coverImage.extraLarge || item.coverImage.large || '/placeholder-poster.png';
 
