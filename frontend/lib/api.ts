@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/api.ts
 import { logError } from './logger';
-import { fetchKitsuCharacters } from './kitsu-api';
 import { DEFAULT_GENRES_LIST } from './genres-data';
 import { 
   getOfficialMALAnimeDetails, 
@@ -1190,136 +1189,69 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
   return await fetchCuratedSectionFromAtlas('evergreen');
 }
 
-// ─── Kitsu Anime External ID Resolver ─────────────────────────────────────────
-export async function resolveKitsuAnimeByExternalId(externalId: string | number): Promise<any | null> {
-  const strId = String(externalId).trim();
-  if (!strId || isNaN(Number(strId))) return null;
-
-  const sites = ['anilist/anime', 'myanimelist/anime'];
-  for (const site of sites) {
-    try {
-      const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=${site}&filter[external_id]=${strId}&include=item`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/vnd.api+json' },
-        next: { revalidate: GLOBAL_CACHE_TIME }
-      });
-      if (res.status === 200) {
-        const json = await res.json();
-        const item = json.included?.find((inc: any) => inc.type === 'anime');
-        if (item && item.attributes) {
-          const attr = item.attributes;
-          const canonical = attr.canonicalTitle || 'Unknown Title';
-          const titleEng = attr.titles?.en || attr.titles?.en_us || canonical || attr.titles?.en_jp || canonical;
-          const titleRom = attr.titles?.en_jp || canonical || titleEng;
-          const rawScore = attr.averageRating ? parseFloat(attr.averageRating) : null;
-          const score = rawScore ? parseFloat((rawScore / 10).toFixed(1)) : null;
-
-          return {
-            mal_id: Number(strId),
-            kitsuId: item.id,
-            title: titleRom,
-            title_english: titleEng,
-            title_japanese: attr.titles?.ja_jp || '',
-            synopsis: attr.synopsis || attr.description || 'No synopsis available.',
-            images: {
-              webp: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' },
-              jpg: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' }
-            },
-            bannerImage: attr.coverImage?.large || attr.coverImage?.original || null,
-            score: score,
-            episodes: attr.episodeCount || null,
-            status: attr.status === 'current' ? 'Currently Airing' : 'Finished Airing',
-            genres: [],
-            year: attr.startDate ? parseInt(attr.startDate.slice(0, 4)) : null,
-            trailer: attr.youtubeVideoId ? {
-              youtube_id: attr.youtubeVideoId,
-              embed_url: `https://www.youtube.com/embed/${attr.youtubeVideoId}`
-            } : null
-          };
-        }
-      }
-    } catch (e: any) {
-      console.warn(`[resolveKitsuAnimeByExternalId Fail] site=${site}, id=${strId}:`, e?.message);
-    }
-  }
-  return null;
-}
-
-// ৪. Details Page এর জন্য Jikan Full Info (With AniList & Kitsu Multi-Tier Fallback)
+// ৪. Details Page এর জন্য Full Info (BFF / Official MAL -> AniList -> Jikan)
 export async function getAnimeFullDetails(id: string) {
   const strId = String(id).trim();
   const numId = Number(strId);
   const isAnilistPrefixed = strId.startsWith('al-');
-  const isKitsuPrefixed = strId.startsWith('kitsu-');
   const isAnilistNumeric = !isNaN(numId) && numId > 65000;
   const isMalNumeric = !isNaN(numId) && numId > 0 && numId <= 65000;
 
-  // CASE 1: Kitsu Prefixed ID (e.g. kitsu-41370)
-  if (isKitsuPrefixed) {
-    const kitsuId = strId.replace('kitsu-', '');
+  // CASE 1: Backend BFF First for MAL Numeric IDs
+  if (isMalNumeric) {
+    // 1. Tier 1: Backend BFF API (Official MAL v2 with 5-Key Pool)
     try {
-      const url = `https://kitsu.io/api/edge/anime/${kitsuId}?include=mappings`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
+      const res = await fetch(`${BACKEND_BASE_URL}/api/anime/${numId}`, {
+        signal: AbortSignal.timeout(3500),
         next: { revalidate: GLOBAL_CACHE_TIME }
       });
       if (res.ok) {
         const json = await res.json();
-        const item = json.data;
-        if (item && item.attributes) {
-          const attr = item.attributes;
-          let malId: number | null = null;
-          if (json.included && Array.isArray(json.included)) {
-            const malMapping = json.included.find(
-              (inc: any) => inc.type === 'mappings' && inc.attributes?.externalSite === 'myanimelist/anime' && inc.attributes?.externalId
-            );
-            if (malMapping) malId = Number(malMapping.attributes.externalId);
-          }
-
-          if (malId && malId <= 65000) {
-            try {
-              const malOfficial = await getOfficialMALAnimeDetails(malId);
-              if (malOfficial && isSafeContent(malOfficial)) return malOfficial;
-            } catch {}
-            try {
-              const jikanRes = await fetchJikan(`/anime/${malId}/full`);
-              if (jikanRes?.data && isSafeContent(jikanRes.data)) return jikanRes.data;
-            } catch {}
-          }
-
-          const canonical = attr.canonicalTitle || 'Unknown Title';
-          const titleEng = attr.titles?.en || attr.titles?.en_us || canonical || attr.titles?.en_jp || canonical;
-          const titleRom = attr.titles?.en_jp || canonical || titleEng;
-          const rawScore = attr.averageRating ? parseFloat(attr.averageRating) : null;
-
-          return {
-            mal_id: malId || `kitsu-${kitsuId}`,
-            kitsuId: item.id,
-            title: titleRom,
-            title_english: titleEng,
-            title_japanese: attr.titles?.ja_jp || '',
-            synopsis: attr.synopsis || attr.description || 'No synopsis available.',
-            images: {
-              webp: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' },
-              jpg: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' }
-            },
-            bannerImage: attr.coverImage?.large || attr.coverImage?.original || null,
-            score: rawScore ? parseFloat((rawScore / 10).toFixed(1)) : null,
-            episodes: attr.episodeCount || null,
-            status: attr.status === 'current' ? 'Currently Airing' : 'Finished Airing',
-            genres: [],
-            year: attr.startDate ? parseInt(attr.startDate.slice(0, 4)) : null,
-            trailer: attr.youtubeVideoId ? {
-              youtube_id: attr.youtubeVideoId,
-              embed_url: `https://www.youtube.com/embed/${attr.youtubeVideoId}`
-            } : null
-          };
+        if (json.success && json.data && isSafeContent(json.data)) {
+          return json.data;
         }
       }
-    } catch (e: any) {
-      console.warn(`[getAnimeFullDetails Kitsu Fail] id=${strId}:`, e?.message);
-    }
-    return null;
+    } catch {}
+
+    // 2. Direct Official MAL module fallback
+    try {
+      const malOfficial = await getOfficialMALAnimeDetails(numId);
+      if (malOfficial && isSafeContent(malOfficial)) {
+        return malOfficial;
+      }
+    } catch {}
+
+    // 3. AniList Direct Query
+    try {
+      const extra = await getAniListExtraInfo(numId);
+      if (extra && isSafeContent(extra)) {
+        return {
+          mal_id: extra.idMal || extra.id || numId,
+          title: extra.title?.romaji || extra.title?.english || 'Unknown Title',
+          title_english: extra.title?.english || extra.title?.romaji || 'Unknown Title',
+          title_japanese: extra.title?.native || '',
+          synopsis: extra.description || 'No description available.',
+          images: {
+            webp: { large_image_url: extra.coverImage?.extraLarge || extra.coverImage?.large || '/placeholder-poster.png' },
+            jpg: { large_image_url: extra.coverImage?.large || '/placeholder-poster.png' }
+          },
+          bannerImage: extra.bannerImage,
+          score: extra.averageScore ? extra.averageScore / 10 : null,
+          episodes: extra.episodes || null,
+          status: extra.status === 'RELEASING' ? 'Currently Airing' : 'Finished Airing',
+          genres: (extra.genres || []).map(g => ({ name: g })),
+          year: extra.seasonYear || null,
+          trailer: extra.trailer,
+          studios: extra.studios
+        };
+      }
+    } catch {}
+
+    // 4. Jikan Fallback
+    try {
+      const res = await fetchJikan(`/anime/${id}/full`);
+      if (res?.data && isSafeContent(res.data)) return res.data;
+    } catch {}
   }
 
   // CASE 2: AniList ID (al- prefix OR numeric > 65000)
@@ -1333,7 +1265,6 @@ export async function getAnimeFullDetails(id: string) {
             try {
               const malOfficial = await getOfficialMALAnimeDetails(extra.idMal);
               if (malOfficial && isSafeContent(malOfficial)) {
-                // Blend with AniList banner if available
                 if (extra.bannerImage && !malOfficial.bannerImage) {
                   malOfficial.bannerImage = extra.bannerImage;
                 }
@@ -1367,89 +1298,42 @@ export async function getAnimeFullDetails(id: string) {
           };
         }
       } catch {}
-
-      try {
-        const kitsuAnime = await resolveKitsuAnimeByExternalId(anilistId);
-        if (kitsuAnime && isSafeContent(kitsuAnime)) return kitsuAnime;
-      } catch {}
     }
-    return null;
-  }
-
-  // CASE 3: Standard MAL ID (numId <= 65000)
-  if (isMalNumeric) {
-    // 1. Tier 1: Official MyAnimeList API v2 (Primary Direct Provider)
-    try {
-      const malOfficial = await getOfficialMALAnimeDetails(numId);
-      if (malOfficial && isSafeContent(malOfficial)) {
-        return malOfficial;
-      }
-    } catch {}
-
-    // 2. Tier 2: AniList Direct Query (Secondary Provider)
-    try {
-      const extra = await getAniListExtraInfo(numId);
-      if (extra && isSafeContent(extra)) {
-        return {
-          mal_id: extra.idMal || extra.id || numId,
-          title: extra.title?.romaji || extra.title?.english || 'Unknown Title',
-          title_english: extra.title?.english || extra.title?.romaji || 'Unknown Title',
-          title_japanese: extra.title?.native || '',
-          synopsis: extra.description || 'No description available.',
-          images: {
-            webp: { large_image_url: extra.coverImage?.extraLarge || extra.coverImage?.large || '/placeholder-poster.png' },
-            jpg: { large_image_url: extra.coverImage?.large || '/placeholder-poster.png' }
-          },
-          bannerImage: extra.bannerImage,
-          score: extra.averageScore ? extra.averageScore / 10 : null,
-          episodes: extra.episodes || null,
-          status: extra.status === 'RELEASING' ? 'Currently Airing' : 'Finished Airing',
-          genres: (extra.genres || []).map(g => ({ name: g })),
-          year: extra.seasonYear || null,
-          trailer: extra.trailer,
-          studios: extra.studios
-        };
-      }
-    } catch {}
-
-    // 3. Tier 3: Jikan API (Fallback Provider)
-    try {
-      const res = await fetchJikan(`/anime/${id}/full`);
-      if (res?.data && isSafeContent(res.data)) return res.data;
-    } catch {}
-
-    // 4. Tier 4: Fallback to Kitsu Mapping Resolver if all above failed
-    try {
-      const kitsuAnime = await resolveKitsuAnimeByExternalId(numId);
-      if (kitsuAnime && isSafeContent(kitsuAnime)) {
-        return kitsuAnime;
-      }
-    } catch {}
   }
 
   return null;
 }
 
-// ৫. ক্যারেক্টার ও ভয়েস অ্যাক্টর (Multi-Tier Fallback: AniList -> Jikan -> Kitsu)
+// ৫. ক্যারেক্টার ও ভয়েস অ্যাক্টর (Multi-Tier: Backend/AniList -> Jikan Fallback)
 export async function getAnimeCharacters(id: string | number, anilistId?: number): Promise<any[]> {
   const numMalId = Number(id);
   const resolvedAniListId = anilistId || numMalId;
 
   const providers = [
     {
-      name: 'Jikan Characters (Primary for MAL ID)',
+      name: 'Backend BFF / AniList Characters (Primary)',
       fn: async () => {
-        const res = await fetchJikan(`/anime/${id}/characters`, GLOBAL_CACHE_TIME, 2000);
-        return res?.data && Array.isArray(res.data) && res.data.length > 0 ? res.data : null;
+        try {
+          const res = await fetch(`${BACKEND_BASE_URL}/api/anime/${id}/characters`, {
+            signal: AbortSignal.timeout(3000),
+            next: { revalidate: GLOBAL_CACHE_TIME }
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+              return json.data;
+            }
+          }
+        } catch {}
+        return fetchAniListCharactersFallback(resolvedAniListId);
       }
     },
     {
-      name: 'AniList Characters (Secondary Fallback)',
-      fn: async () => fetchAniListCharactersFallback(resolvedAniListId)
-    },
-    {
-      name: 'Kitsu Characters (Tertiary)',
-      fn: async () => fetchKitsuCharacters(numMalId)
+      name: 'Jikan Characters (Secondary Fallback)',
+      fn: async () => {
+        const res = await fetchJikan(`/anime/${id}/characters`, GLOBAL_CACHE_TIME, 2500);
+        return res?.data && Array.isArray(res.data) && res.data.length > 0 ? res.data : null;
+      }
     }
   ];
 
@@ -2218,84 +2102,6 @@ export async function fetchAniListStaff(id: number): Promise<any | null> {
   }
 }
 
-// ─── Kitsu Character & People Mapping Resolvers ──────────────────────────────
-export async function resolveKitsuCharacterByMalId(malId: string | number): Promise<any | null> {
-  const strId = String(malId).trim();
-  if (!strId || isNaN(Number(strId))) return null;
-
-  try {
-    const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=myanimelist/character&filter[external_id]=${strId}&include=item`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const item = json.included?.find((inc: any) => inc.type === 'characters');
-      if (item && item.attributes) {
-        const attr = item.attributes;
-        const charName = attr.canonicalName || attr.name || 'Unknown Character';
-        const img = attr.image?.original || attr.image?.large || attr.image?.medium || '/placeholder.png';
-        return {
-          mal_id: Number(strId),
-          name: charName,
-          name_kanji: attr.names?.ja_jp || '',
-          nicknames: Array.isArray(attr.otherNames) ? attr.otherNames : [],
-          favorites: 0,
-          about: attr.description || '',
-          images: {
-            jpg: { image_url: img },
-            webp: { image_url: img }
-          },
-          anime: [],
-          voices: []
-        };
-      }
-    }
-  } catch (e: any) {
-    console.warn(`[resolveKitsuCharacterByMalId Fail] id=${strId}:`, e?.message);
-  }
-  return null;
-}
-
-export async function resolveKitsuPersonByMalId(malId: string | number): Promise<any | null> {
-  const strId = String(malId).trim();
-  if (!strId || isNaN(Number(strId))) return null;
-
-  try {
-    const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=myanimelist/people&filter[external_id]=${strId}&include=item`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
-      next: { revalidate: GLOBAL_CACHE_TIME }
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const item = json.included?.find((inc: any) => inc.type === 'people');
-      if (item && item.attributes) {
-        const attr = item.attributes;
-        const img = attr.image?.original || attr.image?.large || attr.image?.medium || '/placeholder.png';
-        return {
-          mal_id: Number(strId),
-          name: attr.name || 'Unknown Staff',
-          given_name: '',
-          family_name: '',
-          about: attr.description || '',
-          favorites: 0,
-          images: {
-            jpg: { image_url: img },
-            webp: { image_url: img }
-          },
-          anime: [],
-          voices: []
-        };
-      }
-    }
-  } catch (e: any) {
-    console.warn(`[resolveKitsuPersonByMalId Fail] id=${strId}:`, e?.message);
-  }
-  return null;
-}
-
 const TOP_CHARACTERS_CACHE: Record<number, any> = {
   1: {
     mal_id: 1,
@@ -2428,12 +2234,6 @@ export async function getCharacterDetailsJikan(id: string | number) {
     return TOP_CHARACTERS_CACHE[numId];
   }
 
-  // 3. Resilient Fallback to Kitsu character mapping (by MAL character ID)
-  if (!isNaN(numId) && numId > 0) {
-    const kitsuChar = await resolveKitsuCharacterByMalId(numId);
-    if (kitsuChar) return kitsuChar;
-  }
-
   return null;
 }
 
@@ -2463,12 +2263,6 @@ export async function getPersonDetailsJikan(id: string | number) {
   // 2. Try In-Memory Cache for Top Staff
   if (!isNaN(numId) && TOP_STAFF_CACHE[numId]) {
     return TOP_STAFF_CACHE[numId];
-  }
-
-  // 3. Resilient Fallback to Kitsu people mapping (by MAL people ID)
-  if (!isNaN(numId) && numId > 0) {
-    const kitsuPerson = await resolveKitsuPersonByMalId(numId);
-    if (kitsuPerson) return kitsuPerson;
   }
 
   return null;
@@ -2700,108 +2494,6 @@ export async function fetchAniListMangaDetails(id: string | number): Promise<any
   }
 }
 
-const ANILIST_TO_KITSU_MAP: Record<string, string> = {
-  '105778': '54139', // Chainsaw Man
-  '30002': '8',      // Berserk
-  '2': '8',          // Berserk MAL
-  '105398': '54114', // Solo Leveling
-  '121496': '54114', // Solo Leveling MAL
-  '119257': '56452', // Omniscient Reader
-  '85143': '25436',  // Tower of God
-  '86334': '39293',  // Lookism AniList
-  '93633': '39293',  // Lookism MAL
-  '38167': '38167',  // Wind Breaker
-  '30013': '38',     // One Piece AniList -> Kitsu manga 38
-  '13': '38',        // One Piece MAL -> Kitsu manga 38
-};
-
-// ─── Kitsu Manga External ID Resolver ─────────────────────────────────────────
-export async function resolveKitsuMangaByExternalId(externalId: string | number): Promise<any | null> {
-  const strId = String(externalId).trim();
-  if (!strId || isNaN(Number(strId))) return null;
-
-  // Try both anilist/manga and myanimelist/manga mappings
-  const sites = ['anilist/manga', 'myanimelist/manga'];
-  for (const site of sites) {
-    try {
-      const url = `https://kitsu.io/api/edge/mappings?filter[external_site]=${site}&filter[external_id]=${strId}&include=item`;
-      const res = await fetch(url, {
-        headers: { 'Accept': 'application/vnd.api+json' },
-        next: { revalidate: GLOBAL_CACHE_TIME }
-      });
-      if (res.status === 200) {
-        const json = await res.json();
-        const item = json.included?.find((inc: any) => inc.type === 'manga');
-        if (item && item.id) {
-          const details = await getKitsuMangaDetails(item.id);
-          if (details) return details;
-        }
-      }
-    } catch (e: any) {
-      console.warn(`[resolveKitsuMangaByExternalId Fail] site=${site}, id=${strId}:`, e?.message);
-    }
-  }
-  return null;
-}
-
-// Kitsu Manga Details Resolver
-export async function getKitsuMangaDetails(id: string) {
-  const cleanId = String(id).replace(/^kitsu-/, '').trim();
-  const url = `https://kitsu.io/api/edge/manga/${cleanId}?include=genres`;
-  try {
-    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.api+json' }, next: { revalidate: GLOBAL_CACHE_TIME } });
-    if (res.status !== 200) return null;
-    const json = await res.json();
-    const attr = json.data?.attributes;
-    if (!attr) return null;
-
-    const canonical = attr.canonicalTitle === 'Oemojisangjuui' ? 'Lookism' : attr.canonicalTitle;
-    const titleEnglish = attr.titles?.en || attr.titles?.en_us || canonical || attr.titles?.en_jp || 'Unknown Title';
-    const titleRomaji = attr.titles?.en_jp || canonical || titleEnglish;
-    const format = (attr.subtype || 'manga').toUpperCase();
-    const rawScore = attr.averageRating ? parseFloat(attr.averageRating) : null;
-    const score = rawScore ? parseFloat((rawScore / 10).toFixed(1)) : null;
-
-    const countryOfOrigin = format === 'MANHWA' ? 'KR' : format === 'MANHUA' ? 'CN' : 'JP';
-
-    const mangaData = {
-      mal_id: cleanId,
-      id: `kitsu-${cleanId}`,
-      kitsuId: cleanId,
-      title: titleRomaji,
-      title_english: titleEnglish,
-      title_japanese: attr.titles?.ja_jp || '',
-      synopsis: attr.synopsis || 'No synopsis available for this title.',
-      images: {
-        webp: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' },
-        jpg: { large_image_url: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png' }
-      },
-      coverImage: {
-        large: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png',
-        extraLarge: attr.posterImage?.original || attr.posterImage?.large || '/placeholder-poster.png'
-      },
-      bannerImage: attr.coverImage?.large || attr.coverImage?.original || null,
-      genres: [],
-      score: score,
-      type: format === 'MANHWA' ? 'Manhwa' : format === 'MANHUA' ? 'Manhua' : format === 'NOVEL' ? 'Novel' : 'Manga',
-      status: attr.status === 'current' ? 'Publishing' : 'Finished',
-      countryOfOrigin,
-      chapters: attr.chapterCount || null,
-      volumes: attr.volumeCount || null,
-      relations: [],
-      characters: [],
-      recommendations: []
-    };
-
-    MANGA_DETAILS_CACHE.set(`kitsu-${cleanId}`, mangaData);
-    MANGA_DETAILS_CACHE.set(cleanId, mangaData);
-    return mangaData;
-  } catch (err) {
-    console.warn(`[Kitsu Manga Details Fail] ID ${id}:`, err);
-    return null;
-  }
-}
-
 // In-memory persistent cache for manga details to survive external API downtimes
 const MANGA_DETAILS_CACHE = new Map<string, any>([
   ['105398', {
@@ -2903,30 +2595,31 @@ const MANGA_DETAILS_CACHE = new Map<string, any>([
 ]);
 
 export async function getMangaFullDetails(id: string) {
-  const strId = String(id).trim();
+  const strId = String(id).trim().replace(/^kitsu-/, '');
 
-  // 1. If explicit Kitsu ID format (e.g. kitsu-38)
-  if (strId.startsWith('kitsu-')) {
-    const kitsuManga = await getKitsuMangaDetails(strId);
-    if (kitsuManga) return kitsuManga;
-  }
-
-  // 2. Check in-memory persistent cache first
+  // 1. Check in-memory persistent cache first
   if (MANGA_DETAILS_CACHE.has(strId)) {
     return MANGA_DETAILS_CACHE.get(strId);
   }
 
-  // 3. Try Jikan API (primary for numeric MAL IDs, e.g. /manga/13)
+  // 2. Try Backend BFF Manga Details (Official MAL v2 + AniList Proxy)
   try {
-    const data = await fetchJikan(`/manga/${strId}/full`, GLOBAL_CACHE_TIME, 2500);
-    const mangaData = data?.data;
-    if (mangaData && isSafeContent(mangaData)) {
-      MANGA_DETAILS_CACHE.set(strId, mangaData);
-      return mangaData;
+    const res = await fetch(`${BACKEND_BASE_URL}/api/manga/${strId}`, {
+      signal: AbortSignal.timeout(3500),
+      next: { revalidate: GLOBAL_CACHE_TIME }
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.data) {
+        MANGA_DETAILS_CACHE.set(strId, json.data);
+        return json.data;
+      }
     }
-  } catch {}
+  } catch (err: any) {
+    console.warn(`[BFF Manga Details Fail] ID ${strId}:`, err?.message);
+  }
 
-  // 4. Try AniList Direct Fetcher (primary for AniList IDs, e.g. /manga/30013)
+  // 3. Try AniList Direct Fetcher (primary for AniList IDs, e.g. /manga/30013)
   try {
     const aniManga = await fetchAniListMangaDetails(strId);
     if (aniManga && isSafeContent(aniManga)) {
@@ -2939,20 +2632,13 @@ export async function getMangaFullDetails(id: string) {
     console.warn(`[AniList Manga Fail] ID ${strId}:`, error);
   }
 
-  // 5. Try explicit curated static map to Kitsu ID
-  if (ANILIST_TO_KITSU_MAP[strId]) {
-    try {
-      const mappedKitsu = await getKitsuMangaDetails(ANILIST_TO_KITSU_MAP[strId]);
-      if (mappedKitsu) return mappedKitsu;
-    } catch {}
-  }
-
-  // 6. Try Kitsu dynamic mapping resolver (maps AniList ID or MAL ID -> Kitsu item via official mappings API)
-  // NEVER query Kitsu by raw numeric ID directly! That caused the "Simple Knot Loafers" bug!
+  // 4. Try Jikan Fallback (for numeric MAL IDs, e.g. /manga/13)
   try {
-    const resolvedKitsu = await resolveKitsuMangaByExternalId(strId);
-    if (resolvedKitsu && isSafeContent(resolvedKitsu)) {
-      return resolvedKitsu;
+    const data = await fetchJikan(`/manga/${strId}/full`, GLOBAL_CACHE_TIME, 2500);
+    const mangaData = data?.data;
+    if (mangaData && isSafeContent(mangaData)) {
+      MANGA_DETAILS_CACHE.set(strId, mangaData);
+      return mangaData;
     }
   } catch {}
 
@@ -3097,104 +2783,40 @@ export async function getTrendingMangaSpotlight(): Promise<any[]> {
   }
 }
 
-// 3. Kitsu High-Speed Manga Search Engine (100% Uptime & Comprehensive Webtoons/Manhwa/Manga)
-export async function searchMangaKitsu(
+// 3. High-Speed Manga Search Engine (Backend BFF / MAL Official API v2)
+export async function searchMangaBFF(
   queryText = '', 
   page = 1, 
-  type = '', 
-  genre = '', 
-  sort = 'popular',
-  status = '',
-  year: string | number = ''
+  limit = 24
 ) {
-  const limit = 20;
-  const offset = (page - 1) * limit;
-  let url = `https://kitsu.io/api/edge/manga?page[limit]=${limit}&page[offset]=${offset}`;
-
-  if (queryText && queryText.trim()) {
-    url += `&filter[text]=${encodeURIComponent(queryText.trim())}`;
-  } else {
-    if (sort === 'score' || sort === 'top_rated') url += '&sort=-averageRating';
-    else if (sort === 'newest' || sort === 'latest') url += '&sort=-startDate';
-    else if (sort === 'title') url += '&sort=canonicalTitle';
-    else url += '&sort=-userCount';
-  }
-
-  if (type) {
-    const t = type.toLowerCase();
-    if (t === 'manhwa') url += '&filter[subtype]=manhwa';
-    else if (t === 'manhua') url += '&filter[subtype]=manhua';
-    else if (t === 'novel' || t === 'lightnovel') url += '&filter[subtype]=novel';
-    else if (t === 'manga') url += '&filter[subtype]=manga';
-  }
-
-  if (status) {
-    if (status === 'releasing' || status === 'publishing') url += '&filter[status]=current';
-    else if (status === 'finished' || status === 'completed') url += '&filter[status]=finished';
-  }
-
-  if (year) {
-    url += `&filter[year]=${year}`;
-  }
-
-  if (genre) {
-    url += `&filter[categories]=${encodeURIComponent(genre.split(',')[0].trim())}`;
-  }
-
   try {
-    const res = await fetch(url, { headers: { 'Accept': 'application/vnd.api+json' }, next: { revalidate: queryText ? 0 : GLOBAL_CACHE_TIME } });
-    if (res.status !== 200) return null;
-    const json = await res.json();
+    const url = queryText.trim()
+      ? `${BACKEND_BASE_URL}/api/manga/search?q=${encodeURIComponent(queryText.trim())}&page=${page}&limit=${limit}`
+      : `${BACKEND_BASE_URL}/api/manga/top?page=${page}&limit=${limit}`;
 
-    const media = (json.data || []).map((item: any) => {
-      const attr = item.attributes || {};
-      const canonical = attr.canonicalTitle === 'Oemojisangjuui' ? 'Lookism' : attr.canonicalTitle;
-      const titleEnglish = attr.titles?.en || attr.titles?.en_us || canonical || attr.titles?.en_jp || 'Unknown Title';
-      const titleRomaji = attr.titles?.en_jp || canonical || titleEnglish;
-      const format = (attr.subtype || 'manga').toUpperCase();
-      const rawScore = attr.averageRating ? parseFloat(attr.averageRating) : null;
-      const score = rawScore ? Math.round(rawScore) : null;
-
-      return {
-        id: `kitsu-${item.id}`,
-        idMal: item.id,
-        kitsuId: item.id,
-        title: {
-          english: titleEnglish,
-          romaji: titleRomaji,
-          native: attr.titles?.ja_jp || ''
-        },
-        coverImage: {
-          large: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png',
-          extraLarge: attr.posterImage?.original || attr.posterImage?.large || '/placeholder-poster.png'
-        },
-        bannerImage: attr.coverImage?.large || attr.coverImage?.original || null,
-        averageScore: score,
-        format: format === 'MANHWA' ? 'MANHWA' : format === 'MANHUA' ? 'MANHUA' : format === 'NOVEL' ? 'NOVEL' : 'MANGA',
-        type: 'MANGA',
-        status: attr.status === 'current' ? 'RELEASING' : 'FINISHED',
-        seasonYear: attr.startDate ? parseInt(attr.startDate.split('-')[0], 10) : null,
-        genres: [],
-        description: attr.synopsis || '',
-        countryOfOrigin: format === 'MANHWA' ? 'KR' : format === 'MANHUA' ? 'CN' : 'JP',
-        chapters: attr.chapterCount || null,
-        volumes: attr.volumeCount || null
-      };
+    const res = await fetch(url, { 
+      signal: AbortSignal.timeout(3500), 
+      next: { revalidate: queryText ? 0 : GLOBAL_CACHE_TIME } 
     });
 
-    return {
-      media,
-      pageInfo: {
-        total: json.meta?.count || media.length,
-        currentPage: page,
-        lastPage: Math.ceil((json.meta?.count || 24) / limit),
-        hasNextPage: Boolean(json.links?.next)
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return {
+          media: json.data,
+          pageInfo: {
+            total: json.data.length,
+            currentPage: page,
+            lastPage: 1,
+            hasNextPage: false
+          }
+        };
       }
-    };
-  } catch (err) {
-    console.warn('[Kitsu Manga Search Fail]:', err);
-    return null;
+    }
+  } catch (err: any) {
+    console.warn('[searchMangaBFF Fail]:', err?.message);
   }
+  return null;
 }
 
 // 4. AniList High-Speed Manga Search Engine (With Format, Genre, Status, Year & Sort Filters - Hentai Blocked)
@@ -3376,7 +2998,7 @@ export async function searchMangaAniList(
   }
 }
 
-// searchMangaJikan queries Kitsu for search queries with fallbacks to AniList & Jikan
+// searchMangaJikan queries AniList and Backend BFF with fallback to Jikan
 export async function searchMangaJikan(
   queryText: string, 
   page = 1, 
@@ -3386,15 +3008,15 @@ export async function searchMangaJikan(
   status = '',
   year: string | number = ''
 ) {
-  // If user searched for a specific text title (e.g. "Lookism", "Solo Leveling", "Wind Breaker"):
+  // If user searched for a specific text title:
   if (queryText && queryText.trim()) {
     try {
-      const kitsuResult = await searchMangaKitsu(queryText, page, type, genre, sort, status, year);
-      if (kitsuResult && kitsuResult.media && kitsuResult.media.length > 0) {
-        return kitsuResult;
+      const bffResult = await searchMangaBFF(queryText, page, 24);
+      if (bffResult && bffResult.media && bffResult.media.length > 0) {
+        return bffResult;
       }
-    } catch (e) {
-      console.warn('[Kitsu Manga Search Fail]:', e);
+    } catch (e: any) {
+      console.warn('[BFF Manga Search Fail]:', e?.message);
     }
   }
 
@@ -3408,14 +3030,14 @@ export async function searchMangaJikan(
     console.warn('[AniList Manga Search Fail]:', error);
   }
 
-  // 2. Fallback to Kitsu for browse
+  // 2. Fallback to Backend BFF
   try {
-    const kitsuResult = await searchMangaKitsu(queryText, page, type, genre, sort, status, year);
-    if (kitsuResult && kitsuResult.media && kitsuResult.media.length > 0) {
-      return kitsuResult;
+    const bffResult = await searchMangaBFF(queryText, page, 24);
+    if (bffResult && bffResult.media && bffResult.media.length > 0) {
+      return bffResult;
     }
-  } catch (e) {
-    console.warn('[Kitsu Manga Fallback Fail]:', e);
+  } catch (e: any) {
+    console.warn('[BFF Manga Fallback Fail]:', e?.message);
   }
 
   // 3. Fallback to Jikan Manga Search (Strict SFW)

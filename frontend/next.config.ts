@@ -47,30 +47,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.tmdb.org',
       },
-      {
-        protocol: 'https',
-        hostname: 'kitsu.io',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.kitsu.io',
-      },
-      {
-        protocol: 'https',
-        hostname: 'media.kitsu.io',
-      },
-      {
-        protocol: 'https',
-        hostname: 'kitsu.app',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.kitsu.app',
-      },
-      {
-        protocol: 'https',
-        hostname: 'media.kitsu.app',
-      },
+
       {
         protocol: 'https',
         hostname: 'animecorner.me',

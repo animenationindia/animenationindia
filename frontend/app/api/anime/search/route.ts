@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { searchOfficialMAL } from '@/lib/mal-api';
 import { fetchJikan, isSafeContent, GLOBAL_CACHE_TIME } from '@/lib/api';
 
 export async function GET(request: Request) {
@@ -8,7 +9,49 @@ export async function GET(request: Request) {
   const format = searchParams.get('format') || '';
   const genre = searchParams.get('genre') || '';
 
-  // 1. Try Jikan API (Primary for MAL-indexed search)
+  // 1. Primary: Official MAL API v2 via Backend BFF (5-Key Load Balanced Pool)
+  if (q.trim() && !genre && !format) {
+    try {
+      const malResults = await searchOfficialMAL(q.trim(), 24);
+      if (malResults && Array.isArray(malResults) && malResults.length > 0) {
+        const media = malResults.map((anime: any) => ({
+          id: anime.id,
+          idMal: anime.id,
+          idSystem: 'mal',
+          title: {
+            english: anime.title?.english || anime.title?.romaji || anime.title,
+            romaji: anime.title?.romaji || anime.title
+          },
+          coverImage: {
+            large: anime.coverImage?.large || '/placeholder-poster.png',
+            extraLarge: anime.coverImage?.extraLarge || anime.coverImage?.large || '/placeholder-poster.png'
+          },
+          averageScore: anime.averageScore || (anime.score ? Math.round(anime.score * 10) : null),
+          format: anime.format || 'TV',
+          status: anime.status === 'finished_airing' ? 'FINISHED' : anime.status === 'currently_airing' ? 'RELEASING' : 'NOT_YET_RELEASED',
+          episodes: anime.episodes || null,
+          seasonYear: anime.seasonYear || anime.startDate?.year || null,
+          startDate: anime.startDate || null,
+          genres: anime.genres || [],
+          description: anime.synopsis || anime.description || ''
+        }));
+
+        return NextResponse.json({
+          media,
+          pageInfo: {
+            total: media.length,
+            currentPage: page,
+            lastPage: 1,
+            hasNextPage: false
+          }
+        });
+      }
+    } catch (err: any) {
+      console.warn('[Search API] MAL Official search failed, falling back to Jikan:', err?.message);
+    }
+  }
+
+  // 2. Secondary: Jikan Fallback for advanced query combinations (genre/format/pagination)
   try {
     let endpoint = `/anime?page=${page}&limit=24&sfw=true`;
     if (q.trim()) endpoint += `&q=${encodeURIComponent(q.trim())}`;
@@ -52,88 +95,8 @@ export async function GET(request: Request) {
       });
     }
   } catch (err: any) {
-    console.warn('[Search API] Jikan search failed:', err?.message);
+    console.warn('[Search API] Jikan search fallback failed:', err?.message);
   }
-
-  // 2. Resilient Fallback to Kitsu API with MAL mapping inclusion
-  try {
-    const offset = (page - 1) * 20;
-    const kitsuUrl = q.trim()
-      ? `https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(q.trim())}&include=mappings&page[limit]=20&page[offset]=${offset}`
-      : `https://kitsu.io/api/edge/anime?sort=-userCount&include=mappings&page[limit]=20&page[offset]=${offset}`;
-    const res = await fetch(kitsuUrl, {
-      headers: { 'Accept': 'application/vnd.api+json', 'User-Agent': 'Mozilla/5.0' },
-      next: { revalidate: 3600 }
-    });
-
-      if (res.ok) {
-        const json = await res.json();
-        const items = json.data || [];
-        const includedMappings = new Map<string, string>();
-        
-        if (json.included && Array.isArray(json.included)) {
-          json.included.forEach((inc: any) => {
-            if (inc.type === 'mappings' && inc.attributes?.externalSite === 'myanimelist/anime' && inc.attributes?.externalId) {
-              includedMappings.set(inc.id, inc.attributes.externalId);
-            }
-          });
-        }
-
-        if (items.length > 0) {
-          const media = items.map((item: any) => {
-            const attr = item.attributes || {};
-            const rawRating = attr.averageRating ? parseFloat(attr.averageRating) : null;
-            
-            // Resolve MAL ID if mapped
-            let resolvedMalId: number | null = null;
-            const mappingRelationships = item.relationships?.mappings?.data || [];
-            for (const rel of mappingRelationships) {
-              if (includedMappings.has(rel.id)) {
-                resolvedMalId = Number(includedMappings.get(rel.id));
-                break;
-              }
-            }
-
-            const finalId = resolvedMalId || `kitsu-${item.id}`;
-            const idSystem = resolvedMalId ? 'mal' : 'kitsu';
-
-            return {
-              id: finalId,
-              idMal: resolvedMalId,
-              idSystem,
-              title: {
-                english: attr.titles?.en || attr.titles?.en_us || attr.canonicalTitle || 'Unknown',
-                romaji: attr.titles?.en_jp || attr.canonicalTitle || 'Unknown'
-              },
-              coverImage: {
-                large: attr.posterImage?.large || attr.posterImage?.original || '/placeholder-poster.png',
-                extraLarge: attr.posterImage?.original || attr.posterImage?.large || '/placeholder-poster.png'
-              },
-              averageScore: rawRating ? Math.round(rawRating) : null,
-              format: (attr.subtype || 'TV').toUpperCase(),
-              status: attr.status === 'current' ? 'RELEASING' : attr.status === 'finished' ? 'FINISHED' : 'NOT_YET_RELEASED',
-              episodes: attr.episodeCount || null,
-              seasonYear: attr.startDate ? parseInt(attr.startDate.slice(0, 4)) : null,
-              startDate: { year: attr.startDate ? parseInt(attr.startDate.slice(0, 4)) : null },
-              genres: [],
-              description: attr.synopsis || ''
-            };
-          });
-
-          return NextResponse.json({
-            media,
-            pageInfo: {
-              total: json.meta?.count || media.length,
-              currentPage: page,
-              lastPage: Math.ceil((json.meta?.count || 20) / 20),
-              hasNextPage: items.length === 20
-            }
-          });
-        }
-      }
-    } catch (err: any) {
-      console.warn('[Search API] Kitsu search failed:', err?.message);
-    }
 
   return NextResponse.json({
     media: [],

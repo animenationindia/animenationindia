@@ -63,33 +63,20 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
       const newLogoMap: Record<number, string> = {};
       const newBackdropMap: Record<number, string> = {};
 
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
+
       await Promise.all(topItems.map(async (anime) => {
         const title = anime.title.english || anime.title.romaji;
         const cleanTitle = encodeURIComponent(title.replace(/\s*\(TV\)/gi, '').replace(/[:\-_]/g, ' ').trim());
         try {
-          const res = await fetch(`https://api.tmdb.org/3/search/tv?api_key=2bca404e6766fc6ac7cb29ae38db027f&query=${cleanTitle}`);
+          const res = await fetch(`${backendUrl}/api/tmdb/hero?title=${cleanTitle}`);
           if (res.ok) {
-            const data = await res.json();
-            const first = data.results?.[0];
-            const tmdbId = first?.id;
-
-            if (first?.backdrop_path) {
-              newBackdropMap[anime.id] = `https://image.tmdb.org/t/p/original${first.backdrop_path}`;
+            const json = await res.json();
+            if (json.data?.backdropUrl) {
+              newBackdropMap[anime.id] = json.data.backdropUrl;
             }
-
-            if (tmdbId) {
-              const imgRes = await fetch(`https://api.tmdb.org/3/tv/${tmdbId}/images?api_key=2bca404e6766fc6ac7cb29ae38db027f&include_image_language=en,ja,null`);
-              if (imgRes.ok) {
-                const imgData = await imgRes.json();
-                const logo = (imgData.logos || []).find((l: any) => l.iso_639_1 === 'en' || !l.iso_639_1) || imgData.logos?.[0];
-                if (logo?.file_path) {
-                  newLogoMap[anime.id] = `https://image.tmdb.org/t/p/original${logo.file_path}`;
-                }
-                const bestBackdrop = (imgData.backdrops || []).sort((a: any, b: any) => (b.width || 0) - (a.width || 0))[0];
-                if (bestBackdrop?.file_path) {
-                  newBackdropMap[anime.id] = `https://image.tmdb.org/t/p/original${bestBackdrop.file_path}`;
-                }
-              }
+            if (json.data?.logoUrl) {
+              newLogoMap[anime.id] = json.data.logoUrl;
             }
           }
         } catch {}

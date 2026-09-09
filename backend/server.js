@@ -12,6 +12,14 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const sanitizeHtml = require('sanitize-html');
 
+// 🔥 Unified BFF Services 🔥
+const malService = require('./services/malService');
+const anilistService = require('./services/anilistService');
+const tmdbService = require('./services/tmdbService');
+const themesService = require('./services/themesService');
+const newsService = require('./services/newsService');
+const jikanService = require('./services/jikanService');
+
 // 🔥 Email Pathanor Setup (Nodemailer) 🔥
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -1516,15 +1524,15 @@ app.post(
 
 app.get('/api/anime/season/:year/:season', async (req, res) => {
   const { year, season } = req.params;
-  const page = req.query.page || 1;
+  const page = Number(req.query.page) || 1;
   try {
-    await delay(300);
-    const response = await fetch(`https://api.jikan.moe/v4/seasons/${year}/${season}?page=${page}`, { headers: jikanHeaders });
-    if (!response.ok) {
-      throw new Error(`Jikan API Error: ${response.status}`);
-    }
-    const data = await response.json();
-    res.json(data);
+    const data = await anilistService.browseFilter({
+      year: Number(year),
+      sort: 'POPULARITY_DESC',
+      page,
+      limit: 24
+    });
+    res.json({ success: true, data });
   } catch (error) {
     console.error(`❌ Seasonal Anime Fetch Error (${year}/${season}):`, error.message);
     res.status(500).json({ success: false, message: "Internal server error" });
@@ -1533,32 +1541,12 @@ app.get('/api/anime/season/:year/:season', async (req, res) => {
 
 app.get('/api/hero', async (req, res) => {
   try {
-    const savedHero = await HeroAnime.find();
-    const now = new Date();
-    
-    if (savedHero.length > 0 && savedHero[0].last_updated) {
-      const diffHours = (now - savedHero[0].last_updated) / (1000 * 60 * 60);
-      if (diffHours < 24) {
-        return res.json({ data: savedHero });
-      }
+    const list = await anilistService.getTrending(10);
+    if (list && list.length > 0) {
+      return res.json({ data: list });
     }
-    
-    const response = await fetch('https://api.jikan.moe/v4/top/anime?filter=airing&limit=10&type=tv', { headers: jikanHeaders });
-    if (!response.ok) {
-        if (savedHero.length > 0) return res.json({ data: savedHero });
-        return res.status(502).json({ message: "Jikan API Error" });
-    }
-    
-    const data = await response.json();
-    if (data && data.data) {
-       const updatedData = data.data.map(item => ({...item, last_updated: now}));
-       await HeroAnime.deleteMany({}); 
-       await HeroAnime.insertMany(updatedData); 
-       return res.json({ data: updatedData });
-    }
-    
-    if (savedHero.length > 0) return res.json({ data: savedHero });
-    return res.status(500).json({ message: "Failed to fetch hero anime" });
+    const malList = await malService.getRankings('airing', 10);
+    return res.json({ data: malList });
   } catch (error) { 
     console.error('Hero Fetch Error:', error);
     res.status(500).json({ message: "Internal server error" }); 
@@ -1567,91 +1555,12 @@ app.get('/api/hero', async (req, res) => {
 
 app.get('/api/trending', async (req, res) => {
   try {
-    const savedTrending = await TrendingAnime.find();
-    const now = new Date();
-    
-    if (savedTrending.length > 0 && savedTrending[0].last_updated) {
-      const diffHours = (now - savedTrending[0].last_updated) / (1000 * 60 * 60);
-      if (diffHours < 24) {
-        return res.json({ data: savedTrending });
-      }
-    }
-
-    let list = null;
-
-    // 1. Try Jikan
-    try {
-      const response = await fetch('https://api.jikan.moe/v4/seasons/now?limit=15&type=tv', {
-        headers: jikanHeaders,
-        signal: AbortSignal.timeout(3500)
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-          list = data.data;
-        }
-      }
-    } catch (e) {
-      console.warn('Jikan trending failed, trying AniList fallback:', e.message);
-    }
-
-    // 2. Fallback to AniList GraphQL
-    if (!list) {
-      try {
-        const aniRes = await fetch('https://graphql.anilist.co', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: `
-              query {
-                Page(page: 1, perPage: 15) {
-                  media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
-                    id
-                    idMal
-                    title { romaji english }
-                    coverImage { extraLarge large }
-                    description
-                    averageScore
-                    genres
-                    status
-                  }
-                }
-              }
-            `
-          }),
-          signal: AbortSignal.timeout(4000)
-        });
-        if (aniRes.ok) {
-          const aniData = await aniRes.json();
-          if (aniData?.data?.Page?.media && Array.isArray(aniData.data.Page.media)) {
-            list = aniData.data.Page.media.map(item => ({
-              mal_id: item.idMal || item.id,
-              title: item.title?.english || item.title?.romaji,
-              title_english: item.title?.english || item.title?.romaji,
-              images: {
-                jpg: { large_image_url: item.coverImage?.extraLarge || item.coverImage?.large },
-                webp: { large_image_url: item.coverImage?.extraLarge || item.coverImage?.large }
-              },
-              genres: (item.genres || []).map(g => ({ name: g })),
-              synopsis: item.description,
-              score: item.averageScore ? item.averageScore / 10 : null
-            }));
-          }
-        }
-      } catch (e) {
-        console.error('AniList fallback error:', e.message);
-      }
-    }
-
+    const list = await anilistService.getTrending(15);
     if (list && list.length > 0) {
-       const updatedData = list.map(item => ({...item, last_updated: now}));
-       await TrendingAnime.deleteMany({}); 
-       await TrendingAnime.insertMany(updatedData);
-       return res.json({ data: updatedData });
+      return res.json({ data: list });
     }
-    
-    if (savedTrending.length > 0) return res.json({ data: savedTrending });
-    return res.status(500).json({ message: "Failed to fetch trending anime" });
+    const malList = await malService.getRankings('airing', 15);
+    return res.json({ data: malList });
   } catch (error) { 
     console.error('Trending Fetch Error:', error);
     res.status(500).json({ message: "Internal server error" }); 
@@ -1699,9 +1608,8 @@ app.get('/api/anime/search', async (req, res) => {
   const query = req.query.q;
   if (!query || typeof query !== 'string') return res.status(400).json({ message: "Search query required" });
   try {
-    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=5`, { headers: jikanHeaders });
-    const data = await response.json();
-    res.json(data.data || []);
+    const data = await malService.searchAnime(query, 10);
+    res.json(data || []);
   } catch (error) {
     console.error('Anime Search Error:', error);
     res.status(500).json({ message: "Internal server error" });
@@ -2055,128 +1963,306 @@ app.get('/api/news', async (req, res) => {
 });
 
 // ==========================================
-// 🔥 TRAILERS ROUTES 🔥
+// 📰 CUSTOM ANIME NEWS & ARTICLES API
 // ==========================================
 
-app.get('/api/trailers', async (req, res) => {
+// ============================================================================
+// 🔥 UNIFIED BACKEND-FOR-FRONTEND (BFF) ENDPOINTS 🔥
+// ============================================================================
+
+// 1. Composite Home Feed (Hero, Trending, Popular, Upcoming, Top Rated, News)
+app.get('/api/home', async (req, res) => {
   try {
-    await delay(300);
-    const [r1, r2] = await Promise.all([
-      fetch('https://api.jikan.moe/v4/seasons/upcoming?limit=25', { headers: jikanHeaders }),
-      fetch('https://api.jikan.moe/v4/top/anime?filter=airing&limit=25&type=tv', { headers: jikanHeaders })
+    const [trending, popular, upcoming, topRated, news] = await Promise.all([
+      anilistService.getTrending(12).catch(() => []),
+      anilistService.getPopular(12).catch(() => []),
+      malService.getRankings('upcoming', 12).catch(() => []),
+      malService.getRankings('all', 12).catch(() => []),
+      newsService.getLatestNews(6).catch(() => [])
     ]);
-    if (!r1.ok || !r2.ok) throw new Error(`Jikan API Error: ${r1.status} / ${r2.status}`);
-    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
-    const all = [...(d1.data || []), ...(d2.data || [])];
-    const withTrailers = all.filter(a => a.trailer?.youtube_id);
-    const unique = Array.from(new Map(withTrailers.map(a => [a.mal_id, a])).values());
-    res.json({ success: true, data: unique });
-  } catch (error) {
-    console.error("❌ Trailers Fetch Error:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+
+    res.json({
+      success: true,
+      data: {
+        trending,
+        popular,
+        upcoming,
+        topRated,
+        news
+      }
+    });
+  } catch (err) {
+    console.error("❌ Home Feed Error:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-app.get('/api/trailers/search', async (req, res) => {
-  const query = req.query.q;
-  if (!query || typeof query !== 'string') return res.status(400).json({ message: "Query required" });
-  try {
-    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=20`, { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    const data = await response.json();
-    const withTrailers = (data.data || []).filter(a => a.trailer?.youtube_id);
-    res.json({ success: true, data: withTrailers });
-  } catch (error) {
-    console.error("❌ Trailer Search Error:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
-});
-
-// ==========================================
-// 🔥 ADVANCED MANGA & ANIME ROUTES 🔥
-// ==========================================
-
-app.get('/api/manga/top', async (req, res) => {
-  try {
-    await delay(300); 
-    const response = await fetch('https://api.jikan.moe/v4/top/manga?limit=3&type=manga', { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    
-    const data = await response.json();
-    res.json(data);
-  } catch (error) { 
-    console.error("❌ Top Manga Fetch Error:", error);
-    res.status(500).json({ message: "Internal server error" }); 
-  }
-});
-
-app.get('/api/manga/all', async (req, res) => {
-  const page = req.query.page || 1;
-  try {
-    await delay(600); 
-    const response = await fetch(`https://api.jikan.moe/v4/top/manga?page=${page}&limit=24&type=manga`, { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    
-    const data = await response.json();
-    res.json(data);
-  } catch (error) { 
-    console.error("❌ All Manga Fetch Error:", error);
-    res.status(500).json({ message: "Internal server error" }); 
-  }
-});
-
-app.get('/api/manga/search', async (req, res) => {
-  const query = req.query.q;
-  if (!query || typeof query !== 'string') return res.status(400).json({ message: "Search query required" });
-  try {
-    const response = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=5`, { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    
-    const data = await response.json();
-    res.json(data);
-  } catch (error) { 
-    console.error("❌ Manga Search Error:", error);
-    res.status(500).json({ message: "Internal server error" }); 
-  }
-});
-
-app.get('/api/manga/:id', async (req, res) => {
-  try {
-    const response = await fetch(`https://api.jikan.moe/v4/manga/${req.params.id}`, { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    
-    const data = await response.json();
-    res.json(data);
-  } catch (error) { 
-    console.error("❌ Manga Details Error:", error);
-    res.status(500).json({ message: "Internal server error" }); 
-  }
-});
-
+// 2. Full Anime Details (Tier 1: Official MAL v2 -> Tier 2: Jikan Fallback)
 app.get('/api/anime/:id', async (req, res) => {
   try {
-    const response = await fetch(`https://api.jikan.moe/v4/anime/${req.params.id}/full`, { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    
-    const data = await response.json();
-    res.json(data);
+    const id = req.params.id;
+    const malData = await malService.getAnimeDetails(id);
+    if (malData) {
+      return res.json({ success: true, data: malData, source: 'mal_official_v2' });
+    }
+
+    const jikanData = await jikanService.fetchJikan(`/anime/${id}/full`);
+    if (jikanData?.data) {
+      return res.json({ success: true, data: jikanData.data, source: 'jikan_fallback' });
+    }
+
+    res.status(404).json({ success: false, message: "Anime not found" });
   } catch (error) { 
     console.error("❌ Anime Details Error:", error);
-    res.status(500).json({ message: "Internal server error" }); 
+    res.status(500).json({ success: false, message: "Internal server error" }); 
   }
 });
 
+// 3. Anime Recommendations (Tier 1: Official MAL -> Tier 2: Jikan Fallback)
 app.get('/api/anime/:id/recommendations', async (req, res) => {
   try {
-    const response = await fetch(`https://api.jikan.moe/v4/anime/${req.params.id}/recommendations`, { headers: jikanHeaders });
-    if (!response.ok) throw new Error(`Jikan API Error: ${response.status}`);
-    
-    const data = await response.json();
-    res.json(data);
+    const id = req.params.id;
+    const malRecs = await malService.getRecommendations(id);
+    if (malRecs && malRecs.length > 0) {
+      return res.json({ success: true, data: malRecs, source: 'mal_official_v2' });
+    }
+
+    const jikanRecs = await jikanService.fetchJikan(`/anime/${id}/recommendations`);
+    res.json({ success: true, data: jikanRecs?.data || [], source: 'jikan_fallback' });
   } catch (error) { 
     console.error("❌ Anime Recommendations Error:", error);
-    res.status(500).json({ message: "Internal server error" }); 
+    res.json({ success: true, data: [] }); 
   }
+});
+
+// 4. Anime Characters & Voice Actors (AniList -> Jikan Fallback)
+app.get('/api/anime/:id/characters', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const chars = await anilistService.getAnimeCharacters(id);
+    if (chars && chars.length > 0) {
+      return res.json({ success: true, data: chars });
+    }
+
+    const jikanChars = await jikanService.fetchJikan(`/anime/${id}/characters`);
+    res.json({ success: true, data: jikanChars?.data || [] });
+  } catch (error) {
+    console.error("❌ Anime Characters Error:", error);
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 5. Anime Opening & Ending Songs (AnimeThemes API)
+app.get('/api/anime/:id/themes', async (req, res) => {
+  try {
+    const themes = await themesService.getAnimeThemes(req.query.title, req.params.id);
+    res.json({ success: true, data: themes });
+  } catch (error) {
+    console.error("❌ Anime Themes Error:", error);
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 6. TMDB Hero Backdrops & 4K Logos
+app.get('/api/tmdb/hero', async (req, res) => {
+  try {
+    const data = await tmdbService.getHeroBackdrop(req.query.title);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error("❌ TMDB Hero Error:", error);
+    res.json({ success: false, data: null });
+  }
+});
+
+// 7. Rankings Endpoint (Official MAL v2)
+app.get('/api/anime/ranking/:type', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 24;
+    const offset = Number(req.query.offset) || 0;
+    const data = await malService.getRankings(req.params.type, limit, offset);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8. Search Endpoint (Official MAL v2)
+app.get('/api/anime/search/query', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const limit = Number(req.query.limit) || 20;
+    const data = await malService.searchAnime(query, limit);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9. Instant Search Suggestions (Auto-complete for search bar)
+app.get('/api/search/suggestions', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const limit = Number(req.query.limit) || 5;
+    const data = await malService.getSearchSuggestions(query, limit);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 10. Advanced Browse Multi-Filter Endpoint
+app.get('/api/browse/filter', async (req, res) => {
+  try {
+    const { genre, status, format, year, sort, page = 1, limit = 24 } = req.query;
+    const data = await anilistService.browseFilter({
+      genre,
+      status,
+      format,
+      year,
+      sort,
+      page: Number(page),
+      limit: Number(limit)
+    });
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 11. Anime Episodes List
+app.get('/api/anime/:id/episodes', async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const episodes = await jikanService.getAnimeEpisodes(req.params.id, page);
+    res.json({ success: true, data: episodes });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 12. Anime Reviews Endpoint
+app.get('/api/anime/:id/reviews', async (req, res) => {
+  try {
+    const reviews = await jikanService.getAnimeReviews(req.params.id);
+    res.json({ success: true, data: reviews });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 13. Top Characters Catalog
+app.get('/api/characters/top', async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 24;
+    const characters = await anilistService.getTopCharacters(page, limit);
+    res.json({ success: true, data: characters });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 14. Single Character Details
+app.get('/api/character/:id', async (req, res) => {
+  try {
+    const character = await anilistService.getCharacterDetails(req.params.id) 
+      || await jikanService.getCharacterDetails(req.params.id);
+    if (character) return res.json({ success: true, data: character });
+    res.status(404).json({ success: false, message: "Character not found" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 15. Single Staff / Voice Actor Details
+app.get('/api/staff/:id', async (req, res) => {
+  try {
+    const staff = await anilistService.getStaffDetails(req.params.id)
+      || await jikanService.getStaffDetails(req.params.id);
+    if (staff) return res.json({ success: true, data: staff });
+    res.status(404).json({ success: false, message: "Staff not found" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 16. Manga Top Catalog
+app.get('/api/manga/top', async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 24;
+    const manga = await anilistService.getTopManga(page, limit);
+    res.json({ success: true, data: manga });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 17. Manga Search
+app.get('/api/manga/search', async (req, res) => {
+  try {
+    const query = req.query.q || req.query.search || '';
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 24;
+    const manga = await anilistService.searchManga(query, page, limit);
+    res.json({ success: true, data: manga });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 18. Manga Single Details
+app.get('/api/manga/:id', async (req, res) => {
+  try {
+    const manga = await anilistService.getMangaDetails(req.params.id);
+    if (manga) return res.json({ success: true, data: manga });
+    res.status(404).json({ success: false, message: "Manga not found" });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 19. Latest Trailers Endpoint
+app.get('/api/trailers', async (req, res) => {
+  try {
+    const limit = Number(req.query.limit) || 24;
+    const trailers = await anilistService.getTrailers(limit);
+    res.json({ success: true, data: trailers });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 20. Curated Dubbed Anime Endpoint
+app.get('/api/dubbed', async (req, res) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 24;
+    const dubbed = await anilistService.browseFilter({ sort: 'POPULARITY_DESC', page, limit });
+    res.json({ success: true, data: dubbed });
+  } catch (err) {
+    res.json({ success: true, data: [] });
+  }
+});
+
+// 21. Standard Genres Catalog Endpoint
+app.get('/api/genres', (req, res) => {
+  const genres = [
+    { id: 1, name: 'Action', slug: 'action', icon: '⚔️' },
+    { id: 2, name: 'Adventure', slug: 'adventure', icon: '🗺️' },
+    { id: 4, name: 'Comedy', slug: 'comedy', icon: '😂' },
+    { id: 8, name: 'Drama', slug: 'drama', icon: '🎭' },
+    { id: 10, name: 'Fantasy', slug: 'fantasy', icon: '🧙' },
+    { id: 14, name: 'Horror', slug: 'horror', icon: '👻' },
+    { id: 22, name: 'Romance', slug: 'romance', icon: '💖' },
+    { id: 24, name: 'Sci-Fi', slug: 'sci-fi', icon: '🚀' },
+    { id: 30, name: 'Sports', slug: 'sports', icon: '⚽' },
+    { id: 36, name: 'Slice of Life', slug: 'slice-of-life', icon: '☕' },
+    { id: 37, name: 'Supernatural', slug: 'supernatural', icon: '🔮' },
+    { id: 41, name: 'Suspense', slug: 'suspense', icon: '🕵️' },
+    { id: 62, name: 'Isekai', slug: 'isekai', icon: '🌀' }
+  ];
+  res.json({ success: true, data: genres });
 });
 
 // Start Server

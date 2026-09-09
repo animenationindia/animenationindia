@@ -2,7 +2,7 @@
 // lib/tmdb-api.ts
 import { logError } from './logger';
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY || '2bca404e6766fc6ac7cb29ae38db027f';
+const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
 const TMDB_BASE_URL = 'https://api.tmdb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 

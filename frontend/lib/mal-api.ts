@@ -3,15 +3,13 @@
 // Official MyAnimeList (MAL) API v2 Integration
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
-const MAL_CLIENT_ID = process.env.MAL_CLIENT_ID || 'f6cd787eb297c144b5cebd2ef50026c3';
-const MAL_API_BASE = 'https://api.myanimelist.net/v2';
 
 const malClientMemoryCache = new Map<string, { data: any; timestamp: number }>();
 const inFlightMalPromises = new Map<string, Promise<any>>();
 const MAL_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Generic fetcher for Official MyAnimeList API v2 with backend proxy and direct fallback
+ * Generic fetcher for Official MyAnimeList API v2 via Backend BFF Proxy
  */
 export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Promise<any> {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -29,7 +27,7 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
   }
 
   const executeFetch = async () => {
-    // A. Try Backend Proxy First (Fast In-Memory Cache on Port 5000)
+    // Call Backend BFF Proxy (5-Key Round-Robin & Fast In-Memory Cache)
     try {
       const proxyUrl = `${BACKEND_BASE_URL}/api/mal/proxy?endpoint=${encodeURIComponent(cleanEndpoint)}`;
       const proxyRes = await fetch(proxyUrl, {
@@ -44,30 +42,8 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
           return data;
         }
       }
-    } catch {}
-
-    // B. Direct Official MAL API call with X-MAL-CLIENT-ID
-    try {
-      const targetUrl = `${MAL_API_BASE}${cleanEndpoint}`;
-      const directRes = await fetch(targetUrl, {
-        headers: {
-          'X-MAL-CLIENT-ID': MAL_CLIENT_ID,
-          'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
-          'Accept': 'application/json'
-        },
-        signal: AbortSignal.timeout(timeoutMs),
-        cache: 'no-store'
-      });
-
-      if (directRes.ok) {
-        const data = await directRes.json();
-        if (data && (data.id || data.data || data.title)) {
-          malClientMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
-          return data;
-        }
-      }
     } catch (err: any) {
-      console.warn(`[Official MAL API] Fetch failed for ${cleanEndpoint}:`, err.message);
+      console.warn(`[Official MAL Backend Proxy] Fetch failed for ${cleanEndpoint}:`, err?.message);
     }
 
     return null;
