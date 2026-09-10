@@ -64,6 +64,12 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
                   src={thumbnailUrl} 
                   alt={title} 
                   loading="lazy"
+                  onError={(e) => {
+                    const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
+                    if (e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                 />
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">

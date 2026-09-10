@@ -31,10 +31,10 @@ const CURATED_FALLBACK_TRAILERS: TrailerItem[] = [
     status: 'NOT_YET_RELEASED'
   },
   {
-    id: 52299,
-    title: { english: 'Solo Leveling Season 2: -Arise from the Shadow-', romaji: 'Ore dake Level Up na Ken Season 2' },
-    trailer: { id: 'gFl_P6d7q5M', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/gFl_P6d7q5M/hqdefault.jpg' },
-    status: 'RELEASING'
+    id: 16498,
+    title: { english: 'Attack on Titan Final Season', romaji: 'Shingeki no Kyojin: The Final Season' },
+    trailer: { id: 'M_OauHnAFc8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/M_OauHnAFc8/hqdefault.jpg' },
+    status: 'FINISHED'
   },
   {
     id: 40748,
@@ -49,16 +49,10 @@ const CURATED_FALLBACK_TRAILERS: TrailerItem[] = [
     status: 'RELEASING'
   },
   {
-    id: 52991,
-    title: { english: "Frieren: Beyond Journey's End", romaji: 'Sousou no Frieren' },
-    trailer: { id: 'qgQunxD0qMo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/qgQunxD0qMo/hqdefault.jpg' },
-    status: 'FINISHED'
-  },
-  {
-    id: 52588,
-    title: { english: 'Kaiju No. 8', romaji: 'Kaijuu 8-gou' },
-    trailer: { id: 'c3ISn_k_bZ8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/c3ISn_k_bZ8/hqdefault.jpg' },
-    status: 'FINISHED'
+    id: 44511,
+    title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man: Reze-hen' },
+    trailer: { id: 'v4yLeNt-kCU', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/v4yLeNt-kCU/hqdefault.jpg' },
+    status: 'NOT_YET_RELEASED'
   },
   {
     id: 50265,
@@ -67,33 +61,45 @@ const CURATED_FALLBACK_TRAILERS: TrailerItem[] = [
     status: 'FINISHED'
   },
   {
-    id: 44511,
-    title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man: Reze-hen' },
-    trailer: { id: 'v4yLeNt-kCU', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/v4yLeNt-kCU/hqdefault.jpg' },
-    status: 'NOT_YET_RELEASED'
-  },
-  {
-    id: 56845,
-    title: { english: 'Dandadan', romaji: 'Dandadan' },
-    trailer: { id: 'oG43m3J5-dM', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/oG43m3J5-dM/hqdefault.jpg' },
+    id: 5114,
+    title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' },
+    trailer: { id: 'yb2R1l0O9Zs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yb2R1l0O9Zs/hqdefault.jpg' },
     status: 'FINISHED'
   },
   {
-    id: 21,
-    title: { english: 'One Piece: Egghead Island Arc', romaji: 'One Piece' },
-    trailer: { id: 'm47h2-i27g4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/m47h2-i27g4/hqdefault.jpg' },
-    status: 'RELEASING'
-  },
-  {
-    id: 47778,
-    title: { english: 'Blue Lock vs. U-20 Japan', romaji: 'Blue Lock 2nd Season' },
-    trailer: { id: 'V7Z5K6i4Xbg', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/V7Z5K6i4Xbg/hqdefault.jpg' },
+    id: 21087,
+    title: { english: 'One Punch Man', romaji: 'One Punch Man' },
+    trailer: { id: 'tMblzsXwAKo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/tMblzsXwAKo/hqdefault.jpg' },
     status: 'FINISHED'
   },
   {
-    id: 49838,
-    title: { english: "Hell's Paradise", romaji: 'Jigokuraku' },
-    trailer: { id: 'X5iN6zPj5u8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/X5iN6zPj5u8/hqdefault.jpg' },
+    id: 38408,
+    title: { english: 'My Hero Academia Season 3', romaji: 'Boku no Hero Academia 3rd Season' },
+    trailer: { id: 'JezE6iZUWxo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/JezE6iZUWxo/hqdefault.jpg' },
+    status: 'FINISHED'
+  },
+  {
+    id: 31964,
+    title: { english: 'My Hero Academia', romaji: 'Boku no Hero Academia' },
+    trailer: { id: 'D5fYOnwYkj4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/D5fYOnwYkj4/hqdefault.jpg' },
+    status: 'FINISHED'
+  },
+  {
+    id: 1535,
+    title: { english: 'Death Note', romaji: 'Death Note' },
+    trailer: { id: 'NlJZ-YgAt-c', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/NlJZ-YgAt-c/hqdefault.jpg' },
+    status: 'FINISHED'
+  },
+  {
+    id: 32281,
+    title: { english: 'Your Name.', romaji: 'Kimi no Na wa.' },
+    trailer: { id: '3KR8_igDs1Y', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/3KR8_igDs1Y/hqdefault.jpg' },
+    status: 'FINISHED'
+  },
+  {
+    id: 16498,
+    title: { english: 'Attack on Titan Season 1', romaji: 'Shingeki no Kyojin' },
+    trailer: { id: 'LHtdKWJdif4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/LHtdKWJdif4/hqdefault.jpg' },
     status: 'FINISHED'
   }
 ];
@@ -445,7 +451,18 @@ export default function TrailersPage() {
                           }}
                         >
                           <div className="relative w-16 h-10 rounded-md overflow-hidden flex-shrink-0 bg-black/50">
-                            <img src={thumb} alt={title} loading="lazy" className="w-full h-full object-cover" />
+                            <img 
+                              src={thumb} 
+                              alt={title} 
+                              loading="lazy" 
+                              onError={(e) => {
+                                const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
+                                if (e.currentTarget.src !== fallback) {
+                                  e.currentTarget.src = fallback;
+                                }
+                              }}
+                              className="w-full h-full object-cover" 
+                            />
                             <div className="absolute inset-0 bg-black/40 group-hover:bg-[#ff4dd2]/30 transition-colors flex items-center justify-center">
                               <Play size={14} className="text-white fill-white" />
                             </div>
@@ -535,6 +552,12 @@ export default function TrailersPage() {
                       src={thumbnailUrl}
                       alt={title}
                       loading="lazy"
+                      onError={(e) => {
+                        const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />

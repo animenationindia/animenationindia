@@ -152,6 +152,15 @@ function WatchlistContent() {
           fetch(`${BACKEND_URL}/api/song-playlists/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
+        if (wlRes.status === 'fulfilled' && (wlRes.value.status === 401 || wlRes.value.status === 403)) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user_token');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('user_id');
+          router.push('/auth');
+          return;
+        }
+
         if (wlRes.status === 'fulfilled' && wlRes.value.ok) {
           const wlData = await wlRes.value.json();
           setWatchlist(

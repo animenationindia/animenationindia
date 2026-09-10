@@ -53,6 +53,16 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         setWatchlist(Array.isArray(data) ? data : []);
         setError(null);
+      } else if (res.status === 401 || res.status === 403) {
+        // Expired or invalid token in localStorage - silently clear stale session
+        try {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user_token');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('user_id');
+        } catch {}
+        setWatchlist([]);
+        setError(null);
       }
     } catch {
       try {

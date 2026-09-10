@@ -123,6 +123,15 @@ export default function ProfilePage() {
           fetch(`${BACKEND_URL}/api/ratings/user/${userId}`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
 
+        if (wlRes.status === 'fulfilled' && (wlRes.value.status === 401 || wlRes.value.status === 403)) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user_token');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('user_id');
+          router.push('/auth');
+          return;
+        }
+
         // 1. Watchlist
         if (wlRes.status === 'fulfilled' && wlRes.value.ok) {
           const data = await wlRes.value.json();

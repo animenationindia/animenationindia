@@ -276,13 +276,15 @@ export default async function Home() {
   if (trailersData.length === 0) {
     trailersData = [
       { id: 38000, title: { english: 'Demon Slayer: Infinity Castle', romaji: 'Kimetsu no Yaiba' }, trailer: { id: 'VQGCKyvzIM4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/VQGCKyvzIM4/hqdefault.jpg' } },
-      { id: 52299, title: { english: 'Solo Leveling Season 2 -Arise from the Shadow-', romaji: 'Ore dake Level Up na Ken' }, trailer: { id: 'gFl_P6d7q5M', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/gFl_P6d7q5M/hqdefault.jpg' } },
+      { id: 16498, title: { english: 'Attack on Titan Final Season', romaji: 'Shingeki no Kyojin' }, trailer: { id: 'M_OauHnAFc8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/M_OauHnAFc8/hqdefault.jpg' } },
       { id: 40748, title: { english: 'Jujutsu Kaisen Season 2 (Shibuya Incident)', romaji: 'Jujutsu Kaisen' }, trailer: { id: 'O6qVieflwqs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/O6qVieflwqs/hqdefault.jpg' } },
       { id: 41467, title: { english: 'Bleach: Thousand-Year Blood War Part 3', romaji: 'Bleach TYBW' }, trailer: { id: 'e8YBesRKq_U', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/e8YBesRKq_U/hqdefault.jpg' } },
-      { id: 52991, title: { english: 'Frieren: Beyond Journey\'s End', romaji: 'Sousou no Frieren' }, trailer: { id: 'qgQunxD0qMo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/qgQunxD0qMo/hqdefault.jpg' } },
-      { id: 52588, title: { english: 'Kaiju No. 8', romaji: 'Kaijuu 8-gou' }, trailer: { id: 'c3ISn_k_bZ8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/c3ISn_k_bZ8/hqdefault.jpg' } },
+      { id: 44511, title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man' }, trailer: { id: 'v4yLeNt-kCU', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/v4yLeNt-kCU/hqdefault.jpg' } },
       { id: 50265, title: { english: 'Spy x Family Code: White', romaji: 'Spy x Family' }, trailer: { id: 'ofXigq9aIpo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/ofXigq9aIpo/hqdefault.jpg' } },
-      { id: 44511, title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man' }, trailer: { id: 'v4yLeNt-kCU', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/v4yLeNt-kCU/hqdefault.jpg' } }
+      { id: 5114, title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' }, trailer: { id: 'yb2R1l0O9Zs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yb2R1l0O9Zs/hqdefault.jpg' } },
+      { id: 21087, title: { english: 'One Punch Man', romaji: 'One Punch Man' }, trailer: { id: 'tMblzsXwAKo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/tMblzsXwAKo/hqdefault.jpg' } },
+      { id: 32281, title: { english: 'Your Name.', romaji: 'Kimi no Na wa.' }, trailer: { id: '3KR8_igDs1Y', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/3KR8_igDs1Y/hqdefault.jpg' } },
+      { id: 1535, title: { english: 'Death Note', romaji: 'Death Note' }, trailer: { id: 'NlJZ-YgAt-c', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/NlJZ-YgAt-c/hqdefault.jpg' } }
     ];
   }
 
