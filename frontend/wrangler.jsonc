@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "animenationindia",
   "main": ".open-next/worker.js",
@@ -12,5 +12,18 @@
   "vars": {
     "NEXT_PUBLIC_BACKEND_URL": "https://animenationindia.onrender.com",
     "NEXT_PUBLIC_SITE_URL": "https://www.animenationindia.online"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
   }
 }
