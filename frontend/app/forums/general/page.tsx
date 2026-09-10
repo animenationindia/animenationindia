@@ -139,7 +139,7 @@ const threads = [
     isPinned: false,
     image: '',
     details: { title: 'N/A', author: 'N/A', status: 'N/A', genres: [] },
-    content: 'Do you use MAL, AniList, Kitsu, or just an Excel spreadsheet? I\'m looking to switch platforms and want to know what everyone considers the best tracker right now.'
+    content: 'Do you use MAL, AniList, or just an Excel spreadsheet? I\'m looking to switch platforms and want to know what everyone considers the best tracker right now.'
   },
   {
     id: 10,

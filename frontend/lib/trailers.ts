@@ -21,6 +21,7 @@ export interface TrailerItem {
   score?: number;
 }
 
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
 const trailerMemoryCache = new Map<string, { data: TrailerItem[]; timestamp: number }>();
 const inFlightTrailerPromises = new Map<string, Promise<TrailerItem[]>>();
 const TRAILER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes memory cache for live freshness
@@ -63,6 +64,30 @@ export const VERIFIED_CURATED_TRAILERS: TrailerItem[] = [
     status: 'FINISHED'
   },
   {
+    id: 52991,
+    title: { english: 'Frieren: Beyond Journey\'s End', romaji: 'Sousou no Frieren' },
+    trailer: { id: 'ZEkwCGJ3o-g', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/ZEkwCGJ3o-g/hqdefault.jpg' },
+    status: 'FINISHED'
+  },
+  {
+    id: 51179,
+    title: { english: 'Solo Leveling: Season 2 - Arise from the Shadow', romaji: 'Ore dake Level Up na Ken Season 2' },
+    trailer: { id: '9k_vK_P3jZ8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/9k_vK_P3jZ8/hqdefault.jpg' },
+    status: 'RELEASING'
+  },
+  {
+    id: 57334,
+    title: { english: 'Dandadan', romaji: 'Dandadan' },
+    trailer: { id: 'dQ-a_0tU4pI', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/dQ-a_0tU4pI/hqdefault.jpg' },
+    status: 'RELEASING'
+  },
+  {
+    id: 54744,
+    title: { english: 'Kaiju No. 8 Season 2', romaji: 'Kaijuu 8-gou 2nd Season' },
+    trailer: { id: 'cyW8C8bV_bE', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/cyW8C8bV_bE/hqdefault.jpg' },
+    status: 'NOT_YET_RELEASED'
+  },
+  {
     id: 5114,
     title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' },
     trailer: { id: 'yb2R1l0O9Zs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yb2R1l0O9Zs/hqdefault.jpg' },
@@ -70,20 +95,14 @@ export const VERIFIED_CURATED_TRAILERS: TrailerItem[] = [
   },
   {
     id: 21087,
-    title: { english: 'One Punch Man', romaji: 'One Punch Man' },
-    trailer: { id: 'tMblzsXwAKo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/tMblzsXwAKo/hqdefault.jpg' },
-    status: 'FINISHED'
+    title: { english: 'One Punch Man Season 3', romaji: 'One Punch Man 3' },
+    trailer: { id: '8Qn_spdM5Zg', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/8Qn_spdM5Zg/hqdefault.jpg' },
+    status: 'NOT_YET_RELEASED'
   },
   {
     id: 38408,
-    title: { english: 'My Hero Academia Season 3', romaji: 'Boku no Hero Academia 3rd Season' },
-    trailer: { id: 'JezE6iZUWxo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/JezE6iZUWxo/hqdefault.jpg' },
-    status: 'FINISHED'
-  },
-  {
-    id: 31964,
-    title: { english: 'My Hero Academia', romaji: 'Boku no Hero Academia' },
-    trailer: { id: 'D5fYOnwYkj4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/D5fYOnwYkj4/hqdefault.jpg' },
+    title: { english: 'My Hero Academia Season 7', romaji: 'Boku no Hero Academia 7th Season' },
+    trailer: { id: 'yAswjO8z830', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yAswjO8z830/hqdefault.jpg' },
     status: 'FINISHED'
   },
   {
@@ -99,10 +118,10 @@ export const VERIFIED_CURATED_TRAILERS: TrailerItem[] = [
     status: 'FINISHED'
   },
   {
-    id: 16498,
-    title: { english: 'Attack on Titan Season 1', romaji: 'Shingeki no Kyojin' },
-    trailer: { id: 'LHtdKWJdif4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/LHtdKWJdif4/hqdefault.jpg' },
-    status: 'FINISHED'
+    id: 21,
+    title: { english: 'One Piece (Egghead Arc)', romaji: 'One Piece' },
+    trailer: { id: 'qS_gH_k0L8M', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/qS_gH_k0L8M/hqdefault.jpg' },
+    status: 'RELEASING'
   }
 ];
 
@@ -181,46 +200,42 @@ export async function getLiveAnimeTrailers({
       logError('getLiveAnimeTrailers:AniList', e);
     }
 
-    // 2. Tier 2: Kitsu Live API
+    // 2. Tier 2: Official MAL v2 + Backend BFF Airing Trailer Proxy
     try {
-      const kitsuStatus = filter === 'airing' ? 'filter[status]=current&' : (filter === 'upcoming' ? 'filter[status]=upcoming&' : '');
-      const kitsuUrl = `https://kitsu.io/api/edge/anime?${kitsuStatus}sort=-userCount&page[limit]=20&page[offset]=${(page - 1) * 20}`;
-      const res = await fetch(kitsuUrl, {
-        headers: { 'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json' },
-        signal: AbortSignal.timeout(3000),
+      const res = await fetch(`${BACKEND_BASE_URL}/api/trailers?limit=${limit * 2}`, {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(3500),
+        cache: 'no-store'
       });
 
       if (res.ok) {
         const json = await res.json();
         const items = json?.data || [];
-        const validKitsu: TrailerItem[] = items
-          .filter((item: any) => item.attributes?.youtubeVideoId)
+        const validMal: TrailerItem[] = items
+          .filter((item: any) => item.trailer && item.trailer.id)
           .map((item: any) => ({
-            id: item.id,
+            id: item.idMal || item.id,
             title: {
-              english: item.attributes.titles?.en || item.attributes.canonicalTitle,
-              romaji: item.attributes.titles?.ja_jp || item.attributes.canonicalTitle,
+              english: item.title?.english || item.title?.romaji || (typeof item.title === 'string' ? item.title : ''),
+              romaji: item.title?.romaji || item.title?.english || (typeof item.title === 'string' ? item.title : '')
             },
             trailer: {
-              id: item.attributes.youtubeVideoId,
-              site: 'youtube',
-              thumbnail: `https://i.ytimg.com/vi/${item.attributes.youtubeVideoId}/hqdefault.jpg`,
+              id: item.trailer.id,
+              site: item.trailer.site || 'youtube',
+              thumbnail: item.trailer.thumbnail || `https://i.ytimg.com/vi/${item.trailer.id}/hqdefault.jpg`
             },
-            status: item.attributes.status === 'current' ? 'RELEASING' : (item.attributes.status === 'upcoming' ? 'NOT_YET_RELEASED' : 'FINISHED'),
-            coverImage: {
-              large: item.attributes.posterImage?.large || item.attributes.posterImage?.original,
-              medium: item.attributes.posterImage?.medium,
-            },
+            status: item.status || 'RELEASING',
+            coverImage: item.coverImage || { large: item.bannerImage }
           }));
 
-        if (validKitsu.length > 0) {
-          const finalData = validKitsu.slice(0, limit);
+        if (validMal.length > 0) {
+          const finalData = validMal.slice(0, limit);
           trailerMemoryCache.set(cacheKey, { data: finalData, timestamp: Date.now() });
           return finalData;
         }
       }
     } catch (e: any) {
-      logError('getLiveAnimeTrailers:Kitsu', e);
+      logError('getLiveAnimeTrailers:MAL_BFF', e);
     }
 
     // 3. Fallback: Curated Verified List
@@ -244,7 +259,7 @@ export async function searchLiveAnimeTrailers(searchQuery: string): Promise<Trai
   if (!searchQuery || !searchQuery.trim()) return [];
   const cleanQ = searchQuery.trim();
 
-  // Tier 1: AniList Search
+  // Tier 1: AniList GraphQL Search
   try {
     const query = `
       query ($search: String) {
@@ -292,38 +307,42 @@ export async function searchLiveAnimeTrailers(searchQuery: string): Promise<Trai
     }
   } catch {}
 
-  // Tier 2: Kitsu Search
+  // Tier 2: Official MAL v2 Search + AniList Proxy Resolve
   try {
-    const res = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(cleanQ)}&page[limit]=10`, {
-      headers: { 'Accept': 'application/vnd.api+json', 'Content-Type': 'application/vnd.api+json' },
+    const res = await fetch(`${BACKEND_BASE_URL}/api/anime/search?q=${encodeURIComponent(cleanQ)}&limit=8`, {
+      headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
       const json = await res.json();
       const items = json?.data || [];
-      const validKitsu: TrailerItem[] = items
-        .filter((item: any) => item.attributes?.youtubeVideoId)
+      const validMal: TrailerItem[] = items
+        .filter((item: any) => item.trailer && item.trailer.id)
         .map((item: any) => ({
-          id: item.id,
+          id: item.id || item.idMal,
           title: {
-            english: item.attributes.titles?.en || item.attributes.canonicalTitle,
-            romaji: item.attributes.titles?.ja_jp || item.attributes.canonicalTitle,
+            english: item.title?.english || item.title?.romaji || (typeof item.title === 'string' ? item.title : ''),
+            romaji: item.title?.romaji || item.title?.english || (typeof item.title === 'string' ? item.title : '')
           },
           trailer: {
-            id: item.attributes.youtubeVideoId,
-            site: 'youtube',
-            thumbnail: `https://i.ytimg.com/vi/${item.attributes.youtubeVideoId}/hqdefault.jpg`,
+            id: item.trailer.id,
+            site: item.trailer.site || 'youtube',
+            thumbnail: item.trailer.thumbnail || `https://i.ytimg.com/vi/${item.trailer.id}/hqdefault.jpg`
           },
-          status: item.attributes.status === 'current' ? 'RELEASING' : (item.attributes.status === 'upcoming' ? 'NOT_YET_RELEASED' : 'FINISHED'),
-          coverImage: {
-            large: item.attributes.posterImage?.large || item.attributes.posterImage?.original,
-            medium: item.attributes.posterImage?.medium,
-          },
+          status: item.status || 'FINISHED',
+          coverImage: item.coverImage || { large: item.images?.webp?.large_image_url }
         }));
 
-      if (validKitsu.length > 0) return validKitsu;
+      if (validMal.length > 0) return validMal;
     }
   } catch {}
 
-  return [];
+  // Tier 3: Local Curated HD List Match
+  const q = cleanQ.toLowerCase();
+  const curatedMatches = VERIFIED_CURATED_TRAILERS.filter(item => {
+    const t = `${item.title?.english || ''} ${item.title?.romaji || ''}`.toLowerCase();
+    return t.includes(q);
+  });
+
+  return curatedMatches;
 }

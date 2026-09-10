@@ -2139,7 +2139,7 @@ const MANGA_DETAILS_CACHE = new Map<string, any>([
 ]);
 
 export async function getMangaFullDetails(id: string) {
-  const strId = String(id).trim().replace(/^kitsu-/, '');
+  const strId = String(id).trim().replace(/^al-/, '');
 
   // 1. Check in-memory persistent cache first
   if (MANGA_DETAILS_CACHE.has(strId)) {
@@ -3042,7 +3042,7 @@ export async function getHiddenGemsAnimeAniList(): Promise<AniListMedia[]> {
 // ─── Anime Reviews Fetcher (BFF with Jikan & Memory Cache) ───────────────────
 export async function getAnimeReviews(malId: number | string): Promise<any[]> {
   if (!malId) return [];
-  const cleanId = String(malId).replace(/^(kitsu-|al-)/, '');
+  const cleanId = String(malId).replace(/^al-/, '');
   const numId = Number(cleanId);
   if (isNaN(numId) || numId <= 0 || numId > 65000) return [];
 

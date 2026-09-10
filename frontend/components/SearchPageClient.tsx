@@ -210,7 +210,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
   const title = anime.title?.english || anime.title?.romaji || 'Unknown';
   const linkId = anime.idMal 
     ? anime.idMal 
-    : (typeof anime.id === 'string' && (anime.id.startsWith('kitsu-') || anime.id.startsWith('al-'))
+    : (typeof anime.id === 'string' && anime.id.startsWith('al-')
         ? anime.id
         : (typeof anime.id === 'number' && anime.id > 65000 ? `al-${anime.id}` : anime.id));
   const isManga = anime.type === 'MANGA' || anime.format === 'MANGA' || anime.format === 'NOVEL';
@@ -579,7 +579,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
         const selected = suggestions[activeSugg];
         const linkId = selected.idMal 
           ? selected.idMal 
-          : (typeof selected.id === 'string' && (selected.id.startsWith('kitsu-') || selected.id.startsWith('al-'))
+          : (typeof selected.id === 'string' && selected.id.startsWith('al-')
               ? selected.id
               : (typeof selected.id === 'number' && selected.id > 65000 ? `al-${selected.id}` : selected.id));
         const t = selected.title?.english || selected.title?.romaji || '';
@@ -784,7 +784,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
                         const isHighlighted = activeSugg === idx;
                         const linkId = a.idMal 
                           ? a.idMal 
-                          : (typeof a.id === 'string' && (a.id.startsWith('kitsu-') || a.id.startsWith('al-'))
+                          : (typeof a.id === 'string' && a.id.startsWith('al-')
                               ? a.id
                               : (typeof a.id === 'number' && a.id > 65000 ? `al-${a.id}` : a.id));
 

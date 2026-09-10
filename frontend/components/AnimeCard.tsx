@@ -46,7 +46,7 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
   const title = toEnglishTitle(rawTitle, 'Unknown Title');
   const linkId = anime.idMal 
     ? anime.idMal 
-    : (typeof anime.id === 'string' && (anime.id.startsWith('kitsu-') || anime.id.startsWith('al-'))
+    : (typeof anime.id === 'string' && anime.id.startsWith('al-')
         ? anime.id
         : (typeof anime.id === 'number' && anime.id > 65000 ? `al-${anime.id}` : anime.id));
   const year = anime.seasonYear || (anime.startDate ? anime.startDate.year : null);
