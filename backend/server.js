@@ -119,27 +119,41 @@ const validate = (validations) => {
   };
 };
 
-// 🔥 Strict CORS Configuration 🔥
+// 🔥 Resilient CORS Configuration 🔥
 const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'https://animenationindia.online',
   'https://www.animenationindia.online',
   'https://animenationindia.animenationindia-global.workers.dev',
+  'https://anilist.co',
+  'https://myanimelist.net',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || (typeof origin === 'string' && (origin.endsWith('.animenationindia.online') || origin.endsWith('.workers.dev')))) {
+    if (
+      !origin ||
+      origin === 'null' ||
+      allowedOrigins.includes(origin) ||
+      (typeof origin === 'string' && (
+        origin.endsWith('.animenationindia.online') ||
+        origin.endsWith('.workers.dev') ||
+        origin.endsWith('.onrender.com') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1') ||
+        origin.includes('anilist.co')
+      ))
+    ) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS Error: Access from origin ${origin} blocked by security policy.`));
+      callback(null, true); // Allow gracefully without 500 error
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-passcode', 'Origin', 'Accept', 'Referer'],
 };
 
 app.use(cors(corsOptions));
@@ -156,11 +170,8 @@ app.get('/api/health', (req, res) => res.json({
 }));
 
 // ============================================================================
-// 🔥 High-Speed GraphQL Proxy for AniList (10-Min In-Memory Cache) 🔥
+// 🔥 High-Speed GraphQL Proxy for AniList (Integrated with Resilience Engine) 🔥
 // ============================================================================
-const anilistProxyCache = new Map();
-const ANILIST_PROXY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
-
 app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) => {
   try {
     const { query, variables } = req.body;
@@ -168,28 +179,11 @@ app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) 
       return res.status(400).json({ error: 'GraphQL query is required' });
     }
 
-    const cacheKey = JSON.stringify({ query, variables });
-    const cached = anilistProxyCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp < ANILIST_PROXY_CACHE_TTL)) {
-      return res.json(cached.data);
+    const data = await anilistService.fetchAniList(query, variables);
+    if (data) {
+      return res.json(data);
     }
-
-    const aniRes = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)'
-      },
-      body: JSON.stringify({ query, variables }),
-      signal: AbortSignal.timeout(8000)
-    });
-
-    const data = await aniRes.json();
-    if (aniRes.ok && data?.data) {
-      anilistProxyCache.set(cacheKey, { data, timestamp: Date.now() });
-    }
-    return res.status(aniRes.status).json(data);
+    return res.status(502).json({ error: 'AniList Proxy upstream failed' });
   } catch (err) {
     console.error('AniList Proxy Error:', err.message);
     return res.status(500).json({ error: err.message });

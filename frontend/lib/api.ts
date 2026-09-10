@@ -104,35 +104,46 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
     const targetUrl = ANILIST_PROXY_URL;
     const fallbackUrl = ANILIST_API_URL;
 
-    const fetchOptions: any = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Origin': 'https://anilist.co',
-        'Referer': 'https://anilist.co/'
-      },
-      body: JSON.stringify({ query, variables }),
-      signal: controller.signal,
-      cache: 'no-store'
-    };
-
     try {
-      let res = await fetch(targetUrl, fetchOptions);
+      // 1. Try Backend AniList Proxy (Primary)
+      let res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ query, variables }),
+        signal: controller.signal,
+        cache: 'no-store'
+      }).catch(() => null);
 
-      if ((res.status === 403 || res.status >= 500) && targetUrl !== fallbackUrl) {
+      // 2. Direct AniList Fallback with origin headers (if backend fails)
+      if ((!res || res.status === 403 || res.status >= 500 || !res.ok) && targetUrl !== fallbackUrl) {
         try {
-          res = await fetch(fallbackUrl, fetchOptions);
+          res = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Origin': 'https://anilist.co',
+              'Referer': 'https://anilist.co/'
+            },
+            body: JSON.stringify({ query, variables }),
+            signal: controller.signal,
+            cache: 'no-store'
+          }).catch(() => null);
         } catch {}
       }
       clearTimeout(timer);
 
-      if (res.status === 429 || res.status === 403 || !res.ok) {
+      if (!res || res.status === 429 || res.status === 403 || !res.ok) {
+        if (cached) return cached.data;
         return null;
       }
 
       const data = await res.json();
       if (data.errors && data.errors.length > 0) {
+        if (cached) return cached.data;
         return null;
       }
 
@@ -142,6 +153,7 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
       return data;
     } catch (error: any) {
       clearTimeout(timer);
+      if (cached) return cached.data;
       return null;
     }
   };
