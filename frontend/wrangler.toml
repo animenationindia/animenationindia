@@ -1,0 +1,8 @@
+﻿name = "animenationindia"
+compatibility_date = "2026-08-28"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".open-next/assets"
+
+[vars]
+NEXT_PUBLIC_BACKEND_URL = "https://animenationindia.onrender.com"
+NEXT_PUBLIC_SITE_URL = "https://www.animenationindia.online"
