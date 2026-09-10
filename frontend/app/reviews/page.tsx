@@ -28,9 +28,80 @@ export default function ReviewsPage() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const res = await fetch('https://api.jikan.moe/v4/reviews/anime');
-        const data = await res.json();
-        setReviews(data.data || []);
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+        let res = await fetch(`${backendUrl}/api/reviews?limit=18`).catch(() => null);
+        if (res && res.ok) {
+          const json = await res.json();
+          if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+            setReviews(json.data);
+            return;
+          }
+        }
+
+        // Direct AniList GraphQL reviews fetch
+        const query = `
+          query {
+            Page(page: 1, perPage: 18) {
+              reviews(sort: ID_DESC) {
+                id
+                summary
+                body
+                rating
+                score
+                createdAt
+                user {
+                  id
+                  name
+                  avatar {
+                    large
+                  }
+                }
+                media {
+                  id
+                  idMal
+                  title {
+                    romaji
+                    english
+                  }
+                  coverImage {
+                    large
+                  }
+                }
+              }
+            }
+          }
+        `;
+
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': 'https://anilist.co',
+            'Referer': 'https://anilist.co/'
+          },
+          body: JSON.stringify({ query })
+        });
+
+        if (aniRes.ok) {
+          const data = await aniRes.json();
+          const items = (data?.data?.Page?.reviews || []).map((r: any) => ({
+            mal_id: r.media?.idMal || r.id,
+            score: r.score ? Math.round(r.score / 10) : 8,
+            review: r.summary ? `${r.summary}\n\n${r.body}` : r.body,
+            date: new Date(r.createdAt * 1000).toISOString(),
+            user: {
+              username: r.user?.name || 'Otaku Critic',
+              images: { jpg: { image_url: r.user?.avatar?.large || '' } }
+            },
+            entry: {
+              mal_id: r.media?.idMal || r.media?.id || 1,
+              title: r.media?.title?.english || r.media?.title?.romaji || 'Anime',
+              images: { jpg: { image_url: r.media?.coverImage?.large || '' } }
+            }
+          }));
+          setReviews(items);
+        }
       } catch (error) {
         console.error('Failed to fetch reviews:', error);
       } finally {

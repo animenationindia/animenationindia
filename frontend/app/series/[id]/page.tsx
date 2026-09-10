@@ -118,7 +118,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
 
   const extraInfo = extraInfoRes.status === 'fulfilled' ? extraInfoRes.value : null;
   const episodesData = episodesRes.status === 'fulfilled' ? episodesRes.value : [];
-  const episodes = Array.isArray(episodesData) ? episodesData : (episodesData?.data || []);
+  const episodes = Array.isArray(episodesData) ? episodesData : ((episodesData as any)?.data || []);
   const characters = charactersRes.status === 'fulfilled' ? charactersRes.value : [];
   const recommendations = recommendationsRes.status === 'fulfilled' ? recommendationsRes.value : [];
   const themes = themesRes.status === 'fulfilled' ? themesRes.value : [];

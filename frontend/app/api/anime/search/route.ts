@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { searchOfficialMAL } from '@/lib/mal-api';
-import { fetchJikan, isSafeContent, GLOBAL_CACHE_TIME } from '@/lib/api';
+import { fetchAniList } from '@/lib/api';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -47,55 +49,71 @@ export async function GET(request: Request) {
         });
       }
     } catch (err: any) {
-      console.warn('[Search API] MAL Official search failed, falling back to Jikan:', err?.message);
+      console.warn('[Search API] MAL Official search failed, falling back to AniList:', err?.message);
     }
   }
 
-  // 2. Secondary: Jikan Fallback for advanced query combinations (genre/format/pagination)
+  // 2. Secondary: AniList GraphQL Search via Backend Proxy
   try {
-    let endpoint = `/anime?page=${page}&limit=24&sfw=true`;
-    if (q.trim()) endpoint += `&q=${encodeURIComponent(q.trim())}`;
-    if (format) endpoint += `&type=${encodeURIComponent(format.toLowerCase())}`;
-    if (genre) endpoint += `&genres=${encodeURIComponent(genre)}`;
-    if (!q.trim()) endpoint += `&order_by=popularity&sort=asc`;
-
-    const jikanRes = await fetchJikan(endpoint, GLOBAL_CACHE_TIME, 2500);
-    if (jikanRes?.data && Array.isArray(jikanRes.data) && jikanRes.data.length > 0) {
-      const safeData = jikanRes.data.filter((item: any) => isSafeContent(item));
-      const media = safeData.map((anime: any) => ({
-        id: anime.mal_id,
-        idMal: anime.mal_id,
-        idSystem: 'mal',
-        title: {
-          english: anime.title_english || anime.title,
-          romaji: anime.title
-        },
-        coverImage: {
-          large: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '/placeholder-poster.png',
-          extraLarge: anime.images?.webp?.large_image_url || anime.images?.jpg?.large_image_url || '/placeholder-poster.png'
-        },
-        averageScore: anime.score ? Math.round(anime.score * 10) : null,
-        format: anime.type || 'TV',
-        status: anime.status === 'Currently Airing' ? 'RELEASING' : anime.status === 'Finished Airing' ? 'FINISHED' : 'NOT_YET_RELEASED',
-        episodes: anime.episodes || null,
-        seasonYear: anime.year || (anime.aired?.prop?.from?.year) || null,
-        startDate: { year: anime.year || (anime.aired?.prop?.from?.year) || null },
-        genres: (anime.genres || []).map((g: any) => g.name),
-        description: anime.synopsis || ''
-      }));
-
-      return NextResponse.json({
-        media,
-        pageInfo: {
-          total: jikanRes.pagination?.items?.total || media.length,
-          currentPage: page,
-          lastPage: jikanRes.pagination?.last_visible_page || 1,
-          hasNextPage: jikanRes.pagination?.has_next_page || false
+    const graphqlQuery = `
+      query ($page: Int, $perPage: Int, $search: String, $genre: String, $format: MediaFormat) {
+        Page(page: $page, perPage: $perPage) {
+          pageInfo { total currentPage lastPage hasNextPage }
+          media(search: $search, genre: $genre, format: $format, type: ANIME, countryOfOrigin: "JP", isAdult: false, sort: [SEARCH_MATCH, POPULARITY_DESC]) {
+            id
+            idMal
+            title { english romaji }
+            coverImage { extraLarge large medium }
+            averageScore
+            format
+            status
+            episodes
+            seasonYear
+            startDate { year }
+            genres
+            description
+          }
         }
+      }
+    `;
+
+    const variables: any = {
+      page,
+      perPage: 24,
+      search: q.trim() || undefined,
+      genre: genre.trim() || undefined,
+      format: format.trim() ? format.toUpperCase() : undefined
+    };
+
+    const res = await fetchAniList(graphqlQuery, variables);
+    const media = res?.data?.Page?.media;
+    const pageInfo = res?.data?.Page?.pageInfo;
+
+    if (media && Array.isArray(media) && media.length > 0) {
+      return NextResponse.json({
+        media: media.map((anime: any) => ({
+          id: anime.id,
+          idMal: anime.idMal || anime.id,
+          idSystem: 'anilist',
+          title: anime.title,
+          coverImage: {
+            large: anime.coverImage?.large || '/placeholder-poster.png',
+            extraLarge: anime.coverImage?.extraLarge || anime.coverImage?.large || '/placeholder-poster.png'
+          },
+          averageScore: anime.averageScore,
+          format: anime.format,
+          status: anime.status,
+          episodes: anime.episodes,
+          seasonYear: anime.seasonYear || anime.startDate?.year,
+          startDate: anime.startDate,
+          genres: anime.genres || [],
+          description: anime.description || ''
+        })),
+        pageInfo: pageInfo || { total: media.length, currentPage: page, lastPage: 1, hasNextPage: false }
       });
     }
   } catch (err: any) {
-    console.warn('[Search API] Jikan search fallback failed:', err?.message);
+    console.warn('[Search API] AniList search fallback error:', err?.message);
   }
 
   return NextResponse.json({

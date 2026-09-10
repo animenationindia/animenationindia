@@ -67,12 +67,52 @@ export default function HomeReviews() {
           }
         }
 
-        // Fallback to Jikan public anime reviews if local backend is offline
-        const jikanRes = await fetch('https://api.jikan.moe/v4/reviews/anime').catch(() => null);
-        if (jikanRes && jikanRes.ok) {
-          const jikanData = await jikanRes.json();
-          if (jikanData.data && jikanData.data.length > 0) {
-            setReviews(jikanData.data.slice(0, 3));
+        // Fallback to AniList public GraphQL reviews if backend is warming up
+        const query = `
+          query {
+            Page(page: 1, perPage: 3) {
+              reviews(sort: ID_DESC) {
+                id
+                summary
+                body
+                score
+                createdAt
+                user { name avatar { large } }
+                media { id idMal title { romaji english } coverImage { large } }
+              }
+            }
+          }
+        `;
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': 'https://anilist.co',
+            'Referer': 'https://anilist.co/'
+          },
+          body: JSON.stringify({ query })
+        }).catch(() => null);
+
+        if (aniRes && aniRes.ok) {
+          const aniData = await aniRes.json();
+          const list = (aniData?.data?.Page?.reviews || []).map((r: any) => ({
+            mal_id: r.media?.idMal || r.id,
+            score: r.score ? Math.round(r.score / 10) : 8,
+            review: r.summary ? `${r.summary}\n\n${r.body}` : r.body,
+            date: new Date(r.createdAt * 1000).toISOString(),
+            user: {
+              username: r.user?.name || 'Otaku Critic',
+              images: { jpg: { image_url: r.user?.avatar?.large || '' } }
+            },
+            entry: {
+              mal_id: r.media?.idMal || r.media?.id || 1,
+              title: r.media?.title?.english || r.media?.title?.romaji || 'Anime',
+              images: { jpg: { image_url: r.media?.coverImage?.large || '' } }
+            }
+          }));
+          if (list.length > 0) {
+            setReviews(list);
             return;
           }
         }

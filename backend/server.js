@@ -17,7 +17,6 @@ const malService = require('./services/malService');
 const anilistService = require('./services/anilistService');
 const tmdbService = require('./services/tmdbService');
 const newsService = require('./services/newsService');
-const jikanService = require('./services/jikanService');
 const { toEnglishTitle, normalizeTitleObject } = require('./services/titleCleaner');
 
 // 🔥 Email Pathanor Setup (Nodemailer) 🔥
@@ -56,12 +55,6 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
 // Delay helper for rate limits
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Jikan headers for 403 prevention
-const jikanHeaders = {
-  'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
-  'Accept': 'application/json',
-};
 
 const app = express();
 app.use(compression());
@@ -204,54 +197,10 @@ app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) 
 });
 
 // ============================================================================
-// 🔥 High-Speed Jikan Proxy (5-Min In-Memory Cache & Rate-Limit Shield) 🔥
+// 🔥 Legacy Jikan Proxy Alias (Gracefully Handled / Empty Safe Fallback) 🔥
 // ============================================================================
-const jikanProxyCache = new Map();
-const JIKAN_PROXY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
-
-app.get('/api/jikan/proxy', async (req, res) => {
-  try {
-    let endpoint = req.query.endpoint || req.query.path;
-    if (!endpoint) {
-      const match = req.originalUrl.match(/\/api\/jikan\/proxy\?(?:endpoint|path)=(.+)/);
-      if (match && match[1]) {
-        endpoint = decodeURIComponent(match[1]);
-      }
-    }
-
-    if (!endpoint || typeof endpoint !== 'string') {
-      return res.status(400).json({ error: 'Endpoint query parameter is required (e.g. /top/anime?limit=10)' });
-    }
-
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const cached = jikanProxyCache.get(cleanEndpoint);
-    if (cached && (Date.now() - cached.timestamp < JIKAN_PROXY_CACHE_TTL)) {
-      return res.json(cached.data);
-    }
-
-    const targetUrl = `https://api.jikan.moe/v4${cleanEndpoint}`;
-    const jikanRes = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
-        'Accept': 'application/json'
-      },
-      signal: AbortSignal.timeout(6000)
-    });
-
-    if (jikanRes.status === 429 || jikanRes.status >= 500) {
-      if (cached) return res.json(cached.data);
-      return res.status(jikanRes.status).json({ error: `Jikan API returned ${jikanRes.status}` });
-    }
-
-    const data = await jikanRes.json();
-    if (jikanRes.ok && data) {
-      jikanProxyCache.set(cleanEndpoint, { data, timestamp: Date.now() });
-    }
-    return res.status(jikanRes.status).json(data);
-  } catch (err) {
-    console.error('Jikan Proxy Error:', err.message);
-    return res.status(500).json({ error: err.message });
-  }
+app.get('/api/jikan/proxy', (req, res) => {
+  return res.json({ data: [], pagination: { has_next_page: false } });
 });
 
 // ============================================================================
@@ -626,66 +575,87 @@ let scheduleCache = {
 
 async function syncScheduleData() {
   try {
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    const fetchedItems = [];
-    const seen = new Set();
+    const nowEpoch = Math.floor(Date.now() / 1000);
+    const startOfWeek = nowEpoch - (7 * 86400);
+    const endOfWeek = nowEpoch + (7 * 86400);
 
-    for (const day of days) {
-      try {
-        const res = await fetch(`https://api.jikan.moe/v4/schedules?filter=${day}&limit=25`, {
-          headers: jikanHeaders
-        });
-        if (res.ok) {
-          const json = await res.json();
-          (json.data || []).forEach(item => {
-            if (!seen.has(item.mal_id)) {
-              seen.add(item.mal_id);
-              item._targetDay = DAYS_MAP[day];
-              fetchedItems.push(item);
+    const scheduleQuery = `
+      query ($start: Int, $end: Int) {
+        Page(page: 1, perPage: 50) {
+          airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
+            id
+            airingAt
+            episode
+            media {
+              id
+              idMal
+              title {
+                romaji
+                english
+                native
+              }
+              coverImage {
+                extraLarge
+                large
+              }
+              bannerImage
+              genres
+              averageScore
+              episodes
+              format
+              status
+              seasonYear
+              studios(isMain: true) {
+                nodes {
+                  name
+                }
+              }
+              description
             }
-          });
-        }
-        await delay(500);
-      } catch (e) {}
-    }
-
-    try {
-      const resTop = await fetch('https://api.jikan.moe/v4/top/anime?filter=airing&limit=25', {
-        headers: jikanHeaders
-      });
-      if (resTop.ok) {
-        const json = await resTop.json();
-        (json.data || []).forEach(item => {
-          if (!seen.has(item.mal_id)) {
-            seen.add(item.mal_id);
-            fetchedItems.push(item);
           }
-        });
+        }
       }
-    } catch (e) {}
+    `;
 
-    if (fetchedItems.length > 0) {
-      for (const item of fetchedItems) {
-        const { dayOfWeek, airingTime } = parseBroadcast(item.broadcast, item._targetDay !== undefined ? item._targetDay : 1);
+    const anilistRes = await anilistService.fetchAniList(scheduleQuery, { start: startOfWeek, end: endOfWeek });
+    const schedules = anilistRes?.data?.Page?.airingSchedules || anilistRes?.Page?.airingSchedules || [];
+
+    if (schedules.length > 0) {
+      for (const item of schedules) {
+        const media = item.media;
+        if (!media) continue;
+        const airingDate = new Date(item.airingAt * 1000);
+        const dayOfWeek = airingDate.getUTCDay(); // 0 is Sunday
+        const hours = String(airingDate.getUTCHours()).padStart(2, '0');
+        const mins = String(airingDate.getUTCMinutes()).padStart(2, '0');
+        const airingTime = `${hours}:${mins}`;
+
         await ScheduleAnime.findOneAndUpdate(
-          { mal_id: item.mal_id },
+          { mal_id: media.idMal || media.id },
           {
-            mal_id: item.mal_id,
-            title: item.title,
-            title_english: item.title_english || item.title,
-            title_japanese: item.title_japanese || item.title,
-            images: item.images,
-            broadcast: item.broadcast,
+            mal_id: media.idMal || media.id,
+            title: media.title?.romaji || media.title?.english || 'Anime',
+            title_english: media.title?.english || media.title?.romaji,
+            title_japanese: media.title?.native || media.title?.romaji,
+            images: {
+              jpg: {
+                large_image_url: media.coverImage?.extraLarge || media.coverImage?.large,
+                image_url: media.coverImage?.large
+              },
+              webp: {
+                large_image_url: media.coverImage?.extraLarge || media.coverImage?.large
+              }
+            },
             dayOfWeek,
             airingTime,
-            score: item.score || null,
-            episodes: item.episodes || null,
-            format: item.type || 'TV',
-            status: item.status || 'Currently Airing',
-            genres: (item.genres || []).map(g => g.name),
-            studios: (item.studios || []).map(s => s.name),
-            synopsis: item.synopsis || '',
-            airedFrom: item.aired?.from || null,
+            score: media.averageScore ? (media.averageScore / 10) : null,
+            episodes: media.episodes || null,
+            format: media.format || 'TV',
+            status: media.status === 'RELEASING' ? 'Currently Airing' : (media.status || 'Currently Airing'),
+            genres: media.genres || [],
+            studios: (media.studios?.nodes || []).map(s => s.name),
+            synopsis: media.description || '',
+            airedFrom: airingDate.toISOString(),
             updatedAt: new Date()
           },
           { upsert: true, returnDocument: 'after' }
@@ -693,7 +663,7 @@ async function syncScheduleData() {
       }
       scheduleCache.data = await ScheduleAnime.find().lean();
       scheduleCache.lastUpdated = Date.now();
-      console.log(`✅ Schedule Synced: ${scheduleCache.data.length} anime in database.`);
+      console.log(`✅ Schedule Synced via AniList: ${scheduleCache.data.length} anime in database.`);
     }
   } catch (error) {
     console.error('Schedule Sync Error:', error.message);
@@ -2092,7 +2062,7 @@ app.post('/api/schedule/sync', async (req, res) => {
   res.json({ success: true, message: 'Live schedule sync started' });
 });
 
-// 3. GET /api/reviews - Get recent community anime reviews (Cached)
+// 3. GET /api/reviews - Get recent community anime reviews (Cached via AniList)
 let cachedReviews = [];
 let lastReviewsFetch = 0;
 const REVIEWS_CACHE_TTL = 30 * 60 * 1000; // 30 mins
@@ -2106,21 +2076,70 @@ app.get('/api/reviews', async (req, res) => {
       return res.json({ success: true, data: cachedReviews.slice(0, limit) });
     }
 
-    const jikanRes = await fetch('https://api.jikan.moe/v4/reviews/anime', {
-      headers: {
-        'User-Agent': 'AnimeNationIndia/1.0',
-        'Accept': 'application/json'
-      },
-      signal: AbortSignal.timeout(6000)
-    });
-
-    if (jikanRes.ok) {
-      const data = await jikanRes.json();
-      if (data && data.data && Array.isArray(data.data)) {
-        cachedReviews = data.data;
-        lastReviewsFetch = now;
-        return res.json({ success: true, data: cachedReviews.slice(0, limit) });
+    const reviewsQuery = `
+      query ($perPage: Int) {
+        Page(page: 1, perPage: $perPage) {
+          reviews(sort: ID_DESC) {
+            id
+            summary
+            body
+            rating
+            score
+            createdAt
+            user {
+              id
+              name
+              avatar {
+                large
+              }
+            }
+            media {
+              id
+              idMal
+              title {
+                romaji
+                english
+              }
+              coverImage {
+                large
+              }
+            }
+          }
+        }
       }
+    `;
+
+    const anilistRes = await anilistService.fetchAniList(reviewsQuery, { perPage: 25 });
+    const rawReviews = anilistRes?.data?.Page?.reviews || anilistRes?.Page?.reviews || [];
+
+    if (rawReviews.length > 0) {
+      cachedReviews = rawReviews.map(r => ({
+        mal_id: r.media?.idMal || r.id,
+        id: r.id,
+        score: r.score ? Math.round(r.score / 10) : (r.rating || 8),
+        review: r.summary ? `${r.summary}\n\n${r.body}` : r.body,
+        summary: r.summary || '',
+        date: new Date(r.createdAt * 1000).toISOString(),
+        user: {
+          username: r.user?.name || 'Otaku Critic',
+          images: {
+            jpg: {
+              image_url: r.user?.avatar?.large || `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.user?.name || 'Reviewer'}`
+            }
+          }
+        },
+        entry: {
+          mal_id: r.media?.idMal || r.media?.id || 1,
+          title: r.media?.title?.english || r.media?.title?.romaji || 'Anime',
+          images: {
+            jpg: {
+              image_url: r.media?.coverImage?.large || ''
+            }
+          }
+        }
+      }));
+      lastReviewsFetch = now;
+      return res.json({ success: true, data: cachedReviews.slice(0, limit) });
     }
 
     if (cachedReviews.length > 0) {
@@ -2132,6 +2151,112 @@ app.get('/api/reviews', async (req, res) => {
     console.error('Reviews Fetch Error:', error.message);
     if (cachedReviews.length > 0) {
       return res.json({ success: true, data: cachedReviews.slice(0, 10) });
+    }
+    return res.json({ success: true, data: [] });
+  }
+});
+
+// GET /api/recommendations - Get community recommendations (Cached via AniList)
+let cachedRecs = [];
+let lastRecsFetch = 0;
+const RECS_CACHE_TTL = 30 * 60 * 1000; // 30 mins
+
+app.get('/api/recommendations', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || '10', 10);
+    const now = Date.now();
+
+    if (cachedRecs.length > 0 && (now - lastRecsFetch < RECS_CACHE_TTL)) {
+      return res.json({ success: true, data: cachedRecs.slice(0, limit) });
+    }
+
+    const recsQuery = `
+      query ($perPage: Int) {
+        Page(page: 1, perPage: $perPage) {
+          recommendations(sort: ID_DESC) {
+            id
+            rating
+            user {
+              id
+              name
+              avatar {
+                large
+              }
+            }
+            media {
+              id
+              idMal
+              title {
+                romaji
+                english
+              }
+              coverImage {
+                large
+              }
+            }
+            mediaRecommendation {
+              id
+              idMal
+              title {
+                romaji
+                english
+              }
+              coverImage {
+                large
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const anilistRes = await anilistService.fetchAniList(recsQuery, { perPage: 25 });
+    const rawRecs = anilistRes?.data?.Page?.recommendations || anilistRes?.Page?.recommendations || [];
+
+    if (rawRecs.length > 0) {
+      cachedRecs = rawRecs.filter(r => r.media && r.mediaRecommendation).map(r => ({
+        mal_id: String(r.id),
+        id: r.id,
+        content: `If you loved ${r.media?.title?.english || r.media?.title?.romaji}, you must watch ${r.mediaRecommendation?.title?.english || r.mediaRecommendation?.title?.romaji}! Both share phenomenal world-building, emotional storytelling, and intense character arcs.`,
+        user: {
+          username: r.user?.name || 'Otaku Recommendation'
+        },
+        entry: [
+          {
+            mal_id: r.media?.idMal || r.media?.id,
+            title: r.media?.title?.english || r.media?.title?.romaji,
+            url: `/anime/${r.media?.id}`,
+            images: {
+              jpg: {
+                image_url: r.media?.coverImage?.large
+              }
+            }
+          },
+          {
+            mal_id: r.mediaRecommendation?.idMal || r.mediaRecommendation?.id,
+            title: r.mediaRecommendation?.title?.english || r.mediaRecommendation?.title?.romaji,
+            url: `/anime/${r.mediaRecommendation?.id}`,
+            images: {
+              jpg: {
+                image_url: r.mediaRecommendation?.coverImage?.large
+              }
+            }
+          }
+        ]
+      }));
+      lastRecsFetch = now;
+      return res.json({ success: true, data: cachedRecs.slice(0, limit) });
+    }
+
+    if (cachedRecs.length > 0) {
+      return res.json({ success: true, data: cachedRecs.slice(0, limit) });
+    }
+
+    return res.json({ success: true, data: [] });
+  } catch (error) {
+    console.error('Recommendations Fetch Error:', error.message);
+    if (cachedRecs.length > 0) {
+      return res.json({ success: true, data: cachedRecs.slice(0, 10) });
     }
     return res.json({ success: true, data: [] });
   }
@@ -2274,7 +2399,7 @@ app.get('/api/home', async (req, res) => {
   }
 });
 
-// 2. Full Anime Details (Tier 1: Official MAL v2 -> Tier 2: Jikan Fallback)
+// 2. Full Anime Details (Tier 1: Official MAL v2 -> Tier 2: AniList GraphQL)
 app.get('/api/anime/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -2283,9 +2408,28 @@ app.get('/api/anime/:id', async (req, res) => {
       return res.json({ success: true, data: malData, source: 'mal_official_v2' });
     }
 
-    const jikanData = await jikanService.fetchJikan(`/anime/${id}/full`);
-    if (jikanData?.data) {
-      return res.json({ success: true, data: jikanData.data, source: 'jikan_fallback' });
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          idMal
+          title { romaji english native }
+          coverImage { extraLarge large medium }
+          bannerImage
+          description
+          averageScore
+          episodes
+          format
+          status
+          seasonYear
+          genres
+          studios(isMain: true) { nodes { name } }
+        }
+      }
+    `;
+    const anilistRes = await anilistService.fetchAniList(query, { id: Number(id) });
+    if (anilistRes?.data?.Media) {
+      return res.json({ success: true, data: anilistRes.data.Media, source: 'anilist_proxy' });
     }
 
     res.status(404).json({ success: false, message: "Anime not found" });
@@ -2295,7 +2439,7 @@ app.get('/api/anime/:id', async (req, res) => {
   }
 });
 
-// 3. Anime Recommendations (Tier 1: Official MAL -> Tier 2: Jikan Fallback)
+// 3. Anime Recommendations (Tier 1: Official MAL -> Tier 2: AniList GraphQL)
 app.get('/api/anime/:id/recommendations', async (req, res) => {
   try {
     const id = req.params.id;
@@ -2304,28 +2448,47 @@ app.get('/api/anime/:id/recommendations', async (req, res) => {
       return res.json({ success: true, data: malRecs, source: 'mal_official_v2' });
     }
 
-    const jikanRecs = await jikanService.fetchJikan(`/anime/${id}/recommendations`);
-    res.json({ success: true, data: jikanRecs?.data || [], source: 'jikan_fallback' });
+    const query = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          recommendations(perPage: 10, sort: RATING_DESC) {
+            nodes {
+              mediaRecommendation {
+                id
+                idMal
+                title { romaji english }
+                coverImage { large }
+              }
+            }
+          }
+        }
+      }
+    `;
+    const anilistRes = await anilistService.fetchAniList(query, { id: Number(id) });
+    const recNodes = anilistRes?.data?.Media?.recommendations?.nodes || [];
+    const formatted = recNodes.filter(n => n.mediaRecommendation).map(n => ({
+      entry: {
+        mal_id: n.mediaRecommendation.idMal || n.mediaRecommendation.id,
+        title: n.mediaRecommendation.title?.english || n.mediaRecommendation.title?.romaji,
+        images: { jpg: { image_url: n.mediaRecommendation.coverImage?.large } }
+      }
+    }));
+    res.json({ success: true, data: formatted, source: 'anilist_proxy' });
   } catch (error) { 
     console.error("❌ Anime Recommendations Error:", error);
     res.json({ success: true, data: [] }); 
   }
 });
 
-// 4. Anime Characters & Voice Actors (AniList -> Jikan Fallback)
+// 4. Anime Characters & Voice Actors (AniList GraphQL Proxy)
 app.get('/api/anime/:id/characters', async (req, res) => {
   try {
     const id = req.params.id;
     const chars = await anilistService.getAnimeCharacters(id);
-    if (chars && chars.length > 0) {
-      return res.json({ success: true, data: chars });
-    }
-
-    const jikanChars = await jikanService.fetchJikan(`/anime/${id}/characters`);
-    res.json({ success: true, data: jikanChars?.data || [] });
-  } catch (error) {
+    res.json({ success: true, data: chars || [] });
+  } catch (error) { 
     console.error("❌ Anime Characters Error:", error);
-    res.json({ success: true, data: [] });
+    res.json({ success: true, data: [] }); 
   }
 });
 
@@ -2406,12 +2569,48 @@ app.get('/api/browse/filter', async (req, res) => {
   }
 });
 
+// ==========================================
+// 🚀 UNIFIED BFF PROXY ROUTES 🚀
+// ==========================================
+
+// 1. High-Performance AniList GraphQL Proxy with In-Memory Caching & Retries
+app.post('/api/anilist/proxy', async (req, res) => {
+  try {
+    const { query, variables } = req.body;
+    if (!query) {
+      return res.status(400).json({ errors: [{ message: 'GraphQL query is required' }] });
+    }
+
+    const data = await anilistService.fetchAniList(query, variables || {});
+    return res.json(data);
+  } catch (err) {
+    return res.status(502).json({
+      errors: [{ message: err.message || 'AniList Proxy Error' }],
+      data: null
+    });
+  }
+});
+
+// 2. Official MAL v2 Multi-Key Pool Proxy
+app.get('/api/mal/proxy', async (req, res) => {
+  try {
+    const endpoint = req.query.endpoint;
+    if (!endpoint) {
+      return res.status(400).json({ error: 'Endpoint parameter is required' });
+    }
+
+    const data = await malService.fetchMAL(endpoint);
+    return res.json(data);
+  } catch (err) {
+    return res.status(502).json({ error: err.message || 'MAL Proxy Error' });
+  }
+});
+
 // 11. Anime Episodes List
 app.get('/api/anime/:id/episodes', async (req, res) => {
   try {
-    const page = Number(req.query.page) || 1;
-    const episodes = await jikanService.getAnimeEpisodes(req.params.id, page);
-    res.json({ success: true, data: episodes });
+    const episodes = await tmdbService.getEpisodes(req.params.id);
+    res.json({ success: true, data: episodes || [] });
   } catch (err) {
     res.json({ success: true, data: [] });
   }
@@ -2420,7 +2619,7 @@ app.get('/api/anime/:id/episodes', async (req, res) => {
 // 12. Anime Reviews Endpoint
 app.get('/api/anime/:id/reviews', async (req, res) => {
   try {
-    const reviews = await jikanService.getAnimeReviews(req.params.id);
+    const reviews = await anilistService.getAnimeReviews?.(req.params.id) || [];
     res.json({ success: true, data: reviews });
   } catch (err) {
     res.json({ success: true, data: [] });
@@ -2442,8 +2641,7 @@ app.get('/api/characters/top', async (req, res) => {
 // 14. Single Character Details
 app.get('/api/character/:id', async (req, res) => {
   try {
-    const character = await anilistService.getCharacterDetails(req.params.id) 
-      || await jikanService.getCharacterDetails(req.params.id);
+    const character = await anilistService.getCharacterDetails(req.params.id);
     if (character) return res.json({ success: true, data: character });
     res.status(404).json({ success: false, message: "Character not found" });
   } catch (err) {
@@ -2454,8 +2652,7 @@ app.get('/api/character/:id', async (req, res) => {
 // 15. Single Staff / Voice Actor Details
 app.get('/api/staff/:id', async (req, res) => {
   try {
-    const staff = await anilistService.getStaffDetails(req.params.id)
-      || await jikanService.getStaffDetails(req.params.id);
+    const staff = await anilistService.getStaffDetails(req.params.id);
     if (staff) return res.json({ success: true, data: staff });
     res.status(404).json({ success: false, message: "Staff not found" });
   } catch (err) {

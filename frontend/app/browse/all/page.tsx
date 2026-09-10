@@ -89,13 +89,27 @@ function BrowseAllAnimeContent() {
       let hasNext = false;
 
       try {
-        const res = await fetch(ANILIST_API_URL, {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+        let res = await fetch(`${backendUrl}/api/anilist/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query, variables }),
-        });
+        }).catch(() => null);
 
-        if (res.ok) {
+        if (!res || !res.ok) {
+          res = await fetch(ANILIST_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Origin': 'https://anilist.co',
+              'Referer': 'https://anilist.co/'
+            },
+            body: JSON.stringify({ query, variables }),
+          }).catch(() => null);
+        }
+
+        if (res && res.ok) {
           const data = await res.json();
           if (data?.data?.Page?.media && data.data.Page.media.length > 0) {
             mediaItems = data.data.Page.media;
@@ -122,30 +136,35 @@ function BrowseAllAnimeContent() {
         } catch {}
       }
 
-      // ── Fallback 2: Jikan API ──
+      // ── Fallback 2: Official MAL v2 Proxy ──
       if (mediaItems.length === 0) {
         try {
-          const typeParam = currentFormat === 'TV' ? '&type=tv' : (currentFormat === 'MOVIE' ? '&type=movie' : '');
-          const jikanRes = await fetch(`https://api.jikan.moe/v4/top/anime?page=${pageNum}&limit=20${typeParam}`);
-          if (jikanRes.ok) {
-            const jikanJson = await jikanRes.json();
-            if (jikanJson?.data && Array.isArray(jikanJson.data)) {
-              mediaItems = jikanJson.data.map((item: any) => ({
-                id: item.mal_id,
-                idMal: item.mal_id,
-                title: {
-                  english: item.title_english || item.title,
-                  romaji: item.title,
-                },
-                coverImage: {
-                  large: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
-                },
-                genres: (item.genres || []).map((g: any) => g.name),
-                averageScore: item.score ? Math.round(item.score * 10) : null,
-                episodes: item.episodes,
-                status: item.status === 'Currently Airing' ? 'RELEASING' : 'FINISHED',
-              }));
-              hasNext = Boolean(jikanJson.pagination?.has_next_page);
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+          const rankingType = currentFormat === 'MOVIE' ? 'movie' : (currentFormat === 'TV' ? 'tv' : 'bypopularity');
+          const offset = (pageNum - 1) * 20;
+          const malRes = await fetch(`${backendUrl}/api/mal/proxy?endpoint=/anime/ranking?ranking_type=${rankingType}&limit=20&offset=${offset}`);
+          if (malRes.ok) {
+            const malJson = await malRes.json();
+            if (malJson?.data && Array.isArray(malJson.data)) {
+              mediaItems = malJson.data.map((item: any) => {
+                const node = item.node || item;
+                return {
+                  id: node.id,
+                  idMal: node.id,
+                  title: {
+                    english: node.title,
+                    romaji: node.title,
+                  },
+                  coverImage: {
+                    large: node.main_picture?.large || node.main_picture?.medium,
+                  },
+                  genres: (node.genres || []).map((g: any) => g.name),
+                  averageScore: node.mean ? Math.round(node.mean * 10) : null,
+                  episodes: node.num_episodes || null,
+                  status: node.status === 'currently_airing' ? 'RELEASING' : 'FINISHED',
+                };
+              });
+              hasNext = mediaItems.length >= 20;
             }
           }
         } catch {}

@@ -144,16 +144,69 @@ export default function HomeRecommendations() {
     let isMounted = true;
     const fetchRecommendations = async () => {
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2500);
-        const res = await fetch('https://api.jikan.moe/v4/recommendations/anime', {
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-        if (res.ok) {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
+        let res = await fetch(`${backendUrl}/api/recommendations?limit=6`, { signal: AbortSignal.timeout(3000) }).catch(() => null);
+        if (res && res.ok) {
           const data = await res.json();
           if (isMounted && data.data && Array.isArray(data.data) && data.data.length > 0) {
             setRecommendations(data.data.slice(0, 6));
+            return;
+          }
+        }
+
+        const query = `
+          query {
+            Page(page: 1, perPage: 6) {
+              recommendations(sort: ID_DESC) {
+                id
+                rating
+                user { name }
+                media { id idMal title { romaji english } coverImage { large } }
+                mediaRecommendation { id idMal title { romaji english } coverImage { large } }
+              }
+            }
+          }
+        `;
+
+        const aniRes = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': 'https://anilist.co',
+            'Referer': 'https://anilist.co/'
+          },
+          body: JSON.stringify({ query }),
+          signal: AbortSignal.timeout(3000)
+        }).catch(() => null);
+
+        if (aniRes && aniRes.ok) {
+          const aniData = await aniRes.json();
+          const items = (aniData?.data?.Page?.recommendations || [])
+            .filter((r: any) => r.media && r.mediaRecommendation)
+            .map((r: any) => ({
+              mal_id: String(r.id),
+              content: `Fans who loved ${r.media?.title?.english || r.media?.title?.romaji} strongly recommend ${r.mediaRecommendation?.title?.english || r.mediaRecommendation?.title?.romaji}.`,
+              user: {
+                username: r.user?.name || 'Otaku Recommendation'
+              },
+              entry: [
+                {
+                  mal_id: r.media?.idMal || r.media?.id,
+                  title: r.media?.title?.english || r.media?.title?.romaji,
+                  url: `/anime/${r.media?.id}`,
+                  images: { jpg: { image_url: r.media?.coverImage?.large } }
+                },
+                {
+                  mal_id: r.mediaRecommendation?.idMal || r.mediaRecommendation?.id,
+                  title: r.mediaRecommendation?.title?.english || r.mediaRecommendation?.title?.romaji,
+                  url: `/anime/${r.mediaRecommendation?.id}`,
+                  images: { jpg: { image_url: r.mediaRecommendation?.coverImage?.large } }
+                }
+              ]
+            }));
+          if (isMounted && items.length > 0) {
+            setRecommendations(items);
           }
         }
       } catch {

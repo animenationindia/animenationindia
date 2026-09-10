@@ -69,8 +69,8 @@ export default async function WatchPage({ params }: { params: Promise<Params> })
     );
   }
 
-  // Handle Jikan episode format which might be an array or paginated
-  const episodes = Array.isArray(episodesData) ? episodesData : (episodesData?.data || []);
+  // Handle episode format which might be an array or paginated
+  const episodes = Array.isArray(episodesData) ? episodesData : ((episodesData as any)?.data || []);
   
   // Fallback to generating mock episodes if API doesn't return list but we know the count
   const episodeCount = anime.episodes || 12;

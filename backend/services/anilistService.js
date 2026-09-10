@@ -6,11 +6,10 @@ const memoryCache = new Map();
 const inFlightRequests = new Map();
 const DEFAULT_TTL = 30 * 60 * 1000; // 30 mins
 const malService = require('./malService');
-const jikanService = require('./jikanService');
 
 let anilistBlockedUntil = 0;
 
-async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutMs = 3000) {
+async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutMs = 4000) {
   const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
   const cached = memoryCache.get(cacheKey);
@@ -20,7 +19,6 @@ async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutM
 
   if (Date.now() < anilistBlockedUntil) {
     if (cached) return cached.data;
-    throw new Error('AniList is temporarily disabled (Cloudflare/403 Block on Datacenter IP)');
   }
 
   if (inFlightRequests.has(cacheKey)) {
@@ -28,35 +26,56 @@ async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutM
   }
 
   const execute = async () => {
-    try {
-      const res = await fetch(ANILIST_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)'
-        },
-        body: JSON.stringify({ query, variables }),
-        signal: AbortSignal.timeout(timeoutMs)
-      });
+    let lastError = null;
+    const maxRetries = 2;
 
-      if (!res.ok) {
-        if (res.status === 403 || res.status === 429) {
-          anilistBlockedUntil = Date.now() + 15 * 60 * 1000; // block for 15 minutes
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(ANILIST_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Origin': 'https://anilist.co',
+            'Referer': 'https://anilist.co/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+          },
+          body: JSON.stringify({ query, variables }),
+          signal: AbortSignal.timeout(timeoutMs)
+        });
+
+        if (!res.ok) {
+          if (res.status === 429) {
+            if (attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+              continue;
+            }
+          }
+          if (res.status === 403) {
+            anilistBlockedUntil = Date.now() + 2 * 60 * 1000;
+          }
+          if (cached) return cached.data;
+          throw new Error(`AniList HTTP ${res.status}: ${res.statusText}`);
         }
-        if (cached) return cached.data;
-        throw new Error(`AniList HTTP ${res.status}: ${res.statusText}`);
-      }
 
-      const data = await res.json();
-      if (data && data.data) {
-        memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+        const data = await res.json();
+        if (data && (data.data || !data.errors)) {
+          memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+          return data;
+        } else if (data && data.errors) {
+          if (cached) return cached.data;
+          return data;
+        }
+      } catch (err) {
+        lastError = err;
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+        }
       }
-      return data;
-    } catch (err) {
-      if (cached) return cached.data;
-      throw err;
     }
+
+    if (cached) return cached.data;
+    throw lastError || new Error('Failed to fetch from AniList GraphQL');
   };
 
   const promise = execute().finally(() => {
@@ -219,7 +238,7 @@ async function getTopCharacters(page = 1, limit = 24) {
     const chars = res?.data?.Page?.characters;
     if (chars && Array.isArray(chars) && chars.length > 0) return chars;
   } catch {}
-  return jikanService.getTopCharacters(page, limit);
+  return [];
 }
 
 // 5. Character Single Details
@@ -254,7 +273,7 @@ async function getCharacterDetails(id) {
       return char;
     }
   } catch {}
-  return jikanService.getCharacterDetails(id);
+  return null;
 }
 
 // 6. Staff / Voice Actor Single Details
@@ -290,7 +309,7 @@ async function getStaffDetails(id) {
       return staff;
     }
   } catch {}
-  return jikanService.getStaffDetails(id);
+  return null;
 }
 
 // 7. Manga Top Catalog

@@ -223,40 +223,7 @@ export async function getLiveAnimeTrailers({
       logError('getLiveAnimeTrailers:Kitsu', e);
     }
 
-    // 3. Tier 3: Jikan Seasons Live API
-    try {
-      const jikanEndpoint = filter === 'upcoming' ? 'seasons/upcoming' : 'seasons/now';
-      const jikanRes = await fetch(`https://api.jikan.moe/v4/${jikanEndpoint}?page=${page}&limit=25`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      if (jikanRes.ok) {
-        const jikanJson = await jikanRes.json();
-        const list = jikanJson.data || [];
-        const jikanTrailers: TrailerItem[] = list
-          .filter((a: any) => a.trailer?.youtube_id)
-          .map((a: any) => ({
-            id: a.mal_id,
-            title: { english: a.title_english || a.title, romaji: a.title },
-            trailer: {
-              id: a.trailer.youtube_id,
-              site: 'youtube',
-              thumbnail: a.trailer.images?.maximum_image_url || a.trailer.images?.large_image_url || `https://i.ytimg.com/vi/${a.trailer.youtube_id}/hqdefault.jpg`,
-            },
-            status: a.status === 'Currently Airing' ? 'RELEASING' : (a.status === 'Not yet aired' ? 'NOT_YET_RELEASED' : 'FINISHED'),
-            coverImage: { large: a.images?.webp?.large_image_url || a.images?.jpg?.large_image_url },
-          }));
-
-        if (jikanTrailers.length > 0) {
-          const finalData = jikanTrailers.slice(0, limit);
-          trailerMemoryCache.set(cacheKey, { data: finalData, timestamp: Date.now() });
-          return finalData;
-        }
-      }
-    } catch (e: any) {
-      logError('getLiveAnimeTrailers:Jikan', e);
-    }
-
-    // 4. Fallback: Curated Verified List
+    // 3. Fallback: Curated Verified List
     let filteredCurated = VERIFIED_CURATED_TRAILERS;
     if (filter === 'airing') filteredCurated = VERIFIED_CURATED_TRAILERS.filter(t => t.status === 'RELEASING');
     if (filter === 'upcoming') filteredCurated = VERIFIED_CURATED_TRAILERS.filter(t => t.status === 'NOT_YET_RELEASED');
@@ -355,30 +322,6 @@ export async function searchLiveAnimeTrailers(searchQuery: string): Promise<Trai
         }));
 
       if (validKitsu.length > 0) return validKitsu;
-    }
-  } catch {}
-
-  // Tier 3: Jikan Search
-  try {
-    const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(cleanQ)}&limit=10`, {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const list = json.data || [];
-      return list
-        .filter((a: any) => a.trailer?.youtube_id)
-        .map((a: any) => ({
-          id: a.mal_id,
-          title: { english: a.title_english || a.title, romaji: a.title },
-          trailer: {
-            id: a.trailer.youtube_id,
-            site: 'youtube',
-            thumbnail: a.trailer.images?.maximum_image_url || `https://i.ytimg.com/vi/${a.trailer.youtube_id}/hqdefault.jpg`,
-          },
-          status: a.status === 'Currently Airing' ? 'RELEASING' : (a.status === 'Not yet aired' ? 'NOT_YET_RELEASED' : 'FINISHED'),
-          coverImage: { large: a.images?.webp?.large_image_url || a.images?.jpg?.large_image_url },
-        }));
     }
   } catch {}
 
