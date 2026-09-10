@@ -141,103 +141,36 @@ export default function TrailersPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Multi-tier Initial Fetching
+  // Multi-tier Live Auto-Updating Fetching
   useEffect(() => {
     let isMounted = true;
 
     const fetchTrailersWithFallbacks = async () => {
       setIsGridLoading(true);
 
-      // Tier 1: AniList GraphQL
-      const graphqlQuery = `
-        query ($page: Int) {
-          Page(page: $page, perPage: 40) {
-            pageInfo { hasNextPage lastPage }
-            media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
-              id
-              title { romaji english }
-              trailer { id site thumbnail }
-              status
-              coverImage { large medium }
-            }
-          }
-        }
-      `;
-
       try {
-        const res = await fetch('https://graphql.anilist.co', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: graphqlQuery, variables: { page } }),
-        });
-
+        const res = await fetch(`/api/trailers?filter=${filter}&page=${page}&limit=24`);
         if (res.ok) {
           const json = await res.json();
-          const media = json?.data?.Page?.media;
-          const pageInfo = json?.data?.Page?.pageInfo;
-
-          if (media && Array.isArray(media)) {
-            const animeWithTrailers = media.filter((a: any) => a.trailer && a.trailer.site === 'youtube');
-            if (animeWithTrailers.length > 0 && isMounted) {
-              setGridTrailers(animeWithTrailers);
-              if (pageInfo?.lastPage) setLastPage(Math.min(pageInfo.lastPage, 10));
-              setIsGridLoading(false);
-              return;
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('[Trailers] AniList primary fetch failed, falling back to Jikan:', err);
-      }
-
-      // Tier 2: Jikan Fallback
-      try {
-        const jikanRes = await fetch(`https://api.jikan.moe/v4/seasons/now?page=${page}&limit=25`);
-        if (jikanRes.ok) {
-          const jikanJson = await jikanRes.json();
-          const list = jikanJson.data || [];
-          const jikanTrailers: TrailerItem[] = list
-            .filter((a: any) => a.trailer?.youtube_id)
-            .map((a: any) => ({
-              id: a.mal_id,
-              title: { english: a.title_english || a.title, romaji: a.title },
-              trailer: {
-                id: a.trailer.youtube_id,
-                site: 'youtube',
-                thumbnail: a.trailer.images?.maximum_image_url || a.trailer.images?.large_image_url || `https://i.ytimg.com/vi/${a.trailer.youtube_id}/hqdefault.jpg`,
-              },
-              status: a.status === 'Currently Airing' ? 'RELEASING' : a.status === 'Not yet aired' ? 'NOT_YET_RELEASED' : 'FINISHED',
-              coverImage: { large: a.images?.webp?.large_image_url || a.images?.jpg?.large_image_url },
-            }));
-
-          if (jikanTrailers.length > 0 && isMounted) {
-            setGridTrailers(jikanTrailers);
+          if (json.success && Array.isArray(json.trailers) && json.trailers.length > 0 && isMounted) {
+            setGridTrailers(json.trailers);
+            setLastPage(5);
             setIsGridLoading(false);
             return;
           }
         }
       } catch (err) {
-        console.warn('[Trailers] Jikan fallback failed, trying TMDB API:', err);
+        console.warn('[Trailers] Internal live API fetch failed:', err);
       }
 
-      // Tier 3: Internal TMDB Route Fallback
-      try {
-        const tmdbRes = await fetch('/api/trailers?limit=20');
-        if (tmdbRes.ok) {
-          const tmdbJson = await tmdbRes.json();
-          if (tmdbJson.trailers && tmdbJson.trailers.length > 0 && isMounted) {
-            setGridTrailers(tmdbJson.trailers);
-            setIsGridLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn('[Trailers] TMDB fallback failed, falling back to curated list:', err);
-      }
-
-      // Tier 4: Hard Fallback Curated HD list
+      // Hard Fallback Curated HD list
       if (isMounted) {
-        setGridTrailers(CURATED_FALLBACK_TRAILERS);
+        let filteredCurated = CURATED_FALLBACK_TRAILERS;
+        if (filter === 'airing') filteredCurated = CURATED_FALLBACK_TRAILERS.filter((t) => t.status === 'RELEASING');
+        if (filter === 'upcoming') filteredCurated = CURATED_FALLBACK_TRAILERS.filter((t) => t.status === 'NOT_YET_RELEASED');
+        if (filteredCurated.length === 0) filteredCurated = CURATED_FALLBACK_TRAILERS;
+
+        setGridTrailers(filteredCurated);
         setIsGridLoading(false);
       }
     };
@@ -247,9 +180,9 @@ export default function TrailersPage() {
     return () => {
       isMounted = false;
     };
-  }, [page]);
+  }, [page, filter]);
 
-  // Live Debounced Search
+  // Live Debounced Multi-Engine Search
   useEffect(() => {
     if (!query.trim()) {
       setDropdownTrailers([]);
@@ -261,41 +194,18 @@ export default function TrailersPage() {
     const fetchSearchTrailers = async () => {
       setIsDropdownLoading(true);
 
-      const graphqlQuery = `
-        query ($search: String) {
-          Page(page: 1, perPage: 25) {
-            media(sort: SEARCH_MATCH, type: ANIME, isAdult: false, search: $search) {
-              id
-              title { romaji english }
-              trailer { id site thumbnail }
-              status
-              coverImage { large }
-            }
-          }
-        }
-      `;
-
       try {
-        const res = await fetch('https://graphql.anilist.co', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: graphqlQuery, variables: { search: query } }),
-        });
-
+        const res = await fetch(`/api/trailers?q=${encodeURIComponent(query)}`);
         if (res.ok) {
           const data = await res.json();
-          const media = data?.data?.Page?.media;
-          if (media && isMounted) {
-            const animeWithTrailers = media.filter((a: any) => a.trailer && a.trailer.site === 'youtube');
-            if (animeWithTrailers.length > 0) {
-              setDropdownTrailers(animeWithTrailers);
-              setIsDropdownLoading(false);
-              return;
-            }
+          if (data.success && Array.isArray(data.trailers) && data.trailers.length > 0 && isMounted) {
+            setDropdownTrailers(data.trailers);
+            setIsDropdownLoading(false);
+            return;
           }
         }
       } catch (err) {
-        console.warn('[Trailers] Live search AniList error, searching local cache:', err);
+        console.warn('[Trailers] Live search error:', err);
       }
 
       // Fallback Search in active grid / curated list

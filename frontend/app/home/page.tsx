@@ -46,6 +46,7 @@ import {
 } from '../../lib/api';
 import { getNews, getNewsByCategory } from '../../lib/getNews';
 import { getTMDBAnimeTrailers } from '../../lib/tmdb-api';
+import { getLiveAnimeTrailers } from '../../lib/trailers';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -213,7 +214,7 @@ export default async function Home() {
     () => getTopMoviesAniList(),
     () => getTopTVSeriesAniList(),
     () => getYearAwardsAniList(currentYear),
-    () => fetchAniList(trailerQuery, {}, 3600),
+    () => getLiveAnimeTrailers({ filter: 'all', limit: 16 }),
   ];
 
   const results = await Promise.all(aboveTheFoldTasks.map((fn) => fn().catch(() => null)));
@@ -227,7 +228,7 @@ export default async function Home() {
   const topMovies = results[6] || [];
   const topTVSeries = results[7] || [];
   const yearAwards = results[8] || [];
-  const trailersRes = results[9];
+  const liveTrailers = results[9] || [];
 
   const duration = Date.now() - startTime;
   const succeededCount = results.filter(Boolean).length;
@@ -245,10 +246,8 @@ export default async function Home() {
   const safeYearAwards = dedupe(yearAwards);
   const safeNotForKidsAnime = dedupe(notForKidsAnime);
 
-  // Deduplicate initial lists
-  let trailersData = dedupe(
-    trailersRes?.data?.Page?.media?.filter((a: any) => a.trailer && a.trailer.site === 'youtube') || []
-  ).slice(0, 15);
+  // Live Auto-Updating Trailers with deduplication
+  let trailersData = dedupe(Array.isArray(liveTrailers) ? liveTrailers : []);
 
   if (trailersData.length === 0 && safeHeroAnimeList.length > 0) {
     const listWithTrailers = safeHeroAnimeList
@@ -263,29 +262,8 @@ export default async function Home() {
     }
   }
 
-  // Backup fallback: TMDB Anime Trailers API
   if (trailersData.length === 0) {
-    try {
-      const tmdbTrailers = await getTMDBAnimeTrailers(8);
-      if (tmdbTrailers && tmdbTrailers.length > 0) {
-        trailersData = tmdbTrailers;
-      }
-    } catch {}
-  }
-
-  if (trailersData.length === 0) {
-    trailersData = [
-      { id: 38000, title: { english: 'Demon Slayer: Infinity Castle', romaji: 'Kimetsu no Yaiba' }, trailer: { id: 'VQGCKyvzIM4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/VQGCKyvzIM4/hqdefault.jpg' } },
-      { id: 16498, title: { english: 'Attack on Titan Final Season', romaji: 'Shingeki no Kyojin' }, trailer: { id: 'M_OauHnAFc8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/M_OauHnAFc8/hqdefault.jpg' } },
-      { id: 40748, title: { english: 'Jujutsu Kaisen Season 2 (Shibuya Incident)', romaji: 'Jujutsu Kaisen' }, trailer: { id: 'O6qVieflwqs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/O6qVieflwqs/hqdefault.jpg' } },
-      { id: 41467, title: { english: 'Bleach: Thousand-Year Blood War Part 3', romaji: 'Bleach TYBW' }, trailer: { id: 'e8YBesRKq_U', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/e8YBesRKq_U/hqdefault.jpg' } },
-      { id: 44511, title: { english: 'Chainsaw Man Movie: Reze Arc', romaji: 'Chainsaw Man' }, trailer: { id: 'v4yLeNt-kCU', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/v4yLeNt-kCU/hqdefault.jpg' } },
-      { id: 50265, title: { english: 'Spy x Family Code: White', romaji: 'Spy x Family' }, trailer: { id: 'ofXigq9aIpo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/ofXigq9aIpo/hqdefault.jpg' } },
-      { id: 5114, title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' }, trailer: { id: 'yb2R1l0O9Zs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yb2R1l0O9Zs/hqdefault.jpg' } },
-      { id: 21087, title: { english: 'One Punch Man', romaji: 'One Punch Man' }, trailer: { id: 'tMblzsXwAKo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/tMblzsXwAKo/hqdefault.jpg' } },
-      { id: 32281, title: { english: 'Your Name.', romaji: 'Kimi no Na wa.' }, trailer: { id: '3KR8_igDs1Y', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/3KR8_igDs1Y/hqdefault.jpg' } },
-      { id: 1535, title: { english: 'Death Note', romaji: 'Death Note' }, trailer: { id: 'NlJZ-YgAt-c', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/NlJZ-YgAt-c/hqdefault.jpg' } }
-    ];
+    trailersData = await getLiveAnimeTrailers({ filter: 'all', limit: 16 });
   }
 
   let todayReleases = dedupe(
