@@ -11,6 +11,9 @@ import {
 } from '../../lib/api';
 import SectionSlider from '../../components/SectionSlider';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 1800;
+
 export const metadata: Metadata = {
   title: 'New Anime | Anime Nation India',
   description: 'Discover the latest anime episodes and new releases.',

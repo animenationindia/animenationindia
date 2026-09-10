@@ -1,69 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, Tv, X, Subtitles, Settings, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Canvas, useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+
+const Dynamic3DVisualizer = dynamic(() => import('./Dynamic3DVisualizer'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full" />
+});
 
 interface MockPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
   animeTitle: string;
-}
-
-// 🌟 3D Frequency Particle Visualizer to wow the user
-function DynamicVisualizer() {
-  const ref = useRef<THREE.Points>(null!);
-  const count = 120;
-
-  const positions = useMemo(() => {
-    const arr = new Float32Array(count * 3);
-    const pseudoRandom = (seed: number) => {
-      const x = Math.sin(seed) * 10000;
-      return x - Math.floor(x);
-    };
-
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
-      const radius = 2.2 + Math.sin(i * 4) * 0.3;
-      arr[i * 3] = Math.cos(angle) * radius;
-      arr[i * 3 + 1] = Math.sin(angle) * radius;
-      arr[i * 3 + 2] = (pseudoRandom(i * 12.98) - 0.5) * 0.4;
-    }
-    return arr;
-  }, []);
-
-  useFrame((state) => {
-    if (!ref.current) return;
-    const time = state.clock.elapsedTime;
-    ref.current.rotation.z = time * 0.12;
-
-    const pos = ref.current.geometry.attributes.position.array as Float32Array;
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2;
-      const radius = 2.2 + Math.sin(i * 6 + time * 2.2) * 0.35;
-      pos[i * 3] = Math.cos(angle) * radius;
-      pos[i * 3 + 1] = Math.sin(angle) * radius;
-      pos[i * 3 + 2] = Math.sin(time * 3 + i * 0.8) * 0.25;
-    }
-    ref.current.geometry.attributes.position.needsUpdate = true;
-  });
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <pointsMaterial 
-        color="#ff6400" // Glowing Crunchyroll Orange
-        size={0.09} 
-        sizeAttenuation 
-        transparent 
-        opacity={0.85} 
-      />
-    </points>
-  );
 }
 
 export default function MockPlayerModal({ isOpen, onClose, animeTitle }: MockPlayerModalProps) {
@@ -162,12 +112,9 @@ export default function MockPlayerModal({ isOpen, onClose, animeTitle }: MockPla
             {/* Ambient glowing orb background */}
             <div className="absolute w-[200px] h-[200px] bg-[#ff6400] rounded-full blur-[100px] opacity-15 pointer-events-none -z-10" />
             
-            {/* 3D Dynamic Visualizer Canvas */}
+            {/* 3D Dynamic Visualizer Canvas (Lazy Loaded) */}
             <div className="absolute inset-0 w-full h-full -z-10 opacity-70">
-              <Canvas gl={{ antialias: true, alpha: true }}>
-                <ambientLight intensity={0.5} />
-                <DynamicVisualizer />
-              </Canvas>
+              <Dynamic3DVisualizer />
             </div>
 
             {/* Cinematic Glitch Screen Content */}
