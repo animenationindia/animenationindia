@@ -1,11 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Star, MessageCircle, ThumbsUp } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { BACKEND_URL } from '../lib/config';
 
 interface HomeReview {
   mal_id: number;
@@ -51,155 +50,84 @@ interface HomeReview {
   };
 }
 
-export default function HomeReviews() {
-  const [reviews, setReviews] = useState<HomeReview[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchReviews() {
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/reviews?limit=3`).catch(() => null);
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data.data && data.data.length > 0) {
-            setReviews(data.data);
-            return;
-          }
-        }
-
-        // Fallback to AniList public GraphQL reviews if backend is warming up
-        const query = `
-          query {
-            Page(page: 1, perPage: 3) {
-              reviews(sort: ID_DESC) {
-                id
-                summary
-                body
-                score
-                createdAt
-                user { name avatar { large } }
-                media { id idMal title { romaji english } coverImage { large } }
-              }
-            }
-          }
-        `;
-        const aniRes = await fetch('https://graphql.anilist.co', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Origin': 'https://anilist.co',
-            'Referer': 'https://anilist.co/'
-          },
-          body: JSON.stringify({ query })
-        }).catch(() => null);
-
-        if (aniRes && aniRes.ok) {
-          const aniData = await aniRes.json();
-          const list = (aniData?.data?.Page?.reviews || []).map((r: any) => ({
-            mal_id: r.media?.idMal || r.id,
-            score: r.score ? Math.round(r.score / 10) : 8,
-            review: r.summary ? `${r.summary}\n\n${r.body}` : r.body,
-            date: new Date(r.createdAt * 1000).toISOString(),
-            user: {
-              username: r.user?.name || 'Otaku Critic',
-              images: { jpg: { image_url: r.user?.avatar?.large || '' } }
-            },
-            entry: {
-              mal_id: r.media?.idMal || r.media?.id || 1,
-              title: r.media?.title?.english || r.media?.title?.romaji || 'Anime',
-              images: { jpg: { image_url: r.media?.coverImage?.large || '' } }
-            }
-          }));
-          if (list.length > 0) {
-            setReviews(list);
-            return;
-          }
-        }
-
-        // Resilient Fallback: High Quality Curated Reviews
-        setReviews([
-          {
-            mal_id: 52991,
-            url: 'https://myanimelist.net/reviews.php?id=52991',
-            type: 'anime',
-            reactions: { overall: 420, nice: 210, love_it: 180, funny: 5, confused: 2, informative: 15, well_written: 40, creative: 10 },
-            date: new Date().toISOString(),
-            review: 'Frieren: Beyond Journey\'s End is a magnificent and contemplative masterpiece. The pacing, music, and emotional resonance capture the fleeting beauty of life and adventure like few other stories ever could.',
-            score: 10,
-            tags: ['Recommended', 'Masterpiece'],
-            is_spoiler: false,
-            is_premature: false,
-            episodes_watched: 28,
-            entry: {
-              mal_id: 52991,
-              url: 'https://myanimelist.net/anime/52991',
-              images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg', small_image_url: '', large_image_url: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg' } },
-              title: 'Frieren: Beyond Journey\'s End'
-            },
-            user: {
-              url: '',
-              username: 'HimmelTheHero',
-              images: { jpg: { image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HimmelTheHero' } }
-            }
-          },
-          {
-            mal_id: 38000,
-            url: 'https://myanimelist.net/reviews.php?id=38000',
-            type: 'anime',
-            reactions: { overall: 350, nice: 180, love_it: 140, funny: 3, confused: 1, informative: 12, well_written: 30, creative: 8 },
-            date: new Date().toISOString(),
-            review: 'Ufotable\'s animation craft in Demon Slayer elevates every combat sequence into visual poetry. The emotional bond between Tanjiro and Nezuko carries the series with raw heart.',
-            score: 9,
-            tags: ['Recommended', 'Great Animation'],
-            is_spoiler: false,
-            is_premature: false,
-            episodes_watched: 26,
-            entry: {
-              mal_id: 38000,
-              url: 'https://myanimelist.net/anime/38000',
-              images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg', small_image_url: '', large_image_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' } },
-              title: 'Demon Slayer: Kimetsu no Yaiba'
-            },
-            user: {
-              url: '',
-              username: 'RengokuKyojuro',
-              images: { jpg: { image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=RengokuKyojuro' } }
-            }
-          },
-          {
-            mal_id: 52299,
-            url: 'https://myanimelist.net/reviews.php?id=52299',
-            type: 'anime',
-            reactions: { overall: 290, nice: 130, love_it: 110, funny: 8, confused: 0, informative: 9, well_written: 22, creative: 6 },
-            date: new Date().toISOString(),
-            review: 'Solo Leveling delivers exactly what fans of the manhwa wanted: electrifying battles, Hiroyuki Sawano\'s epic soundtrack, and Jinwoo\'s thrilling rise to supremacy.',
-            score: 9,
-            tags: ['Recommended', 'Action Packed'],
-            is_spoiler: false,
-            is_premature: false,
-            episodes_watched: 12,
-            entry: {
-              mal_id: 52299,
-              url: 'https://myanimelist.net/anime/52299',
-              images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1547/140228.jpg', small_image_url: '', large_image_url: 'https://cdn.myanimelist.net/images/anime/1547/140228.jpg' } },
-              title: 'Solo Leveling'
-            },
-            user: {
-              url: '',
-              username: 'SungJinwooHunter',
-              images: { jpg: { image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SungJinwooHunter' } }
-            }
-          }
-        ]);
-      } catch {
-        // Graceful silent fallback
-      } finally {
-        setLoading(false);
-      }
+const CURATED_REVIEWS: HomeReview[] = [
+  {
+    mal_id: 52991,
+    url: 'https://myanimelist.net/reviews.php?id=52991',
+    type: 'anime',
+    reactions: { overall: 420, nice: 210, love_it: 180, funny: 5, confused: 2, informative: 15, well_written: 40, creative: 10 },
+    date: new Date().toISOString(),
+    review: "Frieren: Beyond Journey's End is a magnificent and contemplative masterpiece. The pacing, music, and emotional resonance capture the fleeting beauty of life and adventure like few other stories ever could.",
+    score: 10,
+    tags: ['Recommended', 'Masterpiece'],
+    is_spoiler: false,
+    is_premature: false,
+    episodes_watched: 28,
+    entry: {
+      mal_id: 52991,
+      url: 'https://myanimelist.net/anime/52991',
+      images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg', small_image_url: '', large_image_url: 'https://cdn.myanimelist.net/images/anime/1015/138006.jpg' } },
+      title: "Frieren: Beyond Journey's End"
+    },
+    user: {
+      url: '',
+      username: 'HimmelTheHero',
+      images: { jpg: { image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HimmelTheHero' } }
     }
-    fetchReviews();
-  }, []);
+  },
+  {
+    mal_id: 38000,
+    url: 'https://myanimelist.net/reviews.php?id=38000',
+    type: 'anime',
+    reactions: { overall: 350, nice: 180, love_it: 140, funny: 3, confused: 1, informative: 12, well_written: 30, creative: 8 },
+    date: new Date().toISOString(),
+    review: "Ufotable's animation craft in Demon Slayer elevates every combat sequence into visual poetry. The emotional bond between Tanjiro and Nezuko carries the series with raw heart.",
+    score: 9,
+    tags: ['Recommended', 'Great Animation'],
+    is_spoiler: false,
+    is_premature: false,
+    episodes_watched: 26,
+    entry: {
+      mal_id: 38000,
+      url: 'https://myanimelist.net/anime/38000',
+      images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg', small_image_url: '', large_image_url: 'https://cdn.myanimelist.net/images/anime/1286/99889.jpg' } },
+      title: 'Demon Slayer: Kimetsu no Yaiba'
+    },
+    user: {
+      url: '',
+      username: 'RengokuKyojuro',
+      images: { jpg: { image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=RengokuKyojuro' } }
+    }
+  },
+  {
+    mal_id: 52299,
+    url: 'https://myanimelist.net/reviews.php?id=52299',
+    type: 'anime',
+    reactions: { overall: 290, nice: 130, love_it: 110, funny: 8, confused: 0, informative: 9, well_written: 22, creative: 6 },
+    date: new Date().toISOString(),
+    review: "Solo Leveling delivers exactly what fans of the manhwa wanted: electrifying battles, Hiroyuki Sawano's epic soundtrack, and Jinwoo's thrilling rise to supremacy.",
+    score: 9,
+    tags: ['Recommended', 'Action Packed'],
+    is_spoiler: false,
+    is_premature: false,
+    episodes_watched: 12,
+    entry: {
+      mal_id: 52299,
+      url: 'https://myanimelist.net/anime/52299',
+      images: { jpg: { image_url: 'https://cdn.myanimelist.net/images/anime/1547/140228.jpg', small_image_url: '', large_image_url: 'https://cdn.myanimelist.net/images/anime/1547/140228.jpg' } },
+      title: 'Solo Leveling'
+    },
+    user: {
+      url: '',
+      username: 'SungJinwooHunter',
+      images: { jpg: { image_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=SungJinwooHunter' } }
+    }
+  }
+];
+
+export default function HomeReviews() {
+  const [reviews] = useState<HomeReview[]>(CURATED_REVIEWS);
+  const loading = false;
 
   if (!loading && reviews.length === 0) return null;
 
