@@ -61,6 +61,30 @@ const CURATED_FALLBACK_TRAILERS: TrailerItem[] = [
     status: 'FINISHED'
   },
   {
+    id: 52991,
+    title: { english: 'Frieren: Beyond Journey\'s End', romaji: 'Sousou no Frieren' },
+    trailer: { id: 'ZEkwCGJ3o-g', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/ZEkwCGJ3o-g/hqdefault.jpg' },
+    status: 'FINISHED'
+  },
+  {
+    id: 51179,
+    title: { english: 'Solo Leveling: Season 2 - Arise from the Shadow', romaji: 'Ore dake Level Up na Ken Season 2' },
+    trailer: { id: '9k_vK_P3jZ8', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/9k_vK_P3jZ8/hqdefault.jpg' },
+    status: 'RELEASING'
+  },
+  {
+    id: 57334,
+    title: { english: 'Dandadan', romaji: 'Dandadan' },
+    trailer: { id: 'dQ-a_0tU4pI', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/dQ-a_0tU4pI/hqdefault.jpg' },
+    status: 'RELEASING'
+  },
+  {
+    id: 54744,
+    title: { english: 'Kaiju No. 8 Season 2', romaji: 'Kaijuu 8-gou 2nd Season' },
+    trailer: { id: 'cyW8C8bV_bE', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/cyW8C8bV_bE/hqdefault.jpg' },
+    status: 'NOT_YET_RELEASED'
+  },
+  {
     id: 5114,
     title: { english: 'Fullmetal Alchemist: Brotherhood', romaji: 'Hagane no Renkinjutsushi' },
     trailer: { id: 'yb2R1l0O9Zs', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yb2R1l0O9Zs/hqdefault.jpg' },
@@ -68,20 +92,14 @@ const CURATED_FALLBACK_TRAILERS: TrailerItem[] = [
   },
   {
     id: 21087,
-    title: { english: 'One Punch Man', romaji: 'One Punch Man' },
-    trailer: { id: 'tMblzsXwAKo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/tMblzsXwAKo/hqdefault.jpg' },
-    status: 'FINISHED'
+    title: { english: 'One Punch Man Season 3', romaji: 'One Punch Man 3' },
+    trailer: { id: '8Qn_spdM5Zg', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/8Qn_spdM5Zg/hqdefault.jpg' },
+    status: 'NOT_YET_RELEASED'
   },
   {
     id: 38408,
-    title: { english: 'My Hero Academia Season 3', romaji: 'Boku no Hero Academia 3rd Season' },
-    trailer: { id: 'JezE6iZUWxo', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/JezE6iZUWxo/hqdefault.jpg' },
-    status: 'FINISHED'
-  },
-  {
-    id: 31964,
-    title: { english: 'My Hero Academia', romaji: 'Boku no Hero Academia' },
-    trailer: { id: 'D5fYOnwYkj4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/D5fYOnwYkj4/hqdefault.jpg' },
+    title: { english: 'My Hero Academia Season 7', romaji: 'Boku no Hero Academia 7th Season' },
+    trailer: { id: 'yAswjO8z830', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/yAswjO8z830/hqdefault.jpg' },
     status: 'FINISHED'
   },
   {
@@ -97,10 +115,10 @@ const CURATED_FALLBACK_TRAILERS: TrailerItem[] = [
     status: 'FINISHED'
   },
   {
-    id: 16498,
-    title: { english: 'Attack on Titan Season 1', romaji: 'Shingeki no Kyojin' },
-    trailer: { id: 'LHtdKWJdif4', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/LHtdKWJdif4/hqdefault.jpg' },
-    status: 'FINISHED'
+    id: 21,
+    title: { english: 'One Piece (Egghead Arc)', romaji: 'One Piece' },
+    trailer: { id: 'qS_gH_k0L8M', site: 'youtube', thumbnail: 'https://i.ytimg.com/vi/qS_gH_k0L8M/hqdefault.jpg' },
+    status: 'RELEASING'
   }
 ];
 
@@ -608,26 +626,40 @@ export default function TrailersPage() {
             {/* Modal Video Player (16:9) */}
             <div className="relative aspect-video w-full bg-black">
               <iframe
-                src={`https://www.youtube.com/embed/${selectedTrailer.trailer.id}?autoplay=1&rel=0&modestbranding=1`}
+                src={`https://www.youtube-nocookie.com/embed/${selectedTrailer.trailer.id}?autoplay=1&rel=0&modestbranding=1`}
                 title={selectedTrailer.title?.english || 'Anime Trailer'}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                className="w-full h-full"
+                className="w-full h-full border-0"
               />
             </div>
 
-            {/* Modal Footer with Direct Series Link */}
+            {/* Modal Footer with Direct Series Link and YouTube Link */}
             <div className="p-4 bg-[#0a0c18] flex items-center justify-between flex-wrap gap-3">
-              <span className="text-xs text-[#a0a0a0]">
-                Official YouTube Embed Player • High Definition 1080p
-              </span>
-              <Link
-                href={`/series/${selectedTrailer.id}`}
-                className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-[#ff4dd2] hover:text-white transition-colors px-3 py-1.5 rounded-lg bg-[#ff4dd2]/10 hover:bg-[#ff4dd2] border border-[#ff4dd2]/30"
-              >
-                <span>View Anime Details</span>
-                <ExternalLink size={14} />
-              </Link>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-[#a0a0a0]">
+                  Official YouTube Embed Player • 1080p HD
+                </span>
+                <a
+                  href={`https://www.youtube.com/watch?v=${selectedTrailer.trailer.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-[#a0a0a0] hover:text-[#ff4dd2] transition-colors flex items-center gap-1"
+                >
+                  <span>Open on YouTube</span>
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+
+              {selectedTrailer.id && (
+                <Link
+                  href={`/series/${selectedTrailer.id}`}
+                  className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-[#ff4dd2] hover:text-white transition-colors px-3.5 py-1.5 rounded-lg bg-[#ff4dd2]/10 hover:bg-[#ff4dd2] border border-[#ff4dd2]/30"
+                >
+                  <span>View Anime Details</span>
+                  <ArrowRight size={14} />
+                </Link>
+              )}
             </div>
           </div>
         </div>
