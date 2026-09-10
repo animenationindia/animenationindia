@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:worker": "opennextjs-cloudflare build",
+    "build:worker": "opennextjs-cloudflare build && node copy-worker.js",
     "deploy:worker": "opennextjs-cloudflare deploy",
     "start": "next start",
     "lint": "eslint"
