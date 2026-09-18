@@ -209,7 +209,7 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Home', path: '/home', icon: Home },
     { name: 'New', path: '/new', icon: Sparkles },
-    { name: 'Manga', path: '/manga', icon: BookOpen },
+    { name: 'Read', path: '/read', icon: BookOpen },
     { name: 'Popular', path: '/popular', icon: Flame },
     { name: 'Simulcast', path: '/simulcast', icon: MonitorPlay },
     { name: 'Genres', path: '/genres', icon: Layers },
@@ -221,6 +221,9 @@ export default function Navbar() {
   const isActive = (path: string) => {
     if (path === '/home' || path === '/') {
       return pathname === '/' || pathname === '/home';
+    }
+    if (path === '/read') {
+      return pathname.startsWith('/read') || pathname.startsWith('/manga');
     }
     return pathname.startsWith(path);
   };
@@ -534,12 +537,12 @@ export default function Navbar() {
                       </Link>
 
                       <Link 
-                        href="/manga" 
+                        href="/read" 
                         onClick={() => setIsProfileOpen(false)}
                         className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
                       >
                         <BookOpen size={17} className="text-emerald-400 group-hover:scale-110 transition-transform" />
-                        <span>Manga</span>
+                        <span>Read</span>
                       </Link>
 
                       <Link 

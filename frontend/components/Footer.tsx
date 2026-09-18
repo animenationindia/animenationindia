@@ -46,7 +46,7 @@ const footerLinks = [
     links: [
       { name: "Home", path: "/home" },
       { name: "New Releases", path: "/new" },
-      { name: "Manga", path: "/manga" },
+      { name: "Read", path: "/read" },
       { name: "Popular", path: "/popular" },
       { name: "Simulcast", path: "/simulcast" },
       { name: "Genres", path: "/genres" },
