@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { Play, X, Search, ArrowRight, Loader2, Sparkles, Film, ExternalLink } from 'lucide-react';
+import { toEnglishTitle } from '@/lib/titleCleaner';
 
 interface TrailerItem {
   id: number | string;
@@ -133,9 +134,12 @@ export default function TrailersPage() {
   const [isGridLoading, setIsGridLoading] = useState(true);
   const [isDropdownLoading, setIsDropdownLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   
   const [selectedTrailer, setSelectedTrailer] = useState<TrailerItem | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchCacheRef = useRef<Map<string, TrailerItem[]>>(new Map());
   
   const [lastPage, setLastPage] = useState(5);
 
@@ -150,10 +154,13 @@ export default function TrailersPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ESC key to close modal
+  // ESC key to close modal or dropdown
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSelectedTrailer(null);
+      if (e.key === 'Escape') {
+        setSelectedTrailer(null);
+        setShowDropdown(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -200,40 +207,58 @@ export default function TrailersPage() {
     };
   }, [page, filter]);
 
-  // Live Debounced Multi-Engine Search
+  // Ultra-Optimized Live Debounced Multi-Engine Search with Client Memory Cache & AbortController
   useEffect(() => {
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       setDropdownTrailers([]);
+      setIsDropdownLoading(false);
+      setSelectedIndex(-1);
+      return;
+    }
+
+    const cacheKey = trimmed.toLowerCase();
+    setSelectedIndex(-1);
+
+    // 0ms Instant Response from Client Memory Cache
+    if (searchCacheRef.current.has(cacheKey)) {
+      setDropdownTrailers(searchCacheRef.current.get(cacheKey)!);
       setIsDropdownLoading(false);
       return;
     }
 
+    const controller = new AbortController();
     let isMounted = true;
+
     const fetchSearchTrailers = async () => {
       setIsDropdownLoading(true);
 
       try {
-        const res = await fetch(`/api/trailers?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/trailers?q=${encodeURIComponent(trimmed)}`, {
+          signal: controller.signal
+        });
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.trailers) && data.trailers.length > 0 && isMounted) {
+          if (data.success && Array.isArray(data.trailers) && isMounted) {
+            searchCacheRef.current.set(cacheKey, data.trailers);
             setDropdownTrailers(data.trailers);
             setIsDropdownLoading(false);
             return;
           }
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
         console.warn('[Trailers] Live search error:', err);
       }
 
       // Fallback Search in active grid / curated list
       if (isMounted) {
-        const q = query.toLowerCase();
         const pool = [...gridTrailers, ...CURATED_FALLBACK_TRAILERS];
         const localMatches = pool.filter((item) => {
           const t = `${item.title?.english || ''} ${item.title?.romaji || ''}`.toLowerCase();
-          return t.includes(q);
+          return t.includes(cacheKey);
         });
+        searchCacheRef.current.set(cacheKey, localMatches);
         setDropdownTrailers(localMatches);
         setIsDropdownLoading(false);
       }
@@ -245,6 +270,7 @@ export default function TrailersPage() {
 
     return () => {
       isMounted = false;
+      controller.abort();
       clearTimeout(delayDebounceFn);
     };
   }, [query, gridTrailers]);
@@ -256,7 +282,33 @@ export default function TrailersPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setShowDropdown(false);
+    if (selectedIndex >= 0 && dropdownTrailers[selectedIndex]) {
+      setSelectedTrailer(dropdownTrailers[selectedIndex]);
+      setShowDropdown(false);
+    } else if (dropdownTrailers.length > 0) {
+      setSelectedTrailer(dropdownTrailers[0]);
+      setShowDropdown(false);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown || dropdownTrailers.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < dropdownTrailers.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : dropdownTrailers.length - 1));
+    } else if (e.key === 'Enter') {
+      if (selectedIndex >= 0 && dropdownTrailers[selectedIndex]) {
+        e.preventDefault();
+        setSelectedTrailer(dropdownTrailers[selectedIndex]);
+        setShowDropdown(false);
+      }
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false);
+    }
   };
 
   const formatStatus = (status?: string) => {
@@ -280,25 +332,6 @@ export default function TrailersPage() {
       {/* Background Neon Ambient Glows */}
       <div className="absolute top-20 left-1/4 w-96 h-96 bg-[#ff4dd2]/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-40 right-1/4 w-96 h-96 bg-[#00f7ff]/10 rounded-full blur-[140px] pointer-events-none" />
-
-      {/* JSON-LD Schema for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'CollectionPage',
-            name: 'Official Anime Trailers & Teasers HD | Anime Nation India',
-            description: 'Watch the latest official anime trailers, seasonal teasers, and high-definition preview clips straight from Japan.',
-            url: 'https://animenationindia.com/trailers',
-            publisher: {
-              '@type': 'Organization',
-              name: 'Anime Nation India',
-              url: 'https://animenationindia.com',
-            },
-          }),
-        }}
-      />
 
       <div className="container mx-auto px-4 lg:px-12 max-w-[1600px] relative z-10">
         {/* Header & Live Search Bar */}
@@ -325,11 +358,13 @@ export default function TrailersPage() {
             >
               <Search className="absolute left-4 text-gray-400" size={18} />
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search trailers by anime name..."
                 value={query}
                 onChange={handleSearchChange}
                 onFocus={() => setShowDropdown(true)}
+                onKeyDown={handleInputKeyDown}
                 className="w-full bg-transparent text-white py-3 pl-12 pr-28 focus:outline-none placeholder:text-gray-500 font-medium text-sm md:text-base"
               />
               {query && (
@@ -338,8 +373,9 @@ export default function TrailersPage() {
                   onClick={() => {
                     setQuery('');
                     setShowDropdown(false);
+                    setSelectedIndex(-1);
                   }}
-                  className="absolute right-24 text-gray-400 hover:text-white p-1"
+                  className="absolute right-24 text-gray-400 hover:text-white p-1 cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -355,61 +391,90 @@ export default function TrailersPage() {
 
             {/* Live Search Dropdown */}
             {showDropdown && query.trim().length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-3 bg-[#0c0e1e] border border-[#ff4dd2]/30 rounded-2xl overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.9)] max-h-[60vh] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200">
+              <div className="absolute top-full left-0 right-0 mt-3 bg-[#0c0e1e]/95 backdrop-blur-xl border border-[#ff4dd2]/30 rounded-2xl overflow-hidden shadow-[0_15px_50px_rgba(0,0,0,0.95)] max-h-[60vh] overflow-y-auto z-50 animate-in fade-in slide-in-from-top-4 duration-200 divide-y divide-white/5">
                 {isDropdownLoading ? (
-                  <div className="flex items-center justify-center py-10">
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
                     <Loader2 className="w-8 h-8 animate-spin text-[#ff4dd2]" />
+                    <span className="text-xs text-gray-400 font-medium tracking-wide">Searching official YouTube trailers...</span>
                   </div>
                 ) : dropdownTrailers.length > 0 ? (
-                  <div className="flex flex-col divide-y divide-white/5">
-                    {dropdownTrailers.map((anime) => {
-                      const title = anime.title?.english || anime.title?.romaji || 'Anime Trailer';
-                      const thumb =
-                        anime.trailer?.thumbnail ||
-                        anime.coverImage?.large ||
-                        `https://i.ytimg.com/vi/${anime.trailer.id}/hqdefault.jpg`;
+                  <>
+                    <div className="px-4 py-2 bg-white/5 flex items-center justify-between text-[11px] text-gray-400 font-medium">
+                      <span className="flex items-center gap-1.5 text-[#ff4dd2] font-semibold">
+                        <Sparkles size={12} />
+                        Found {dropdownTrailers.length} official trailer{dropdownTrailers.length > 1 ? 's' : ''}
+                      </span>
+                      <span className="text-gray-500 hidden sm:inline">1080p HD Direct Play</span>
+                    </div>
 
-                      return (
-                        <div
-                          key={`drop-${anime.id}-${anime.trailer.id}`}
-                          className="flex items-center gap-4 p-3.5 hover:bg-[#161a33] cursor-pointer transition-colors group"
-                          onClick={() => {
-                            setSelectedTrailer(anime);
-                            setShowDropdown(false);
-                          }}
-                        >
-                          <div className="relative w-16 h-10 rounded-md overflow-hidden flex-shrink-0 bg-black/50">
-                            <img 
-                              src={thumb} 
-                              alt={title} 
-                              loading="lazy" 
-                              onError={(e) => {
-                                const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
-                                if (e.currentTarget.src !== fallback) {
-                                  e.currentTarget.src = fallback;
-                                }
-                              }}
-                              className="w-full h-full object-cover" 
-                            />
-                            <div className="absolute inset-0 bg-black/40 group-hover:bg-[#ff4dd2]/30 transition-colors flex items-center justify-center">
-                              <Play size={14} className="text-white fill-white" />
+                    <div className="flex flex-col divide-y divide-white/5">
+                      {dropdownTrailers.map((anime, idx) => {
+                        const title = toEnglishTitle(anime.title?.english || anime.title?.romaji || 'Anime Trailer');
+                        const thumb =
+                          anime.trailer?.thumbnail ||
+                          anime.coverImage?.large ||
+                          `https://i.ytimg.com/vi/${anime.trailer.id}/hqdefault.jpg`;
+                        const isSelected = selectedIndex === idx;
+
+                        return (
+                          <div
+                            key={`drop-${anime.id}-${anime.trailer.id}`}
+                            className={`flex items-center gap-4 p-3.5 cursor-pointer transition-all duration-200 group ${
+                              isSelected
+                                ? 'bg-[#ff4dd2]/15 border-l-4 border-[#ff4dd2] pl-3'
+                                : 'hover:bg-[#161a33]'
+                            }`}
+                            onClick={() => {
+                              setSelectedTrailer(anime);
+                              setShowDropdown(false);
+                            }}
+                          >
+                            <div className="relative w-16 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-black/50 border border-white/10 group-hover:border-[#ff4dd2]/50">
+                              <img 
+                                src={thumb} 
+                                alt={title} 
+                                loading="lazy" 
+                                onError={(e) => {
+                                  const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
+                                  if (e.currentTarget.src !== fallback) {
+                                    e.currentTarget.src = fallback;
+                                  }
+                                }}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+                              />
+                              <div className="absolute inset-0 bg-black/40 group-hover:bg-[#ff4dd2]/20 transition-colors flex items-center justify-center">
+                                <Play size={14} className="text-white fill-white" />
+                              </div>
+                            </div>
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <h4 className="text-white font-semibold text-sm truncate group-hover:text-[#ff4dd2] transition-colors">
+                                {title}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-white/5 text-[#00f7ff] border border-white/5">
+                                  {formatStatus(anime.status)}
+                                </span>
+                                <span className="text-[11px] text-gray-500">• Official Preview</span>
+                              </div>
+                            </div>
+                            <div className="hidden sm:flex items-center text-xs text-[#ff4dd2] font-semibold opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+                              <span>Play</span>
+                              <ArrowRight size={12} />
                             </div>
                           </div>
-                          <div className="flex flex-col min-w-0 flex-1">
-                            <h4 className="text-white font-semibold text-sm truncate group-hover:text-[#ff4dd2] transition-colors">
-                              {title}
-                            </h4>
-                            <span className="text-[11px] text-[#a0a0a0] flex items-center gap-2">
-                              <span>Status: {formatStatus(anime.status)}</span>
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="px-4 py-2 bg-[#080915] text-[10px] text-gray-500 flex items-center justify-between border-t border-white/5">
+                      <span>↑ ↓ to navigate</span>
+                      <span>Enter to play • Esc to close</span>
+                    </div>
+                  </>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-400 text-sm">No trailers found for "{query}"</p>
+                  <div className="text-center py-8 px-4">
+                    <p className="text-gray-300 font-semibold text-sm">No official trailers found for "{query}"</p>
+                    <p className="text-gray-500 text-xs mt-1">Try searching another anime title like "Bleach" or "Frieren"</p>
                   </div>
                 )}
               </div>
@@ -463,7 +528,7 @@ export default function TrailersPage() {
         {!isGridLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {displayedTrailers.map((anime, idx) => {
-              const title = anime.title?.english || anime.title?.romaji || 'Official Anime Trailer';
+              const title = toEnglishTitle(anime.title?.english || anime.title?.romaji || 'Official Anime Trailer');
               const thumbnailUrl =
                 anime.trailer?.thumbnail ||
                 `https://i.ytimg.com/vi/${anime.trailer?.id}/hqdefault.jpg`;
@@ -611,7 +676,7 @@ export default function TrailersPage() {
               <div className="flex items-center gap-3 min-w-0 pr-4">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#ff4dd2] animate-pulse" />
                 <h3 className="text-white font-bold text-base md:text-lg truncate">
-                  {selectedTrailer.title?.english || selectedTrailer.title?.romaji || 'Official Anime Trailer'}
+                  {toEnglishTitle(selectedTrailer.title?.english || selectedTrailer.title?.romaji || 'Official Anime Trailer')}
                 </h3>
               </div>
               <button
@@ -626,10 +691,11 @@ export default function TrailersPage() {
             {/* Modal Video Player (16:9) */}
             <div className="relative aspect-video w-full bg-black">
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${selectedTrailer.trailer.id}?autoplay=1&rel=0&modestbranding=1`}
+                src={`https://www.youtube.com/embed/${selectedTrailer.trailer.id}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
                 title={selectedTrailer.title?.english || 'Anime Trailer'}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full border-0"
               />
             </div>

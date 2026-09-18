@@ -54,7 +54,7 @@ const footerLinks = [
       { name: "Trailers", path: "/trailers" },
       { name: "News", path: "/news" },
       { name: "Search", path: "/search" },
-      { name: "Watchlist", path: "/watchlist" },
+      { name: "My List & Folders", path: "/my-list" },
       { name: "Sign In", path: "/signin" },
       { name: "Sign Up (Join Clan)", path: "/signup" },
       { name: "Contact", path: "/contact" },
@@ -77,7 +77,7 @@ const footerLinks = [
   {
     title: "Account",
     links: [
-      { name: "My Watchlist", path: "/watchlist" },
+      { name: "My List & Folders", path: "/my-list" },
       { name: "Settings", path: "/settings" },
       { name: "Help Center", path: "/help" },
     ]

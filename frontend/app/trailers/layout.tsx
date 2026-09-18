@@ -41,10 +41,31 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: 'Official Anime Trailers & Teasers HD | Anime Nation India',
+  description: 'Watch the latest official anime trailers, seasonal teasers, and high-definition preview clips straight from Japan.',
+  url: 'https://animenationindia.com/trailers',
+  publisher: {
+    '@type': 'Organization',
+    name: 'Anime Nation India',
+    url: 'https://animenationindia.com',
+  },
+};
+
 export default function TrailersLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {children}
+    </>
+  );
 }

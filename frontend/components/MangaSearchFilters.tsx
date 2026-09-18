@@ -16,15 +16,19 @@ interface MangaSearchFiltersProps {
   initialSort?: string;
   initialStatus?: string;
   initialYear?: string;
+  lockedType?: string;
+  customPlaceholder?: string;
+  customTrending?: string[];
+  hideFormatTabs?: boolean;
 }
 
 const TYPE_OPTIONS = [
-  { id: '', label: 'All Formats', icon: '📚' },
-  { id: 'manga', label: 'Manga (JP)', icon: '🇯🇵' },
-  { id: 'manhwa', label: 'Manhwa (KR)', icon: '🇰🇷' },
-  { id: 'manhua', label: 'Manhua (CN)', icon: '🇨🇳' },
-  { id: 'lightnovel', label: 'Light Novel', icon: '📖' },
-  { id: 'novel', label: 'Web Novel', icon: '📝' },
+  { id: '', label: 'All Formats', code: 'ALL' },
+  { id: 'manga', label: 'Manga', code: 'JP' },
+  { id: 'manhwa', label: 'Manhwa', code: 'KR' },
+  { id: 'manhua', label: 'Manhua', code: 'CN' },
+  { id: 'lightnovel', label: 'Light Novel', code: 'LN' },
+  { id: 'novel', label: 'Web Novel', code: 'WN' },
 ];
 
 const GENRE_LIST = [
@@ -59,10 +63,19 @@ const YEAR_OPTIONS = [
   { id: '2000s', label: '2000s Classics' },
 ];
 
-const TRENDING_SEARCHES = [
+const DEFAULT_TRENDING_SEARCHES = [
   'Solo Leveling', 'Chainsaw Man', 'Berserk', 'Jujutsu Kaisen', 
   'Omniscient Reader', 'Lookism', 'Tower of God', 'Wind Breaker'
 ];
+
+export const getReadingItemHref = (item: { id: number | string; countryOfOrigin?: string; format?: string }) => {
+  const originCountry = (item.countryOfOrigin || '').toUpperCase();
+  const fmt = (item.format || '').toUpperCase();
+  if (originCountry === 'KR' || fmt === 'MANHWA') return `/read/manhwa/${item.id}`;
+  if (originCountry === 'CN' || fmt === 'MANHUA') return `/read/manhua/${item.id}`;
+  if (fmt === 'NOVEL' || fmt === 'LIGHT NOVEL') return `/read/novels/${item.id}`;
+  return `/read/manga/${item.id}`;
+};
 
 export default function MangaSearchFilters({
   initialQuery = '',
@@ -71,13 +84,20 @@ export default function MangaSearchFilters({
   initialSort = 'popular',
   initialStatus = '',
   initialYear = '',
+  lockedType,
+  customPlaceholder,
+  customTrending,
+  hideFormatTabs = false,
 }: MangaSearchFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const effectiveType = lockedType !== undefined ? lockedType : initialType;
+  const trendingList = customTrending && customTrending.length > 0 ? customTrending : DEFAULT_TRENDING_SEARCHES;
+
   const [query, setQuery] = useState(initialQuery);
-  const [selectedType, setSelectedType] = useState(initialType);
+  const [selectedType, setSelectedType] = useState(effectiveType);
   const [selectedGenre, setSelectedGenre] = useState(initialGenre);
   const [selectedSort, setSelectedSort] = useState(initialSort);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus);
@@ -92,6 +112,7 @@ export default function MangaSearchFilters({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -136,15 +157,19 @@ export default function MangaSearchFilters({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Synchronize state if URL params change externally
+  // Synchronize state if URL params change externally (respecting lockedType)
   useEffect(() => {
     setQuery(searchParams.get('q') || '');
-    setSelectedType(searchParams.get('type') || '');
+    if (lockedType !== undefined) {
+      setSelectedType(lockedType);
+    } else {
+      setSelectedType(searchParams.get('type') || '');
+    }
     setSelectedGenre(searchParams.get('genre') || '');
     setSelectedSort(searchParams.get('sort') || 'popular');
     setSelectedStatus(searchParams.get('status') || '');
     setSelectedYear(searchParams.get('year') || '');
-  }, [searchParams]);
+  }, [searchParams, lockedType]);
 
   // Handle click outside to close autocomplete dropdown
   useEffect(() => {
@@ -157,7 +182,7 @@ export default function MangaSearchFilters({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch live autocomplete suggestions
+  // Fetch live autocomplete suggestions with AbortController to prevent race conditions
   useEffect(() => {
     if (!query.trim() || query.trim().length < 2) {
       setSuggestions([]);
@@ -165,26 +190,45 @@ export default function MangaSearchFilters({
       return;
     }
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const timer = setTimeout(async () => {
       setIsLoadingSuggestions(true);
       try {
-        const res = await fetch(`/api/manga/search?q=${encodeURIComponent(query.trim())}&type=${selectedType}&genre=${selectedGenre}`);
-        const data = await res.json();
-        if (data.results && data.results.length > 0) {
-          setSuggestions(data.results);
-          setShowSuggestions(true);
-        } else {
+        const queryType = lockedType !== undefined ? lockedType : selectedType;
+        const res = await fetch(
+          `/api/manga/search?q=${encodeURIComponent(query.trim())}&type=${encodeURIComponent(queryType || '')}&genre=${encodeURIComponent(selectedGenre || '')}`,
+          { signal: controller.signal }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.results)) {
+            setSuggestions(data.results);
+            if (document.activeElement === searchInputRef.current) {
+              setShowSuggestions(true);
+            }
+          }
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
           setSuggestions([]);
         }
-      } catch (err) {
-        setSuggestions([]);
       } finally {
-        setIsLoadingSuggestions(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingSuggestions(false);
+        }
       }
-    }, 250);
+    }, 200);
 
-    return () => clearTimeout(timer);
-  }, [query, selectedType, selectedGenre]);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, selectedType, selectedGenre, lockedType]);
 
   const updateQueryParams = useCallback((
     q: string, 
@@ -197,7 +241,7 @@ export default function MangaSearchFilters({
     const params = new URLSearchParams();
     
     if (q.trim()) params.set('q', q.trim());
-    if (type) params.set('type', type);
+    if (type && lockedType === undefined) params.set('type', type);
     if (genre) params.set('genre', genre);
     if (sort && sort !== 'popular') params.set('sort', sort);
     if (status) params.set('status', status);
@@ -205,7 +249,7 @@ export default function MangaSearchFilters({
     
     params.set('page', '1');
     router.push(`${pathname}?${params.toString()}`);
-  }, [pathname, router]);
+  }, [pathname, router, lockedType]);
 
   // Keyboard navigation inside autocomplete
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -223,14 +267,17 @@ export default function MangaSearchFilters({
         const selected = suggestions[focusedIndex];
         saveRecentSearch(selected.title);
         setShowSuggestions(false);
-        router.push(`/manga/${selected.id}`);
+        searchInputRef.current?.blur();
+        router.push(getReadingItemHref(selected));
       } else {
         saveRecentSearch(query);
         setShowSuggestions(false);
+        searchInputRef.current?.blur();
         updateQueryParams(query, selectedType, selectedGenre, selectedSort, selectedStatus, selectedYear);
       }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
+      searchInputRef.current?.blur();
     }
   };
 
@@ -238,6 +285,7 @@ export default function MangaSearchFilters({
     e.preventDefault();
     saveRecentSearch(query);
     setShowSuggestions(false);
+    searchInputRef.current?.blur();
     updateQueryParams(query, selectedType, selectedGenre, selectedSort, selectedStatus, selectedYear);
   };
 
@@ -245,6 +293,7 @@ export default function MangaSearchFilters({
     setQuery(term);
     saveRecentSearch(term);
     setShowSuggestions(false);
+    searchInputRef.current?.blur();
     updateQueryParams(term, selectedType, selectedGenre, selectedSort, selectedStatus, selectedYear);
   };
 
@@ -321,7 +370,7 @@ export default function MangaSearchFilters({
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search manga, manhwa, webtoons, light novels... (e.g. Solo Leveling, Berserk)"
+              placeholder={customPlaceholder || "Search manga, manhwa, webtoons, light novels... (e.g. Solo Leveling, Berserk)"}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setShowSuggestions(true)}
@@ -381,7 +430,7 @@ export default function MangaSearchFilters({
                     return (
                       <Link
                         key={item.id}
-                        href={`/manga/${item.id}`}
+                        href={getReadingItemHref(item)}
                         onClick={() => {
                           saveRecentSearch(item.title);
                           setShowSuggestions(false);
@@ -401,7 +450,12 @@ export default function MangaSearchFilters({
                             {item.title}
                           </h4>
                           <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-400">
-                            <span className="bg-[#ff4dd2]/20 text-[#ff4dd2] font-black px-1.5 py-0.5 rounded uppercase text-[9px]">
+                            <span className={`font-black px-2 py-0.5 rounded uppercase text-[9px] border ${
+                              item.format === 'MANHWA' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                              item.format === 'MANHUA' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                              item.format === 'NOVEL' || item.format === 'LIGHT NOVEL' ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' :
+                              'bg-sky-500/20 text-sky-400 border-sky-500/30'
+                            }`}>
                               {item.format}
                             </span>
                             {item.score && (
@@ -432,9 +486,16 @@ export default function MangaSearchFilters({
                 </button>
               </div>
             ) : query.trim().length >= 2 && !isLoadingSuggestions ? (
-              <div className="p-8 text-center text-gray-400 text-sm">
-                <p className="font-semibold text-white mb-1">No instant results found for &quot;{query}&quot;</p>
-                <p className="text-xs text-gray-500">Press Enter to search the full manga database.</p>
+              <div className="p-6 text-center text-gray-400 text-sm">
+                <p className="font-semibold text-white mb-1">No instant preview for &quot;{query}&quot;</p>
+                <p className="text-xs text-gray-500 mb-3">Press Enter or click Search to search the entire database.</p>
+                <button
+                  type="button"
+                  onClick={handleSearchSubmit}
+                  className="px-4 py-2 rounded-xl bg-[#ff4dd2] text-black font-black text-xs uppercase tracking-wider hover:bg-[#ff7be0] transition-colors cursor-pointer"
+                >
+                  Search For &quot;{query}&quot; →
+                </button>
               </div>
             ) : (
               /* Empty Query: Show Trending & Recent Searches */
@@ -481,10 +542,10 @@ export default function MangaSearchFilters({
                 {/* Trending Suggestions */}
                 <div>
                   <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Flame size={13} className="text-amber-400" /> Trending Manga & Manhwa
+                    <Flame size={13} className="text-amber-400" /> Popular Searches
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {TRENDING_SEARCHES.map((term, i) => (
+                    {trendingList.map((term, i) => (
                       <button
                         key={i}
                         type="button"
@@ -507,27 +568,38 @@ export default function MangaSearchFilters({
       {/* 🏷️ Format Tabs Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         
-        {/* Format Selector Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {TYPE_OPTIONS.map((opt) => {
-            const isActive = selectedType === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => handleTypeChange(opt.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 border cursor-pointer hover:scale-[1.02] active:scale-95 ${
-                  isActive
-                    ? 'bg-[#ff4dd2] text-[#050716] border-[#ff4dd2] shadow-[0_0_15px_rgba(255,77,210,0.4)]'
-                    : 'bg-[#121326]/60 text-gray-300 hover:text-white border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10'
-                }`}
-              >
-                <span>{opt.icon}</span>
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* Format Selector Pills (Shown only on universal browse, hidden when locked) */}
+        {!hideFormatTabs && !lockedType ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {TYPE_OPTIONS.map((opt) => {
+              const isActive = selectedType === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => handleTypeChange(opt.id)}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 border cursor-pointer hover:scale-[1.02] active:scale-95 ${
+                    isActive
+                      ? 'bg-[#ff4dd2] text-[#050716] border-[#ff4dd2] shadow-[0_0_15px_rgba(255,77,210,0.4)]'
+                      : 'bg-[#121326]/60 text-gray-300 hover:text-white border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10'
+                  }`}
+                >
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                    isActive ? 'bg-black/20 text-black' : 'bg-white/10 text-gray-400'
+                  }`}>
+                    {opt.code}
+                  </span>
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-[#ff4dd2] shadow-[0_0_8px_rgba(255,77,210,0.8)]" />
+            <span>Refine & Filter Titles</span>
+          </div>
+        )}
 
         {/* Toggle Advanced Filters Button */}
         <button

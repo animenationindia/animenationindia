@@ -1,18 +1,39 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { BACKEND_URL } from '../lib/config';
-import { logError } from '../lib/logger';
+import { useSession } from '@/lib/auth-client';
+import {
+  getWatchlist,
+  addToWatchlist as dbAddToWatchlist,
+  removeFromWatchlist as dbRemoveFromWatchlist,
+  updateWatchlistStatus as dbUpdateWatchlistStatus,
+  updateWatchlistProgress as dbUpdateWatchlistProgress,
+  syncGuestWatchlist,
+  type WatchlistItem as DbWatchlistItem,
+} from '@/app/actions/watchlist';
+import {
+  WATCHLIST_CHANGED_EVENT,
+  dispatchWatchlistUpdated,
+} from '@/lib/catalogs-shared';
 
 export interface WatchlistItem {
-  anime_id?: number;
-  mal_id?: number;
+  mediaId: string | number;
+  anime_id?: number | string;
+  mal_id?: number | string;
+  id?: number | string;
+  title: string;
   anime_title?: string;
-  title?: string;
-  anime_image?: string;
-  images?: any;
+  image?: string | null;
+  posterPath?: string | null;
+  anime_image?: string | null;
+  backdropPath?: string | null;
+  mediaType?: string;
+  type?: string;
+  rating?: string | null;
+  year?: string | null;
   status?: string;
-  [key: string]: any;
+  progress?: number;
+  createdAt?: string;
 }
 
 interface WatchlistContextType {
@@ -21,206 +42,307 @@ interface WatchlistContextType {
   error: string | null;
   isInWatchlist: (animeId: number | string) => boolean;
   getItemStatus: (animeId: number | string) => string;
-  addToWatchlist: (item: { animeId: number | string; title: string; image: string; status?: string; type?: string }) => Promise<boolean>;
-  removeFromWatchlist: (animeId: number | string) => Promise<boolean>;
-  toggleWatchlist: (item: { animeId: number | string; title: string; image: string }) => Promise<boolean>;
+  getItemProgress: (animeId: number | string) => number;
+  addToWatchlist: (item: {
+    animeId: number | string;
+    title: string;
+    image?: string | null;
+    posterPath?: string | null;
+    status?: string;
+    type?: string;
+    mediaType?: string;
+    rating?: string | number | null;
+    year?: string | number | null;
+    progress?: number;
+  }) => Promise<boolean>;
+  removeFromWatchlist: (animeId: number | string, mediaType?: string) => Promise<boolean>;
+  updateStatus: (animeId: number | string, status: string, mediaType?: string) => Promise<boolean>;
+  updateProgress: (animeId: number | string, progress: number, mediaType?: string) => Promise<boolean>;
+  toggleWatchlist: (item: { animeId: number | string; title: string; image?: string | null }) => Promise<boolean>;
   refetchWatchlist: () => Promise<void>;
 }
 
 const WatchlistContext = createContext<WatchlistContextType | undefined>(undefined);
 
 export function WatchlistProvider({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchWatchlist = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-    const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
-
-    if (!token || !userId) {
-      setWatchlist([]);
-      return;
-    }
-
     setIsLoading(true);
+
     try {
-      const res = await fetch(`${BACKEND_URL}/api/watchlist/${userId}`, {
-        headers: { Authorization: 'Bearer ' + token },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWatchlist(Array.isArray(data) ? data : []);
+      // 1. Load strictly from Neon PostgreSQL via Server Action for authenticated users
+      const res = await getWatchlist();
+      if (res?.success && Array.isArray(res.items)) {
+        const formatted: WatchlistItem[] = res.items.map((r) => ({
+          mediaId: String(r.mediaId),
+          id: r.id || r.mediaId,
+          anime_id: r.mediaId,
+          mal_id: r.mediaId,
+          title: r.title,
+          anime_title: r.title,
+          posterPath: r.posterPath,
+          image: r.posterPath,
+          anime_image: r.posterPath,
+          backdropPath: r.backdropPath,
+          mediaType: r.mediaType || 'anime',
+          type: r.mediaType || 'anime',
+          rating: r.rating,
+          year: r.year,
+          status: (r.status || 'plan_to_watch').toUpperCase(),
+          progress: r.progress || 0,
+          createdAt: r.createdAt,
+        }));
+        setWatchlist(formatted);
         setError(null);
-      } else if (res.status === 401 || res.status === 403) {
-        // Expired or invalid token in localStorage - silently clear stale session
-        try {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user_token');
-          localStorage.removeItem('userId');
-          localStorage.removeItem('user_id');
-        } catch {}
-        setWatchlist([]);
-        setError(null);
+        return;
       }
-    } catch {
-      try {
-        const local = localStorage.getItem('guest_watchlist');
-        if (local) setWatchlist(JSON.parse(local));
-      } catch {}
+
+      // Guest / Unauthenticated: empty list
+      setWatchlist([]);
+      setError(null);
+    } catch (err: any) {
+      console.warn('Watchlist fetch notice:', err?.message || err);
+      setWatchlist([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  // Initial load and sync on session change
   useEffect(() => {
     fetchWatchlist();
 
     const handleSync = () => fetchWatchlist();
-
-    // Listen to window focus, back-navigation, and authentication changes
-    window.addEventListener('auth-change', handleSync);
-    window.addEventListener('popstate', handleSync);
-    window.addEventListener('pageshow', handleSync);
+    window.addEventListener(WATCHLIST_CHANGED_EVENT, handleSync);
     window.addEventListener('focus', handleSync);
 
     return () => {
-      window.removeEventListener('auth-change', handleSync);
-      window.removeEventListener('popstate', handleSync);
-      window.removeEventListener('pageshow', handleSync);
+      window.removeEventListener(WATCHLIST_CHANGED_EVENT, handleSync);
       window.removeEventListener('focus', handleSync);
     };
-  }, [fetchWatchlist]);
+  }, [fetchWatchlist, session?.user?.id]);
 
   const isInWatchlist = useCallback(
     (animeId: number | string) => {
-      const numId = Number(animeId);
-      return watchlist.some((item) => Number(item.mal_id || item.anime_id || item.id) === numId);
+      const strId = String(animeId);
+      return watchlist.some(
+        (item) => String(item.mediaId || item.mal_id || item.anime_id || item.id) === strId
+      );
     },
     [watchlist]
   );
 
   const getItemStatus = useCallback(
     (animeId: number | string) => {
-      const numId = Number(animeId);
-      const found = watchlist.find((item) => Number(item.mal_id || item.anime_id || item.id) === numId);
-      return found?.status || 'ADD';
+      const strId = String(animeId);
+      const found = watchlist.find(
+        (item) => String(item.mediaId || item.mal_id || item.anime_id || item.id) === strId
+      );
+      return found?.status ? found.status.toUpperCase() : 'ADD';
+    },
+    [watchlist]
+  );
+
+  const getItemProgress = useCallback(
+    (animeId: number | string) => {
+      const strId = String(animeId);
+      const found = watchlist.find(
+        (item) => String(item.mediaId || item.mal_id || item.anime_id || item.id) === strId
+      );
+      return found?.progress || 0;
     },
     [watchlist]
   );
 
   const addToWatchlist = useCallback(
-    async ({ animeId, title, image, status = 'PLAN_TO_WATCH', type = 'Anime' }: { animeId: number | string; title: string; image: string; status?: string; type?: string }) => {
-      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
-
-      if (!token || !userId) {
-        return false;
-      }
-
-      const numId = Number(animeId);
-      const previousWatchlist = [...watchlist];
-
-      // Optimistic update directly in state
-      const newItem: WatchlistItem = {
-        mal_id: numId,
-        anime_id: numId,
-        title,
-        anime_title: title,
-        anime_image: image,
-        status,
-        type,
-      };
-
-      setWatchlist((prev) => {
-        const filtered = prev.filter((item) => Number(item.mal_id || item.anime_id || item.id) !== numId);
-        return [...filtered, newItem];
-      });
+    async ({
+      animeId,
+      title,
+      image,
+      posterPath,
+      status = 'PLAN_TO_WATCH',
+      type = 'anime',
+      mediaType,
+      rating,
+      year,
+      progress = 0,
+    }: {
+      animeId: number | string;
+      title: string;
+      image?: string | null;
+      posterPath?: string | null;
+      status?: string;
+      type?: string;
+      mediaType?: string;
+      rating?: string | number | null;
+      year?: string | number | null;
+      progress?: number;
+    }) => {
+      const strId = String(animeId);
+      const mType = (mediaType || type || 'anime').toLowerCase();
+      const normStatus = status.toUpperCase();
+      const poster = posterPath || image || null;
 
       try {
-        const animePayload = {
-          mal_id: numId,
+        const res = await dbAddToWatchlist({
+          mediaId: strId,
+          mediaType: mType,
           title,
-          title_english: title,
-          type,
-          images: { webp: { large_image_url: image } },
-          anime_id: numId,
-          anime_title: title,
-          anime_image: image,
-          status,
-        };
-
-        const res = await fetch(`${BACKEND_URL}/api/watchlist`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + token,
-          },
-          body: JSON.stringify({ anime: animePayload, userId }),
+          posterPath: poster,
+          status: normStatus.toLowerCase(),
+          rating: rating ? String(rating) : null,
+          year: year ? String(year) : null,
+          progress,
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to save to watchlist`);
-
-        // Dispatch notification after successful backend persistence
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { animeId: numId, status } }));
+        if (!res?.success) {
+          // Guest mode disabled: Prompt login
+          if (typeof window !== 'undefined') {
+            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+          }
+          return false;
         }
 
+        const newItem: WatchlistItem = {
+          mediaId: strId,
+          id: strId,
+          anime_id: strId,
+          mal_id: strId,
+          title,
+          anime_title: title,
+          posterPath: poster,
+          image: poster,
+          anime_image: poster,
+          status: normStatus,
+          mediaType: mType,
+          type: mType,
+          rating: rating ? String(rating) : null,
+          year: year ? String(year) : null,
+          progress,
+        };
+
+        setWatchlist((prev) => {
+          const filtered = prev.filter(
+            (item) => String(item.mediaId || item.mal_id || item.anime_id || item.id) !== strId
+          );
+          return [newItem, ...filtered];
+        });
+
+        dispatchWatchlistUpdated();
         return true;
-      } catch (err) {
-        logError('WatchlistContext.addToWatchlist', err);
-        // Rollback optimistic update on failure
-        setWatchlist(previousWatchlist);
+      } catch (e) {
+        if (typeof window !== 'undefined') {
+          window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+        }
         return false;
       }
     },
-    [watchlist]
+    []
   );
 
   const removeFromWatchlist = useCallback(
-    async (animeId: number | string) => {
-      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
-
-      if (!token || !userId) return false;
-
-      const numId = Number(animeId);
-      const previousWatchlist = [...watchlist];
-
-      // Optimistic update directly in state
-      setWatchlist((prev) => prev.filter((item) => Number(item.mal_id || item.anime_id || item.id) !== numId));
+    async (animeId: number | string, mediaType: string = 'anime') => {
+      const strId = String(animeId);
 
       try {
-        const res = await fetch(`${BACKEND_URL}/api/watchlist/${userId}/${numId}`, {
-          method: 'DELETE',
-          headers: { Authorization: 'Bearer ' + token },
-        });
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}: Failed to remove watchlist item`);
-
-        // Dispatch notification after successful backend persistence
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { animeId: numId, status: 'ADD' } }));
+        const res = await dbRemoveFromWatchlist(strId, mediaType.toLowerCase());
+        if (!res?.success) {
+          if (typeof window !== 'undefined') {
+            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+          }
+          return false;
         }
 
+        setWatchlist((prev) =>
+          prev.filter(
+            (item) => String(item.mediaId || item.mal_id || item.anime_id || item.id) !== strId
+          )
+        );
+
+        dispatchWatchlistUpdated(strId);
         return true;
-      } catch (err) {
-        logError('WatchlistContext.removeFromWatchlist', err);
-        // Rollback optimistic update on failure
-        setWatchlist(previousWatchlist);
+      } catch (e) {
         return false;
       }
     },
-    [watchlist]
+    []
+  );
+
+  const updateStatus = useCallback(
+    async (animeId: number | string, status: string, mediaType: string = 'anime') => {
+      const strId = String(animeId);
+      const normStatus = status.toUpperCase();
+
+      try {
+        const res = await dbUpdateWatchlistStatus(strId, mediaType.toLowerCase(), normStatus.toLowerCase());
+        if (!res?.success) {
+          if (typeof window !== 'undefined') {
+            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+          }
+          return false;
+        }
+
+        setWatchlist((prev) =>
+          prev.map((item) => {
+            if (String(item.mediaId || item.mal_id || item.anime_id || item.id) === strId) {
+              return { ...item, status: normStatus };
+            }
+            return item;
+          })
+        );
+
+        dispatchWatchlistUpdated();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    []
+  );
+
+  const updateProgress = useCallback(
+    async (animeId: number | string, progress: number, mediaType: string = 'anime') => {
+      const strId = String(animeId);
+      const validProgress = Math.max(0, Math.floor(progress));
+
+      try {
+        const res = await dbUpdateWatchlistProgress(strId, mediaType.toLowerCase(), validProgress);
+        if (!res?.success) {
+          if (typeof window !== 'undefined') {
+            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
+          }
+          return false;
+        }
+
+        setWatchlist((prev) =>
+          prev.map((item) => {
+            if (String(item.mediaId || item.mal_id || item.anime_id || item.id) === strId) {
+              return { ...item, progress: validProgress };
+            }
+            return item;
+          })
+        );
+
+        dispatchWatchlistUpdated();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    []
   );
 
   const toggleWatchlist = useCallback(
-    async ({ animeId, title, image }: { animeId: number | string; title: string; image: string }) => {
+    async ({ animeId, title, image }: { animeId: number | string; title: string; image?: string | null }) => {
       if (isInWatchlist(animeId)) {
         return removeFromWatchlist(animeId);
       } else {
-        return addToWatchlist({ animeId, title, image });
+        return addToWatchlist({ animeId, title, image, status: 'PLAN_TO_WATCH' });
       }
     },
     [isInWatchlist, removeFromWatchlist, addToWatchlist]
@@ -234,8 +356,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         error,
         isInWatchlist,
         getItemStatus,
+        getItemProgress,
         addToWatchlist,
         removeFromWatchlist,
+        updateStatus,
+        updateProgress,
         toggleWatchlist,
         refetchWatchlist: fetchWatchlist,
       }}

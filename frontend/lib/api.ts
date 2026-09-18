@@ -5,6 +5,7 @@ import { DEFAULT_GENRES_LIST } from './genres-data';
 import { toEnglishTitle } from './titleCleaner';
 import { 
   getOfficialMALAnimeDetails, 
+  getOfficialMALMangaDetails,
   getOfficialMALRecommendations, 
   getOfficialMALRankings, 
   searchOfficialMAL 
@@ -12,6 +13,7 @@ import {
 
 export { 
   getOfficialMALAnimeDetails, 
+  getOfficialMALMangaDetails,
   getOfficialMALRecommendations, 
   getOfficialMALRankings, 
   searchOfficialMAL 
@@ -105,38 +107,44 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
     const fallbackUrl = ANILIST_API_URL;
 
     try {
-      // 1. Try Backend AniList Proxy (Primary)
-      let res = await fetch(targetUrl, {
+      // 1. Direct AniList GraphQL Query (Primary: fastest, per-user 90 req/min quota, bypasses Render)
+      let res = await fetch(ANILIST_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Origin': 'https://anilist.co',
+          'Referer': 'https://anilist.co/'
         },
         body: JSON.stringify({ query, variables }),
         signal: controller.signal,
         cache: 'no-store'
       }).catch(() => null);
 
-      // 2. Direct AniList Fallback with origin headers (if backend fails)
-      if ((!res || res.status === 403 || res.status >= 500 || !res.ok) && targetUrl !== fallbackUrl) {
+      // 2. Fallback to Backend Proxy if direct AniList is blocked or failing
+      if (!res || !res.ok || res.status === 429 || res.status === 403) {
         try {
-          res = await fetch(fallbackUrl, {
+          const proxyController = new AbortController();
+          const proxyTimer = setTimeout(() => proxyController.abort(), 4000);
+          const proxyRes = await fetch(ANILIST_PROXY_URL, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Origin': 'https://anilist.co',
-              'Referer': 'https://anilist.co/'
+              'Accept': 'application/json'
             },
             body: JSON.stringify({ query, variables }),
-            signal: controller.signal,
+            signal: proxyController.signal,
             cache: 'no-store'
           }).catch(() => null);
+          clearTimeout(proxyTimer);
+          if (proxyRes && proxyRes.ok) {
+            res = proxyRes;
+          }
         } catch {}
       }
       clearTimeout(timer);
 
-      if (!res || res.status === 429 || res.status === 403 || !res.ok) {
+      if (!res || !res.ok) {
         if (cached) return cached.data;
         return null;
       }
@@ -1986,7 +1994,7 @@ export async function fetchAniListMangaDetails(id: string | number): Promise<any
       bannerImage: media.bannerImage || null,
       genres: (media.genres || []).filter((g: string) => g.toLowerCase() !== 'hentai').map((g: string, idx: number) => ({ mal_id: idx, name: g })),
       score: typeof media.averageScore === 'number' ? media.averageScore / 10 : null,
-      type: media.format ? media.format.replace(/_/g, ' ') : 'Manga',
+      type: (media.countryOfOrigin === 'KR' ? 'Manhwa' : media.countryOfOrigin === 'CN' ? 'Manhua' : media.format === 'NOVEL' ? 'Light Novel' : (media.format ? media.format.replace(/_/g, ' ') : 'Manga')),
       status: media.status === 'RELEASING' ? 'Publishing' : 'Finished',
       countryOfOrigin: media.countryOfOrigin || 'JP',
       chapters: media.chapters || null,
@@ -2176,7 +2184,16 @@ export async function getMangaFullDetails(id: string) {
     console.warn(`[AniList Manga Fail] ID ${strId}:`, error);
   }
 
-  // AniList is the authoritative manga database
+  // 4. Try Official MAL v2 Manga Details (Authoritative Backup with Round-Robin Client IDs)
+  try {
+    const malManga = await getOfficialMALMangaDetails(strId);
+    if (malManga && isSafeContent(malManga)) {
+      MANGA_DETAILS_CACHE.set(strId, malManga);
+      return malManga;
+    }
+  } catch (err: any) {
+    console.warn(`[Official MAL v2 Manga Fail] ID ${strId}:`, err?.message);
+  }
 
   return null;
 }
@@ -2209,11 +2226,25 @@ export async function getMangaRecommendations(id: string) {
   return [];
 }
 
-export async function getAniListMangaExtraInfo(idMal: number): Promise<AniListExtra | null> {
-  const query = `
+export async function getAniListMangaExtraInfo(idNum: number): Promise<any | null> {
+  const queryMal = `
     query ($id: Int) {
       Media(idMal: $id, type: MANGA, isAdult: false) {
+        id
+        idMal
+        title { english romaji native }
+        coverImage { extraLarge large }
         bannerImage
+        countryOfOrigin
+        format
+        status
+        averageScore
+        chapters
+        volumes
+        genres
+        description
+        seasonYear
+        startDate { year }
         relations {
           edges {
             relationType
@@ -2223,9 +2254,42 @@ export async function getAniListMangaExtraInfo(idMal: number): Promise<AniListEx
       }
     }
   `;
+
+  const queryDirect = `
+    query ($id: Int) {
+      Media(id: $id, type: MANGA, isAdult: false) {
+        id
+        idMal
+        title { english romaji native }
+        coverImage { extraLarge large }
+        bannerImage
+        countryOfOrigin
+        format
+        status
+        averageScore
+        chapters
+        volumes
+        genres
+        description
+        seasonYear
+        startDate { year }
+        relations {
+          edges {
+            relationType
+            node { id idMal title { english romaji } coverImage { extraLarge large } format startDate { year month day } type isAdult genres }
+          }
+        }
+      }
+    }
+  `;
+
   try {
-    const data = await fetchAniList(query, { id: idMal });
-    const extra = data.data?.Media as AniListExtra;
+    let data = await fetchAniList(queryMal, { id: idNum });
+    let extra = data?.data?.Media;
+    if (!extra) {
+      data = await fetchAniList(queryDirect, { id: idNum });
+      extra = data?.data?.Media;
+    }
     if (extra?.relations?.edges) {
       extra.relations.edges = extra.relations.edges.filter((e: any) => e.node && isSafeContent(e.node));
     }
@@ -2263,31 +2327,50 @@ export async function getTrendingMangaSpotlight(): Promise<any[]> {
   try {
     const data = await fetchAniList(query, {}, GLOBAL_CACHE_TIME, 3000);
     const media = data?.data?.Page?.media || [];
-    return media.filter(isSafeContent).map((manga: any) => ({
-      id: manga.idMal || manga.id,
-      idMal: manga.idMal || manga.id,
-      anilistId: manga.id,
-      title: {
-        romaji: manga.title?.romaji || manga.title?.english || 'Unknown Title',
-        english: manga.title?.english || manga.title?.romaji || 'Unknown Title',
-        native: manga.title?.native || ''
-      },
-      coverImage: {
-        large: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
-        extraLarge: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
-      },
-      bannerImage: manga.bannerImage || manga.coverImage?.extraLarge || null,
-      averageScore: typeof manga.averageScore === 'number' ? manga.averageScore : null,
-      format: manga.format ? manga.format.replace(/_/g, ' ') : 'MANGA',
-      type: 'MANGA',
-      status: manga.status === 'RELEASING' ? 'RELEASING' : 'FINISHED',
-      seasonYear: manga.seasonYear || manga.startDate?.year || null,
-      genres: manga.genres || [],
-      description: manga.description || '',
-      countryOfOrigin: manga.countryOfOrigin || 'JP',
-      chapters: manga.chapters || null,
-      volumes: manga.volumes || null
-    }));
+    return media.filter(isSafeContent).map((manga: any) => {
+      const origin = (manga.countryOfOrigin || 'JP').toUpperCase();
+      let displayFormat = manga.format ? manga.format.replace(/_/g, ' ') : 'MANGA';
+      let mediaType = 'MANGA';
+
+      if (origin === 'KR') {
+        displayFormat = 'MANHWA';
+        mediaType = 'MANHWA';
+      } else if (origin === 'CN') {
+        displayFormat = 'MANHUA';
+        mediaType = 'MANHUA';
+      } else if (manga.format === 'NOVEL') {
+        displayFormat = 'LIGHT NOVEL';
+        mediaType = 'NOVEL';
+      } else if (manga.format === 'ONE_SHOT') {
+        displayFormat = 'ONE-SHOT';
+      }
+
+      return {
+        id: manga.idMal || manga.id,
+        idMal: manga.idMal || manga.id,
+        anilistId: manga.id,
+        title: {
+          romaji: manga.title?.romaji || manga.title?.english || 'Unknown Title',
+          english: manga.title?.english || manga.title?.romaji || 'Unknown Title',
+          native: manga.title?.native || ''
+        },
+        coverImage: {
+          large: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
+          extraLarge: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
+        },
+        bannerImage: manga.bannerImage || manga.coverImage?.extraLarge || null,
+        averageScore: typeof manga.averageScore === 'number' ? manga.averageScore : null,
+        format: displayFormat,
+        type: mediaType,
+        status: manga.status === 'RELEASING' ? 'RELEASING' : 'FINISHED',
+        seasonYear: manga.seasonYear || manga.startDate?.year || null,
+        genres: manga.genres || [],
+        description: manga.description || '',
+        countryOfOrigin: origin,
+        chapters: manga.chapters || null,
+        volumes: manga.volumes || null
+      };
+    });
   } catch (error) {
     logError('getTrendingMangaSpotlight', error);
     return [];
@@ -2345,6 +2428,12 @@ export async function searchMangaAniList(
   const perPage = queryText.trim() ? 50 : 24;
   const variables: Record<string, any> = { page, perPage };
 
+  if (queryText && queryText.trim()) {
+    queryArgs += `, $search: String`;
+    mediaArgs += `, search: $search`;
+    variables.search = queryText.trim();
+  }
+
   let format: string | null = null;
   let country: string | null = null;
 
@@ -2373,7 +2462,9 @@ export async function searchMangaAniList(
   }
 
   let sortEnum = 'POPULARITY_DESC';
-  if (sort === 'trending') sortEnum = 'TRENDING_DESC';
+  if (queryText && queryText.trim() && sort === 'popular') {
+    sortEnum = 'SEARCH_MATCH';
+  } else if (sort === 'trending') sortEnum = 'TRENDING_DESC';
   else if (sort === 'score' || sort === 'top_rated') sortEnum = 'SCORE_DESC';
   else if (sort === 'newest' || sort === 'latest') sortEnum = 'START_DATE_DESC';
   else if (sort === 'updated') sortEnum = 'UPDATED_AT_DESC';
@@ -2458,7 +2549,7 @@ export async function searchMangaAniList(
       const q = queryText.toLowerCase().trim();
       const qTokens = q.split(/\s+/).filter(Boolean);
 
-      rawMedia = rawMedia.filter((m: any) => {
+      const filtered = rawMedia.filter((m: any) => {
         const eng = (m.title?.english || '').toLowerCase();
         const rom = (m.title?.romaji || '').toLowerCase();
         const nat = (m.title?.native || '').toLowerCase();
@@ -2467,32 +2558,55 @@ export async function searchMangaAniList(
         const fullText = `${eng} ${rom} ${nat} ${syns.join(' ')}`;
         return qTokens.every(token => fullText.includes(token));
       });
+
+      if (filtered.length > 0) {
+        rawMedia = filtered;
+      }
     }
 
-    const transformedMedia = rawMedia.map((manga: any) => ({
-      id: manga.id,
-      idMal: manga.idMal || manga.id,
-      anilistId: manga.id,
-      title: {
-        romaji: manga.title?.romaji || manga.title?.english || 'Unknown Title',
-        english: manga.title?.english || manga.title?.romaji || 'Unknown Title',
-        native: manga.title?.native || ''
-      },
-      coverImage: {
-        large: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
-        extraLarge: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
-      },
-      averageScore: typeof manga.averageScore === 'number' ? manga.averageScore : null,
-      format: manga.format ? manga.format.replace(/_/g, ' ') : 'MANGA',
-      type: 'MANGA',
-      status: manga.status === 'RELEASING' ? 'RELEASING' : 'FINISHED',
-      seasonYear: manga.seasonYear || manga.startDate?.year || null,
-      genres: (manga.genres || []).filter((g: string) => g.toLowerCase() !== 'hentai'),
-      description: manga.description || '',
-      countryOfOrigin: manga.countryOfOrigin || 'JP',
-      chapters: manga.chapters || null,
-      volumes: manga.volumes || null
-    }));
+    const transformedMedia = rawMedia.map((manga: any) => {
+      const origin = (manga.countryOfOrigin || 'JP').toUpperCase();
+      let displayFormat = manga.format ? manga.format.replace(/_/g, ' ') : 'MANGA';
+      let mediaType = 'MANGA';
+
+      if (origin === 'KR') {
+        displayFormat = 'MANHWA';
+        mediaType = 'MANHWA';
+      } else if (origin === 'CN') {
+        displayFormat = 'MANHUA';
+        mediaType = 'MANHUA';
+      } else if (manga.format === 'NOVEL') {
+        displayFormat = 'LIGHT NOVEL';
+        mediaType = 'NOVEL';
+      } else if (manga.format === 'ONE_SHOT') {
+        displayFormat = 'ONE-SHOT';
+      }
+
+      return {
+        id: manga.id,
+        idMal: manga.idMal || manga.id,
+        anilistId: manga.id,
+        title: {
+          romaji: manga.title?.romaji || manga.title?.english || 'Unknown Title',
+          english: manga.title?.english || manga.title?.romaji || 'Unknown Title',
+          native: manga.title?.native || ''
+        },
+        coverImage: {
+          large: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
+          extraLarge: manga.coverImage?.extraLarge || manga.coverImage?.large || '/placeholder-poster.png',
+        },
+        averageScore: typeof manga.averageScore === 'number' ? manga.averageScore : null,
+        format: displayFormat,
+        type: mediaType,
+        status: manga.status === 'RELEASING' ? 'RELEASING' : 'FINISHED',
+        seasonYear: manga.seasonYear || manga.startDate?.year || null,
+        genres: (manga.genres || []).filter((g: string) => g.toLowerCase() !== 'hentai'),
+        description: manga.description || '',
+        countryOfOrigin: origin,
+        chapters: manga.chapters || null,
+        volumes: manga.volumes || null
+      };
+    });
 
     return {
       media: transformedMedia,

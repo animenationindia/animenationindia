@@ -104,9 +104,10 @@ export default function AnimeDetailActions({
             <iframe 
               src={trailerUrl + (trailerUrl.includes('?') ? '&autoplay=1' : '?autoplay=1')}
               title="Trailer"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
-              className="w-full h-full"
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="w-full h-full border-0"
             ></iframe>
           </div>
         </div>

@@ -17,7 +17,9 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { NormalizedTheme } from '../lib/animethemes-api';
-import SongPlaylistModal from './SongPlaylistModal';
+import SaveToMusicModal from './SaveToMusicModal';
+import { SavedMusicTrack } from '@/lib/music-shared';
+import { getUserFavoriteSongIds, toggleUserFavoriteSong } from '@/app/actions/songs';
 
 interface AnimeThemeSongsProps {
   themes: NormalizedTheme[];
@@ -36,7 +38,7 @@ export default function AnimeThemeSongs({ themes, animeTitle = 'Anime' }: AnimeT
 
   // Favorites state per song
   const [favoriteSongIds, setFavoriteSongIds] = useState<Set<string>>(new Set());
-  const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState<NormalizedTheme | null>(null);
+  const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState<SavedMusicTrack | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -56,24 +58,12 @@ export default function AnimeThemeSongs({ themes, animeTitle = 'Anime' }: AnimeT
     return true;
   });
 
-  // Fetch initial favorites for this user
+  // Fetch initial favorites for this user directly from Neon PostgreSQL
   useEffect(() => {
-    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-    if (!token) return;
-
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-
-    fetch(`${backendUrl}/api/song-playlists/my-playlists`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(playlists => {
-        if (Array.isArray(playlists)) {
-          const favPlaylist = playlists.find(p => p.isFavorites);
-          if (favPlaylist && Array.isArray(favPlaylist.songs)) {
-            const set = new Set<string>(favPlaylist.songs.map((s: any) => String(s.songId)));
-            setFavoriteSongIds(set);
-          }
+    getUserFavoriteSongIds()
+      .then((res) => {
+        if (res.authenticated && Array.isArray(res.songIds)) {
+          setFavoriteSongIds(new Set(res.songIds));
         }
       })
       .catch(() => {});
@@ -242,13 +232,6 @@ export default function AnimeThemeSongs({ themes, animeTitle = 'Anime' }: AnimeT
 
   const toggleFavoriteSong = async (theme: NormalizedTheme, e: React.MouseEvent) => {
     e.stopPropagation();
-    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-    if (!token) {
-      alert('Please log in to save songs to your Favorite Themes!');
-      return;
-    }
-
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
     const isFav = favoriteSongIds.has(String(theme.id));
 
     // Optimistic UI update
@@ -260,30 +243,24 @@ export default function AnimeThemeSongs({ themes, animeTitle = 'Anime' }: AnimeT
     });
 
     try {
-      const res = await fetch(`${backendUrl}/api/song-playlists/toggle-favorite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          song: {
-            songId: theme.id,
-            type: theme.type,
-            sequence: theme.sequence,
-            slug: theme.slug,
-            songTitle: theme.songTitle,
-            artists: theme.artists,
-            videoUrl: theme.videoUrl,
-            audioUrl: theme.audioUrl,
-            animeId: theme.animeId,
-            animeTitle: theme.animeTitle || animeTitle,
-            animeImage: theme.animeImage
-          }
-        })
+      const res = await toggleUserFavoriteSong({
+        songId: String(theme.id),
+        type: theme.type,
+        sequence: theme.sequence,
+        slug: theme.slug,
+        songTitle: theme.songTitle,
+        artists: theme.artists,
+        videoUrl: theme.videoUrl,
+        audioUrl: theme.audioUrl,
+        animeId: theme.animeId,
+        animeTitle: theme.animeTitle || animeTitle,
+        animeImage: theme.animeImage,
       });
 
-      if (!res.ok) {
+      if (!res.success) {
+        if (res.error?.includes('sign in')) {
+          alert('Please sign in to save songs to your Favorite Themes!');
+        }
         // Revert on error
         setFavoriteSongIds(prev => {
           const next = new Set(prev);
@@ -446,10 +423,19 @@ export default function AnimeThemeSongs({ themes, animeTitle = 'Anime' }: AnimeT
                 {/* 📑 Add to Playlist Button */}
                 <button
                   type="button"
-                  title="Add to My Playlists"
+                  title="Add to Music Playlists"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedSongForPlaylist(theme);
+                    const mapped: SavedMusicTrack = {
+                      id: `theme_${theme.id}`,
+                      title: theme.songTitle || 'Theme Song',
+                      artist: Array.isArray(theme.artists) && theme.artists.length > 0 ? theme.artists.join(', ') : 'Theme Artist',
+                      type: theme.type === 'OP' ? 'op' : 'ed',
+                      previewUrl: theme.audioUrl || theme.videoUrl || null,
+                      animeTitle: animeTitle,
+                      savedAt: new Date().toISOString(),
+                    };
+                    setSelectedSongForPlaylist(mapped);
                   }}
                   className="p-2 rounded-xl bg-white/5 hover:bg-[#ff4dd2]/20 text-gray-400 hover:text-[#ff4dd2] hover:border-[#ff4dd2]/40 transition-all cursor-pointer"
                 >
@@ -608,11 +594,11 @@ export default function AnimeThemeSongs({ themes, animeTitle = 'Anime' }: AnimeT
         />
       )}
 
-      {/* Modal to Add to Playlist */}
-      <SongPlaylistModal
+      {/* Modal to Save to Music Playlists in Neon DB */}
+      <SaveToMusicModal
         isOpen={!!selectedSongForPlaylist}
         onClose={() => setSelectedSongForPlaylist(null)}
-        song={selectedSongForPlaylist}
+        track={selectedSongForPlaylist}
       />
 
     </div>

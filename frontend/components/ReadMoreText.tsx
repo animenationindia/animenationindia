@@ -8,23 +8,25 @@ import { cleanAnimeSynopsis } from '../lib/sanitize';
 interface ReadMoreTextProps {
   text: string;
   maxChars?: number;
+  maxLength?: number;
   className?: string;
   showSource?: boolean;
 }
 
-export default function ReadMoreText({ text, maxChars = 340, className = '', showSource = true }: ReadMoreTextProps) {
+export default function ReadMoreText({ text, maxChars, maxLength, className = '', showSource = true }: ReadMoreTextProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const limit = maxChars ?? maxLength ?? 340;
 
   const { text: cleanText, sourceAttribution } = useMemo(() => {
     return cleanAnimeSynopsis(text);
   }, [text]);
 
   if (!cleanText) return null;
-  const shouldTruncate = cleanText.length > maxChars;
+  const shouldTruncate = cleanText.length > limit;
 
   const displayText = isExpanded || !shouldTruncate 
     ? cleanText 
-    : cleanText.slice(0, maxChars) + '...';
+    : cleanText.slice(0, limit) + '...';
 
   // Split by double newlines into clean paragraph blocks
   const paragraphs = displayText.split(/\n\n+/).filter(Boolean);

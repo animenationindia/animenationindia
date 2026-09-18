@@ -26,6 +26,10 @@ const trailerMemoryCache = new Map<string, { data: TrailerItem[]; timestamp: num
 const inFlightTrailerPromises = new Map<string, Promise<TrailerItem[]>>();
 const TRAILER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes memory cache for live freshness
 
+const trailerSearchCache = new Map<string, { data: TrailerItem[]; timestamp: number }>();
+const inFlightSearchPromises = new Map<string, Promise<TrailerItem[]>>();
+const SEARCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes search cache for zero API pressure
+
 export const VERIFIED_CURATED_TRAILERS: TrailerItem[] = [
   {
     id: 38000,
@@ -258,91 +262,123 @@ export async function getLiveAnimeTrailers({
 export async function searchLiveAnimeTrailers(searchQuery: string): Promise<TrailerItem[]> {
   if (!searchQuery || !searchQuery.trim()) return [];
   const cleanQ = searchQuery.trim();
+  const cacheKey = cleanQ.toLowerCase();
 
-  // Tier 1: AniList GraphQL Search
-  try {
-    const query = `
-      query ($search: String) {
-        Page(page: 1, perPage: 15) {
-          media(search: $search, type: ANIME, countryOfOrigin: "JP", isAdult: false) {
-            id
-            title { romaji english }
-            trailer { id site thumbnail }
-            status
-            coverImage { large medium }
+  // 1. Check in-memory search cache (0ms instant response)
+  const cached = trailerSearchCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL) {
+    return cached.data;
+  }
+
+  // 2. Reuse in-flight search request to prevent duplicate outbound calls
+  if (inFlightSearchPromises.has(cacheKey)) {
+    return inFlightSearchPromises.get(cacheKey)!;
+  }
+
+  const executeSearch = async (): Promise<TrailerItem[]> => {
+    // Tier 1: AniList GraphQL Search (Fast live official trailers)
+    try {
+      const query = `
+        query ($search: String) {
+          Page(page: 1, perPage: 12) {
+            media(search: $search, type: ANIME, countryOfOrigin: "JP", isAdult: false) {
+              id
+              title { romaji english }
+              trailer { id site thumbnail }
+              status
+              coverImage { large medium }
+            }
+          }
+        }
+      `;
+      const res = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': 'https://anilist.co',
+          'Referer': 'https://anilist.co/'
+        },
+        body: JSON.stringify({ query, variables: { search: cleanQ } }),
+        signal: AbortSignal.timeout(2500),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const media = json?.data?.Page?.media;
+        if (Array.isArray(media)) {
+          const valid = media
+            .filter((a: any) => a.trailer && a.trailer.site === 'youtube' && a.trailer.id)
+            .map((a: any) => ({
+              id: a.id,
+              title: {
+                english: a.title?.english || a.title?.romaji,
+                romaji: a.title?.romaji || a.title?.english,
+              },
+              trailer: {
+                id: a.trailer.id,
+                site: 'youtube',
+                thumbnail: a.trailer.thumbnail || `https://i.ytimg.com/vi/${a.trailer.id}/hqdefault.jpg`,
+              },
+              status: a.status,
+              coverImage: a.coverImage,
+            }));
+
+          if (valid.length > 0) {
+            trailerSearchCache.set(cacheKey, { data: valid, timestamp: Date.now() });
+            return valid;
           }
         }
       }
-    `;
-    const res = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ query, variables: { search: cleanQ } }),
-      signal: AbortSignal.timeout(3000),
-    });
+    } catch {}
 
-    if (res.ok) {
-      const json = await res.json();
-      const media = json?.data?.Page?.media;
-      if (Array.isArray(media)) {
-        const valid = media
-          .filter((a: any) => a.trailer && a.trailer.site === 'youtube' && a.trailer.id)
-          .map((a: any) => ({
-            id: a.id,
+    // Tier 2: Official MAL v2 Search + AniList Proxy Resolve
+    try {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/anime/search?q=${encodeURIComponent(cleanQ)}&limit=8`, {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(2500),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const items = json?.data || [];
+        const validMal: TrailerItem[] = items
+          .filter((item: any) => item.trailer && item.trailer.id)
+          .map((item: any) => ({
+            id: item.id || item.idMal,
             title: {
-              english: a.title?.english || a.title?.romaji,
-              romaji: a.title?.romaji || a.title?.english,
+              english: item.title?.english || item.title?.romaji || (typeof item.title === 'string' ? item.title : ''),
+              romaji: item.title?.romaji || item.title?.english || (typeof item.title === 'string' ? item.title : '')
             },
             trailer: {
-              id: a.trailer.id,
-              site: 'youtube',
-              thumbnail: a.trailer.thumbnail || `https://i.ytimg.com/vi/${a.trailer.id}/hqdefault.jpg`,
+              id: item.trailer.id,
+              site: item.trailer.site || 'youtube',
+              thumbnail: item.trailer.thumbnail || `https://i.ytimg.com/vi/${item.trailer.id}/hqdefault.jpg`
             },
-            status: a.status,
-            coverImage: a.coverImage,
+            status: item.status || 'FINISHED',
+            coverImage: item.coverImage || { large: item.images?.webp?.large_image_url }
           }));
 
-        if (valid.length > 0) return valid;
+        if (validMal.length > 0) {
+          trailerSearchCache.set(cacheKey, { data: validMal, timestamp: Date.now() });
+          return validMal;
+        }
       }
-    }
-  } catch {}
+    } catch {}
 
-  // Tier 2: Official MAL v2 Search + AniList Proxy Resolve
-  try {
-    const res = await fetch(`${BACKEND_BASE_URL}/api/anime/search?q=${encodeURIComponent(cleanQ)}&limit=8`, {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(3000),
+    // Tier 3: Local Curated HD List Match (Instant 0ms fallback)
+    const curatedMatches = VERIFIED_CURATED_TRAILERS.filter(item => {
+      const t = `${item.title?.english || ''} ${item.title?.romaji || ''}`.toLowerCase();
+      return t.includes(cacheKey);
     });
-    if (res.ok) {
-      const json = await res.json();
-      const items = json?.data || [];
-      const validMal: TrailerItem[] = items
-        .filter((item: any) => item.trailer && item.trailer.id)
-        .map((item: any) => ({
-          id: item.id || item.idMal,
-          title: {
-            english: item.title?.english || item.title?.romaji || (typeof item.title === 'string' ? item.title : ''),
-            romaji: item.title?.romaji || item.title?.english || (typeof item.title === 'string' ? item.title : '')
-          },
-          trailer: {
-            id: item.trailer.id,
-            site: item.trailer.site || 'youtube',
-            thumbnail: item.trailer.thumbnail || `https://i.ytimg.com/vi/${item.trailer.id}/hqdefault.jpg`
-          },
-          status: item.status || 'FINISHED',
-          coverImage: item.coverImage || { large: item.images?.webp?.large_image_url }
-        }));
 
-      if (validMal.length > 0) return validMal;
-    }
-  } catch {}
+    trailerSearchCache.set(cacheKey, { data: curatedMatches, timestamp: Date.now() });
+    return curatedMatches;
+  };
 
-  // Tier 3: Local Curated HD List Match
-  const q = cleanQ.toLowerCase();
-  const curatedMatches = VERIFIED_CURATED_TRAILERS.filter(item => {
-    const t = `${item.title?.english || ''} ${item.title?.romaji || ''}`.toLowerCase();
-    return t.includes(q);
+  const promise = executeSearch().finally(() => {
+    inFlightSearchPromises.delete(cacheKey);
   });
 
-  return curatedMatches;
+  inFlightSearchPromises.set(cacheKey, promise);
+  return promise;
 }

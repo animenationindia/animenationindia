@@ -263,6 +263,16 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
     </div>
   );
 
+  const getCardHref = () => {
+    if (!isManga) return `/series/${linkId}`;
+    const country = ((anime as any).countryOfOrigin || '').toUpperCase();
+    const fmt = (anime.format || '').toUpperCase();
+    if (country === 'KR' || fmt === 'MANHWA') return `/read/manhwa/${linkId}`;
+    if (country === 'CN' || fmt === 'MANHUA') return `/read/manhua/${linkId}`;
+    if (fmt === 'NOVEL' || fmt === 'LIGHT NOVEL') return `/read/novels/${linkId}`;
+    return `/read/manga/${linkId}`;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -271,7 +281,7 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
       whileHover={{ y: -6, scale: 1.03 }}
       className="group relative w-full flex flex-col cursor-pointer"
     >
-      <Link href={isManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block relative">
+      <Link href={getCardHref()} prefetch={false} className="block relative">
         <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#0d0e1f] rounded-xl border border-white/10 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_8px_30px_rgba(255,77,210,0.2)] transition-all duration-300">
           {cover && (
             <img src={cover} alt={title} loading="eager" fetchPriority="high" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />

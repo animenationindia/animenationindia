@@ -257,3 +257,91 @@ export async function searchOfficialMAL(query: string, limit = 10): Promise<any[
     };
   });
 }
+
+/**
+ * 5. Fetch Manga / Light Novel Details from Official MAL API v2
+ */
+export async function getOfficialMALMangaDetails(id: number | string): Promise<any | null> {
+  const numId = typeof id === 'string' ? parseInt(id.replace(/\D/g, ''), 10) : id;
+  if (!numId || isNaN(numId)) return null;
+
+  const fields = 'id,title,main_picture,alternative_titles,start_date,end_date,synopsis,mean,rank,popularity,num_list_users,num_scoring_users,nsfw,created_at,updated_at,media_type,status,genres,my_list_status,num_volumes,num_chapters,authors{first_name,last_name,role},pictures,background,related_anime,related_manga,recommendations,serialization{name}';
+
+  const raw = await fetchOfficialMAL(`/manga/${numId}?fields=${encodeURIComponent(fields)}`);
+  if (!raw || !raw.id) return null;
+
+  const formatMap: Record<string, string> = {
+    manga: 'MANGA',
+    novel: 'LIGHT NOVEL',
+    light_novel: 'LIGHT NOVEL',
+    one_shot: 'ONE SHOT',
+    doujinshi: 'DOUJINSHI',
+    manhwa: 'MANHWA',
+    manhua: 'MANHUA',
+  };
+
+  const statusMap: Record<string, string> = {
+    finished: 'Finished',
+    currently_publishing: 'Publishing',
+    not_yet_published: 'Not yet published',
+  };
+
+  const largePic = raw.main_picture?.large || raw.main_picture?.medium || '';
+  const alt = raw.alternative_titles || {};
+
+  // Extract authors & artists
+  const authors = (raw.authors || []).map((a: any) => ({
+    name: `${a.node?.first_name || ''} ${a.node?.last_name || ''}`.trim(),
+    role: a.role || 'Story & Art',
+  }));
+
+  const serializations = (raw.serialization || []).map((s: any) => s.node?.name).filter(Boolean);
+
+  return {
+    mal_id: raw.id,
+    id: raw.id,
+    title: raw.title,
+    title_english: alt.en || raw.title,
+    title_japanese: alt.ja || '',
+    synopsis: raw.synopsis || '',
+    images: {
+      webp: {
+        image_url: largePic,
+        small_image_url: raw.main_picture?.medium || largePic,
+        large_image_url: largePic,
+      },
+      jpg: {
+        image_url: largePic,
+        small_image_url: raw.main_picture?.medium || largePic,
+        large_image_url: largePic,
+      },
+    },
+    score: typeof raw.mean === 'number' ? raw.mean : null,
+    scored_by: raw.num_scoring_users || null,
+    rank: raw.rank || null,
+    popularity: raw.popularity || null,
+    members: raw.num_list_users || null,
+    type: formatMap[raw.media_type] || raw.media_type?.toUpperCase() || 'MANGA',
+    status: statusMap[raw.status] || raw.status || 'Publishing',
+    chapters: raw.num_chapters || null,
+    volumes: raw.num_volumes || null,
+    published: {
+      from: raw.start_date || null,
+      to: raw.end_date || null,
+      string: raw.start_date ? (raw.end_date ? `${raw.start_date} to ${raw.end_date}` : raw.start_date) : null,
+    },
+    authors,
+    serializations,
+    genres: (raw.genres || []).map((g: any) => ({ mal_id: g.id, name: g.name })),
+    relations: Array.isArray(raw.related_anime)
+      ? raw.related_anime.map((rel: any) => ({
+          relation: rel.relation_type_formatted || 'Adaptation',
+          entry: [{
+            mal_id: rel.node?.id,
+            type: 'anime',
+            name: rel.node?.title,
+          }],
+        }))
+      : [],
+  };
+}

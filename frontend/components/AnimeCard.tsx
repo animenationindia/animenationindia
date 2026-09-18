@@ -1,12 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { memo, useState, useEffect } from 'react';
+import { memo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Play, Bookmark, Check, BookOpen } from 'lucide-react';
-import { sanitizeDescription } from '../lib/sanitize';
-import { useWatchlist } from '../hooks/useWatchlist';
 import { toEnglishTitle } from '../lib/titleCleaner';
 
 interface AnimeCardProps {
@@ -24,6 +20,7 @@ interface AnimeCardProps {
     } | null;
     type?: string | null;
     format?: string | null;
+    countryOfOrigin?: string | null;
     coverImage?: {
       extraLarge?: string | null;
       large?: string | null;
@@ -38,10 +35,6 @@ interface AnimeCardProps {
 }
 
 function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps) {
-  const [isMounted, setIsMounted] = useState(false);
-  const router = useRouter();
-  const { isInWatchlist, toggleWatchlist } = useWatchlist();
-
   const rawTitle = typeof anime.title === 'string' ? anime.title : (anime.title?.english || anime.title?.romaji || '');
   const title = toEnglishTitle(rawTitle, 'Unknown Title');
   const linkId = anime.idMal 
@@ -50,131 +43,133 @@ function AnimeCard({ anime, priority = false, isManga = false }: AnimeCardProps)
         ? anime.id
         : (typeof anime.id === 'number' && anime.id > 65000 ? `al-${anime.id}` : anime.id));
   const year = anime.seasonYear || (anime.startDate ? anime.startDate.year : null);
-  const format = anime.format ? anime.format.replace('_', ' ') : 'TV';
   const coverImage = anime.coverImage?.extraLarge || anime.coverImage?.large || '';
-  const description = sanitizeDescription(anime.description);
   
-  const isActuallyManga = anime.type === 'MANGA' || anime.format === 'MANGA' || anime.format === 'NOVEL' || anime.format === 'ONE_SHOT' || isManga;
-  const isSaved = isMounted ? isInWatchlist(linkId) : false;
+  const origin = (anime.countryOfOrigin || '').toUpperCase();
+  const rawFormat = (anime.format || '').replace(/_/g, ' ').toUpperCase();
+  const rawType = (anime.type || '').toUpperCase();
 
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setIsMounted(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
+  const isActuallyManga = rawType === 'MANGA' || 
+    rawType === 'MANHWA' || 
+    rawType === 'MANHUA' || 
+    rawType === 'NOVEL' || 
+    rawFormat === 'MANGA' || 
+    rawFormat === 'MANHWA' || 
+    rawFormat === 'MANHUA' || 
+    rawFormat === 'NOVEL' || 
+    rawFormat === 'LIGHT NOVEL' || 
+    rawFormat === 'ONE SHOT' || 
+    rawFormat === 'ONE-SHOT' || 
+    isManga;
 
-  const toggleSave = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  let displayFormat = rawFormat || (isActuallyManga ? 'MANGA' : 'TV');
 
-    const token = localStorage.getItem('user_token');
-    const userId = localStorage.getItem('user_id');
-    
-    if (!token || !userId) {
-      alert("Please login first to save anime to your Watchlist!");
-      router.push('/auth');
-      return;
+  if (origin === 'KR' || rawFormat === 'MANHWA' || rawType === 'MANHWA') {
+    displayFormat = 'MANHWA';
+  } else if (origin === 'CN' || rawFormat === 'MANHUA' || rawType === 'MANHUA') {
+    displayFormat = 'MANHUA';
+  } else if (rawFormat === 'NOVEL' || rawFormat === 'LIGHT NOVEL' || rawType === 'NOVEL') {
+    displayFormat = 'LIGHT NOVEL';
+  } else if (rawFormat === 'ONE SHOT' || rawFormat === 'ONE-SHOT') {
+    displayFormat = 'ONE-SHOT';
+  } else if (isActuallyManga && (displayFormat === 'MANGA' || !displayFormat)) {
+    displayFormat = 'MANGA';
+  }
+
+  const getFormatBadgeStyle = (fmt: string) => {
+    switch (fmt) {
+      case 'MANHWA':
+        return 'text-emerald-400 font-extrabold';
+      case 'MANHUA':
+        return 'text-amber-400 font-extrabold';
+      case 'LIGHT NOVEL':
+        return 'text-purple-400 font-extrabold';
+      case 'MANGA':
+        return 'text-sky-400 font-extrabold';
+      case 'ONE-SHOT':
+        return 'text-rose-400 font-extrabold';
+      default:
+        return 'text-[#ff4dd2] font-bold';
     }
-
-    await toggleWatchlist({
-      animeId: linkId,
-      title,
-      image: coverImage,
-    });
   };
 
+  let targetHref = `/series/${linkId}`;
+  if (isActuallyManga) {
+    if (displayFormat === 'MANHWA') {
+      targetHref = `/read/manhwa/${linkId}`;
+    } else if (displayFormat === 'MANHUA') {
+      targetHref = `/read/manhua/${linkId}`;
+    } else if (displayFormat === 'LIGHT NOVEL' || rawFormat.includes('NOVEL')) {
+      targetHref = `/read/novels/${linkId}`;
+    } else {
+      targetHref = `/read/manga/${linkId}`;
+    }
+  }
+
   return (
-    <div 
-      className="card-3d group relative w-full mb-4 flex flex-col bg-transparent gpu-accelerate"
+    <Link 
+      href={targetHref} 
+      prefetch={false}
+      className="group relative w-full mb-4 flex flex-col bg-transparent cursor-pointer select-none touch-manipulation transition-transform duration-300 ease-out hover:-translate-y-2 hover:scale-[1.03] active:scale-[0.97]"
     >
-      {/* 🖼️ Image & Overlay Container */}
-      <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#050716] rounded-lg border border-[#ff4dd2]/20 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_0_20px_rgba(255,77,210,0.4)] transition-all duration-300">
-        
-        {/* Link wraps image and hover overlay */}
-        <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="block w-full h-full relative z-10">
-          <img 
-            src={coverImage || '/placeholder-poster.png'} 
-            alt={title} 
-            loading={priority ? "eager" : "lazy"}
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              const target = e.currentTarget;
-              if (!target.src.includes('placeholder-poster.png')) {
-                target.src = '/placeholder-poster.png';
-              }
-            }}
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+      {/* 🖼️ Poster Image Container (7media Smooth Card Style) */}
+      <div className="relative w-full aspect-[2/3] overflow-hidden bg-[#0a0b1c] rounded-xl sm:rounded-2xl border border-white/10 group-hover:border-[#ff4dd2]/60 group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.85),0_0_22px_rgba(255,77,210,0.35)] transition-all duration-300">
+        <img 
+          src={coverImage || '/placeholder-poster.png'} 
+          alt={title} 
+          loading={priority ? "eager" : "lazy"}
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.src.includes('placeholder-poster.png')) {
+              target.src = '/placeholder-poster.png';
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-108 group-hover:brightness-105"
+        />
 
-          {anime.badgeText && (
-            <div className="absolute top-0 left-0 bg-[#000000]/80 px-2 py-1 text-[10px] font-bold text-[#a0a0a0] uppercase tracking-wider z-20 rounded-br-lg border-b border-r border-[#2A2B30]/50 shadow-md">
-              {anime.badgeText}
-            </div>
-          )}
+        {/* Subtle Ambient Bottom Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050716]/80 via-transparent to-transparent opacity-40 group-hover:opacity-60 transition-opacity pointer-events-none" />
 
-          {/* 🌟 Deep Space Neon Hover Overlay */}
-          <div className="absolute inset-0 bg-[#121326]/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-between p-2 md:p-3 backdrop-blur-[2px]">
-            
-            {/* Empty space at top so the play button stays centered */}
-            <div className="flex justify-end h-8 md:h-10"></div>
-
-            {/* Center: Play / Read Button */}
-            <div className="flex flex-col items-center justify-center flex-1 gap-2">
-              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full border-2 border-[#ff4dd2] bg-[#050716]/60 text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-white transition-all duration-300 shadow-[0_0_15px_rgba(255,77,210,0.5)] group-hover:scale-110">
-                {isActuallyManga ? (
-                  <BookOpen size={24} className="stroke-[2.5px]" />
-                ) : (
-                  <Play size={24} fill="currentColor" className="ml-1" />
-                )}
-              </div>
-              <span className="text-[11px] md:text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255,77,210,0.5)]">
-                {isActuallyManga ? "READ NOW" : "WATCH NOW"}
-              </span>
-            </div>
-
-            {/* Bottom: Synopsis snippet or tags */}
-            <div className="text-white relative z-10">
-              {description ? (
-                <p className="text-[11px] md:text-xs leading-tight line-clamp-3 text-gray-300 drop-shadow-md">
-                  {description}
-                </p>
-              ) : (
-                <p className="text-xs font-bold text-[#ff4dd2] uppercase tracking-wider drop-shadow-[0_0_5px_rgba(255,77,210,0.5)]">{isManga ? "Read Now" : "Watch Now"}</p>
-              )}
-            </div>
-            
-            {/* Bottom Gradient for text readability */}
-            <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-[#050716] to-transparent pointer-events-none"></div>
-
+        {/* Floating Custom Badge (if available or category badge) */}
+        {anime.badgeText ? (
+          <div className="absolute top-2 left-2 bg-[#050716]/85 backdrop-blur-md px-2 py-0.5 text-[10px] font-black text-gray-200 uppercase tracking-wider rounded-md border border-white/15 shadow-md z-20">
+            {anime.badgeText}
           </div>
-        </Link>
-
-        {/* Top Right: Watchlist Button (Positioned above Link with z-30) */}
-        <div className={`absolute top-2 right-2 md:top-3 md:right-3 z-30 transition-opacity duration-300 ${isSaved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-          <button 
-            type="button"
-            onClick={toggleSave}
-            className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-full transition-colors backdrop-blur-md shadow-[0_0_10px_rgba(255,77,210,0.3)] hover:shadow-[0_0_15px_rgba(255,77,210,0.8)] cursor-pointer ${
-              isSaved 
-                ? 'bg-[#ff4dd2] text-white border border-transparent' 
-                : 'bg-[#050716]/80 hover:bg-[#ff4dd2] text-white border border-[#ff4dd2]/50'
-            }`}
-          >
-            {isSaved ? <Check size={18} /> : <Bookmark size={18} />}
-          </button>
-        </div>
-
+        ) : isActuallyManga && (displayFormat === 'MANHWA' || displayFormat === 'MANHUA' || displayFormat === 'LIGHT NOVEL') ? (
+          <div className={`absolute top-2 left-2 backdrop-blur-md px-2 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md border shadow-md z-20 ${
+            displayFormat === 'MANHWA' 
+              ? 'bg-emerald-950/85 text-emerald-400 border-emerald-500/40' 
+              : displayFormat === 'MANHUA' 
+              ? 'bg-amber-950/85 text-amber-400 border-amber-500/40' 
+              : 'bg-purple-950/85 text-purple-400 border-purple-500/40'
+          }`}>
+            {displayFormat}
+          </div>
+        ) : null}
       </div>
 
-      {/* 📝 Text Information below card */}
-      <Link href={isActuallyManga ? `/manga/${linkId}` : `/series/${linkId}`} prefetch={false} className="mt-3 flex flex-col px-1 block">
-        <h3 className="text-white text-[14px] font-semibold line-clamp-2 leading-snug group-hover:text-[#ff4dd2] transition-colors drop-shadow-[0_0_5px_rgba(255,255,255,0.1)]">
+      {/* 📝 Clean Metadata & Title Below Poster */}
+      <div className="mt-2.5 flex flex-col px-0.5">
+        <h3 className="text-white text-[13.5px] sm:text-[14px] font-bold line-clamp-2 leading-snug group-hover:text-[#ff4dd2] transition-colors duration-200">
           {title}
         </h3>
-        <div className="text-[12px] text-[#ff4dd2] mt-1 flex items-center gap-1 font-medium capitalize opacity-80">
-          {format.toLowerCase()} {year && <span className="text-[#a0a0a0]">• {year}</span>}
+        <div className="text-[12px] text-gray-400 mt-1 flex items-center gap-1.5 font-medium">
+          <span className={`uppercase text-[11px] ${getFormatBadgeStyle(displayFormat)}`}>
+            {displayFormat}
+          </span>
+          {year && <span className="text-gray-500">• {year}</span>}
+          {typeof anime.averageScore === 'number' && !isNaN(anime.averageScore) && (
+            <>
+              <span className="text-gray-500">•</span>
+              <span className="text-amber-400 font-bold text-[11px] flex items-center gap-0.5">
+                ★ {(anime.averageScore / 10).toFixed(1)}
+              </span>
+            </>
+          )}
         </div>
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }
 

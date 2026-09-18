@@ -2,260 +2,842 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowRight, ShieldCheck, Sparkles, Lock, Mail } from 'lucide-react';
-import { BACKEND_URL } from '@/lib/config';
-import Image from 'next/image';
 import Link from 'next/link';
+import Image from 'next/image';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  ArrowRight,
+  ArrowLeft,
+  KeyRound,
+  Zap,
+  CheckCircle2,
+  X,
+  RefreshCw,
+  AlertCircle,
+  Shield,
+  ShieldCheck,
+} from 'lucide-react';
+import {
+  passwordLoginStep1,
+  verifyTwoFactorAndLogin,
+  verifyBackupCodeAndLogin,
+  otpLoginVerifyAndAuthenticate,
+  requestLoginOtp,
+  resendTwoFactorOtp,
+  requestPasswordResetOtp,
+  verifyOtpAndResetPassword,
+} from '@/app/actions/auth';
+import SocialAuthButtons from '@/components/SocialAuthButtons';
 
 export default function SignInPage() {
+  const router = useRouter();
+
+  // Mode: 'password' | 'otp'
+  const [loginMode, setLoginMode] = useState<'password' | 'otp'>('password');
+
+  // Form State
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  const router = useRouter(); 
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // OTP Login State
+  const [otpStep, setOtpStep] = useState<'request' | 'verify'>('request');
+  const [loginOtpCode, setLoginOtpCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // 2FA Verification Step State
+  const [twoFAStep, setTwoFAStep] = useState(false);
+  const [twoFAEmail, setTwoFAEmail] = useState('');
+  const [twoFACode, setTwoFACode] = useState('');
+  const [twoFAMode, setTwoFAMode] = useState<'otp' | 'backup'>('otp');
+  const [backupCode, setBackupCode] = useState('');
+  const [twoFAResendCooldown, setTwoFAResendCooldown] = useState(60);
+
+  // Forgot Password Modal State
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotStep, setForgotStep] = useState<'email' | 'code'>('email');
+  const [forgotCode, setForgotCode] = useState('');
+  const [forgotNewPass, setForgotNewPass] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  // Countdown timer for regular OTP resend
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  // Countdown timer for 2FA OTP resend
+  useEffect(() => {
+    if (twoFAResendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setTwoFAResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [twoFAResendCooldown]);
+
+  const saveSessionAndRedirect = (data: { token: string; user: any }) => {
+    localStorage.setItem('user_token', data.token);
+    localStorage.setItem('user_id', data.user.id);
+    localStorage.setItem('user_name', data.user.name);
+    localStorage.setItem('user_email', data.user.email);
+    localStorage.setItem('user_role', data.user.role || 'user');
+    if (data.user.avatar) {
+      localStorage.setItem('user_avatar', data.user.avatar);
+    }
+    window.dispatchEvent(new Event('auth-change'));
+    router.push('/home');
+  };
+
+  // 1. Password Login (with 2FA intercept)
+  const handlePasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Invalid email or password. Please try again.');
+      const res = await passwordLoginStep1({ email, password });
+      if (!res.success) {
+        throw new Error(res.error || 'Invalid email or password. Please try again.');
       }
-      localStorage.setItem('user_token', data.token);
-      localStorage.setItem('user_name', data.user.username);
-      localStorage.setItem('user_id', data.user.id || data.user._id);
-      window.dispatchEvent(new Event('auth-change'));
-      router.push('/home'); 
-    } catch (error: any) {
-      setErrorMsg(error.message || 'An unexpected error occurred during sign in.');
+
+      if (res.requires2fa) {
+        // User has 2FA enabled! Switch to 2FA verification step
+        setTwoFAEmail(res.twoFactorEmail || email);
+        setTwoFAStep(true);
+        setTwoFAResendCooldown(60);
+        return;
+      }
+
+      if (!res.token || !res.user) {
+        throw new Error('Authentication succeeded but session could not be established.');
+      }
+
+      saveSessionAndRedirect({ token: res.token, user: res.user });
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred during sign in.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handlePasswordReset = (e: React.MouseEvent) => {
+  // 2. Request OTP Code for Passwordless Login
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Password reset link is not active for self-hosted accounts. Please contact site support.');
+    if (!email.trim()) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await requestLoginOtp(email);
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to send login code.');
+      }
+      setOtpStep('verify');
+      setResendCooldown(60);
+    } catch (err: any) {
+      setError(err.message || 'Failed to dispatch 6-digit OTP code.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const inputVariants: Variants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: (custom: number) => ({
-      opacity: 1, y: 0,
-      transition: { delay: custom * 0.08, duration: 0.35, ease: 'easeOut' }
-    })
+  // 3. Verify Passwordless OTP Code (with 2FA intercept)
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginOtpCode.trim() || loginOtpCode.trim().length !== 6) {
+      setError('Please enter the full 6-digit verification code.');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await otpLoginVerifyAndAuthenticate({
+        email,
+        code: loginOtpCode.trim(),
+      });
+      if (!res.success) {
+        throw new Error(res.error || 'Invalid or expired OTP code.');
+      }
+
+      if (res.requires2fa) {
+        // User has 2FA enabled! Switch to 2FA verification step
+        setTwoFAEmail(res.twoFactorEmail || email);
+        setTwoFAStep(true);
+        setTwoFAResendCooldown(60);
+        return;
+      }
+
+      if (!res.token || !res.user) {
+        throw new Error('Authentication succeeded but session could not be established.');
+      }
+
+      saveSessionAndRedirect({ token: res.token, user: res.user });
+    } catch (err: any) {
+      setError(err.message || 'OTP verification failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 4. Verify 2FA (OTP or Backup Recovery Code)
+  const handleVerifyTwoFactor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (twoFAMode === 'otp') {
+        if (!twoFACode.trim() || twoFACode.trim().length !== 6) {
+          throw new Error('Please enter the full 6-digit 2FA code.');
+        }
+        const res = await verifyTwoFactorAndLogin({
+          email,
+          code: twoFACode.trim(),
+          twoFactorEmail: twoFAEmail,
+        });
+        if (!res.success || !res.token || !res.user) {
+          throw new Error(res.error || 'Invalid or expired 2FA code.');
+        }
+        saveSessionAndRedirect({ token: res.token, user: res.user });
+      } else {
+        // Backup recovery code
+        if (!backupCode.trim()) {
+          throw new Error('Please enter an emergency backup recovery code.');
+        }
+        const res = await verifyBackupCodeAndLogin({
+          email,
+          backupCode: backupCode.trim(),
+        });
+        if (!res.success || !res.token || !res.user) {
+          throw new Error(res.error || 'Invalid emergency backup code.');
+        }
+        saveSessionAndRedirect({ token: res.token, user: res.user });
+      }
+    } catch (err: any) {
+      setError(err.message || '2FA verification failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Resend 2FA OTP
+  const handleResendTwoFactor = async () => {
+    if (twoFAResendCooldown > 0) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await resendTwoFactorOtp(email);
+      if (res.success) {
+        setTwoFAResendCooldown(60);
+      } else {
+        setError(res.error || 'Failed to resend 2FA code.');
+      }
+    } catch {
+      setError('Network error resending 2FA code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 4. Request Password Reset Code
+  const handleRequestForgotOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) return;
+    setForgotLoading(true);
+    setForgotError(null);
+
+    try {
+      const res = await requestPasswordResetOtp(forgotEmail);
+      if (!res.success) {
+        throw new Error(res.error || 'No account found with this email.');
+      }
+      setForgotStep('code');
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to send reset code.');
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  // 5. Confirm Password Reset
+  const handleConfirmResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (forgotCode.length !== 6 || !forgotNewPass) {
+      setForgotError('Please enter the 6-digit code and a new password.');
+      return;
+    }
+    setForgotLoading(true);
+    setForgotError(null);
+
+    try {
+      const res = await verifyOtpAndResetPassword({
+        email: forgotEmail,
+        code: forgotCode.trim(),
+        newPassword: forgotNewPass,
+        isLoginFlow: true,
+      });
+      if (!res.success) {
+        throw new Error(res.error || 'Password reset failed.');
+      }
+      setForgotSuccess('Password updated successfully!');
+      setTimeout(() => {
+        setForgotOpen(false);
+        setForgotStep('email');
+        setForgotSuccess(null);
+        setForgotCode('');
+        setForgotNewPass('');
+
+        if (res.requires2fa) {
+          // If 2FA is on, immediately show 2FA verification step
+          setEmail(forgotEmail);
+          setTwoFAEmail(res.twoFactorEmail || forgotEmail);
+          setTwoFAStep(true);
+          setTwoFAResendCooldown(60);
+          return;
+        }
+
+        if (res.token && res.user) {
+          // Direct Login if 2FA is off
+          saveSessionAndRedirect({ token: res.token, user: res.user });
+        }
+      }, 1000);
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to reset password.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex bg-[#050716] selection:bg-[#00f0ff] selection:text-black">
-      
-      {/* 🌌 Left Side: Epic Shadow Monarch / Hunter Visual */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-[#090a1a] items-center justify-center overflow-hidden border-r border-white/5">
-        <Image 
-          src="https://s4.anilist.co/file/anilistcdn/media/anime/banner/151807-6B1sLz8Wd5iS.jpg" 
-          alt="Solo Leveling Hunter Wallpaper" 
-          fill
-          priority
-          className="object-cover opacity-50 mix-blend-luminosity scale-105 hover:scale-110 transition-transform duration-[12s]"
-        />
-        
-        {/* Deep ambient dark gradients */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050716] via-[#050716]/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#050716]" />
-        
-        {/* Glow Spheres */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00f0ff]/15 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-[#a855f7]/15 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#050716] px-4 py-20 relative overflow-hidden">
+      {/* Subtle Background Glow */}
+      <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#ff4dd2]/10 blur-[130px]" />
+      <div className="pointer-events-none absolute bottom-10 right-1/4 w-[400px] h-[400px] rounded-full bg-indigo-600/10 blur-[120px]" />
 
-        <div className="relative z-10 p-12 w-full max-w-lg mt-auto mb-16 text-left">
-          <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.5 }}>
-            
-            <div className="inline-flex items-center gap-2 bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] px-3.5 py-1 rounded-full text-xs font-black tracking-widest uppercase mb-6 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-              <ShieldCheck size={14} /> Verified Otaku Hunter Access
-            </div>
-
-            <Link href="/" className="block font-orbitron text-5xl text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] via-white to-[#ff4dd2] tracking-widest drop-shadow-[0_0_25px_rgba(0,240,255,0.4)]">
-              ANI
+      <div className="relative z-10 w-full max-w-md">
+        {/* Main Card Container */}
+        <div className="rounded-3xl border border-white/10 bg-[#0c0d1e]/90 p-6 md:p-8 shadow-2xl backdrop-blur-xl">
+          
+          {/* Header */}
+          <div className="text-center mb-6">
+            <Link href="/" className="inline-flex items-center gap-2 group mb-4">
+              <div className="relative w-10 h-10 rounded-full overflow-hidden shadow-[0_0_15px_rgba(255,77,210,0.5)] border border-[#ff4dd2]/30 bg-gray-900 flex items-center justify-center group-hover:scale-105 transition-transform">
+                <Image src="/ani-logo.png" alt="Logo" fill sizes="40px" priority className="object-contain" />
+              </div>
+              <span className="font-orbitron text-lg font-black text-white tracking-wide">
+                ANIME NATION
+              </span>
             </Link>
 
-            <h1 className="text-white text-3xl xl:text-4xl font-extrabold mt-4 leading-tight">
-              Welcome Back, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#ff4dd2]">Hunter.</span>
+            <h1 className="text-2xl font-black text-white font-orbitron uppercase tracking-tight">
+              Welcome Back
             </h1>
-
-            <p className="text-gray-400 mt-4 text-sm leading-relaxed font-medium">
-              Resume your anime voyage across the deep space universe. Your personalized watchlist, 4K streaming links, and custom playlists are waiting.
-            </p>
-
-            <div className="mt-8 grid grid-cols-2 gap-3 pt-6 border-t border-white/10 text-xs text-gray-300 font-semibold">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#00f0ff] animate-pulse" /> Realtime Syncing
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#ff4dd2] animate-pulse" /> Ask Ani AI Support
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#a855f7] animate-pulse" /> Custom Watchlists
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> 100% Ad-Free UI
-              </div>
-            </div>
-
-          </motion.div>
-        </div>
-      </div>
-
-      {/* ✨ Right Side: Sign In Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center relative px-4 sm:px-8 lg:px-12 py-10 sm:py-16 pb-24 lg:pb-16">
-        
-        {/* Background Aura */}
-        <div className="absolute top-12 right-12 w-96 h-96 bg-[#00f0ff]/10 blur-[130px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-12 left-12 w-96 h-96 bg-[#ff4dd2]/10 blur-[130px] rounded-full pointer-events-none" />
-
-        <div className="w-full max-w-md relative z-10">
-          
-          <div className="mb-8 text-center lg:text-left">
-            <div className="lg:hidden inline-block mb-4">
-              <Link href="/" className="font-orbitron text-4xl text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#ff4dd2] tracking-widest">
-                ANI
-              </Link>
-            </div>
-            <h2 className="text-white text-3xl font-black mb-2 flex items-center justify-center lg:justify-start gap-2">
-              Sign In <span className="text-[#00f0ff] text-2xl">⚡</span>
-            </h2>
-            <p className="text-gray-400 text-sm font-medium">
-              Enter your credentials to enter the Anime Nation network.
+            <p className="mt-1 text-xs text-gray-400">
+              Sign in to access your custom folders, watchlist, and reviews.
             </p>
           </div>
 
-          <AnimatePresence mode="popLayout">
-            {errorMsg && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }} 
-                animate={{ opacity: 1, y: 0 }} 
-                exit={{ opacity: 0, y: -10 }}
-                className="bg-red-500/10 text-red-400 p-4 rounded-2xl mb-6 text-sm flex items-start gap-3 font-medium border border-red-500/20 shadow-lg"
-              >
-                <AlertCircle size={20} className="shrink-0 mt-0.5" />
-                <p>{errorMsg}</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {/* Error Banner */}
+          {error && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-xs font-semibold text-rose-300 mb-4 animate-in fade-in">
+              <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-400" />
+              <span>{error}</span>
+            </div>
+          )}
 
-          <form onSubmit={handleSignIn} className="flex flex-col gap-4">
-            
-            {/* Email Field */}
-            <motion.div custom={1} variants={inputVariants} initial="hidden" animate="visible">
-              <label className="text-gray-200 text-xs font-bold mb-2 flex items-center gap-1.5 uppercase tracking-wider">
-                <Mail size={13} className="text-[#00f0ff]" /> Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="hunter@animenation.in"
-                className="w-full p-4 rounded-2xl border border-white/10 bg-[#0d0f24] text-white text-sm outline-none transition-all focus:border-[#00f0ff] focus:bg-[#070918] focus:shadow-[0_0_20px_rgba(0,240,255,0.2)] placeholder-gray-600"
-              />
-            </motion.div>
+          {twoFAStep ? (
+            /* ========================================================================= */
+            /* 🛡️ TWO-FACTOR AUTHENTICATION (2FA) STEP                                   */
+            /* ========================================================================= */
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 text-xs">
+                <ShieldCheck className="shrink-0 text-cyan-400" size={24} />
+                <div className="leading-snug">
+                  <strong className="block text-white font-bold uppercase tracking-wider">Two-Factor Security Shield</strong>
+                  <span className="text-[11px] text-zinc-300">
+                    Dispatched to <span className="font-mono text-cyan-300 font-semibold">{twoFAEmail}</span>
+                  </span>
+                </div>
+              </div>
 
-            {/* Password Field */}
-            <motion.div custom={2} variants={inputVariants} initial="hidden" animate="visible" className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-gray-200 text-xs font-bold flex items-center gap-1.5 uppercase tracking-wider">
-                  <Lock size={13} className="text-[#ff4dd2]" /> Password
-                </label>
+              {/* Mode Switcher inside 2FA: 6-Digit OTP vs Emergency Backup Code */}
+              <div className="flex p-1 rounded-2xl bg-[#121327] border border-white/5">
                 <button
                   type="button"
-                  onClick={handlePasswordReset}
-                  disabled={loading}
-                  className="text-gray-400 hover:text-[#00f0ff] text-xs font-bold transition-colors cursor-pointer"
+                  onClick={() => {
+                    setTwoFAMode('otp');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    twoFAMode === 'otp'
+                      ? 'bg-cyan-500 text-black font-black shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
                 >
-                  Forgot password?
+                  <Zap size={13} /> 6-Digit Code
                 </button>
-              </div>
-              <div className="relative flex items-center">
-                <input
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••••••"
-                  className="w-full py-4 pl-4 pr-12 rounded-2xl border border-white/10 bg-[#0d0f24] text-white text-sm outline-none transition-all focus:border-[#ff4dd2] focus:bg-[#070918] focus:shadow-[0_0_20px_rgba(255,77,210,0.2)] placeholder-gray-600"
-                />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 text-gray-500 hover:text-white transition-colors"
+                  onClick={() => {
+                    setTwoFAMode('backup');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    twoFAMode === 'backup'
+                      ? 'bg-amber-500 text-black font-black shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  <KeyRound size={13} /> Backup Code
                 </button>
               </div>
-            </motion.div>
 
-            {/* Remember Me */}
-            <motion.div custom={2.5} variants={inputVariants} initial="hidden" animate="visible" className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 text-xs font-medium text-gray-300 cursor-pointer select-none">
-                <input 
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded border-white/20 bg-[#0d0f24] text-[#00f0ff] focus:ring-0 cursor-pointer"
-                />
-                Keep me signed in
-              </label>
-            </motion.div>
+              <form onSubmit={handleVerifyTwoFactor} className="space-y-4">
+                {twoFAMode === 'otp' ? (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5 text-center">
+                      Enter 6-Digit Security Code
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      required
+                      autoFocus
+                      value={twoFACode}
+                      onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      className="w-full h-12 rounded-xl border border-cyan-500/40 bg-[#121327] text-center font-orbitron text-xl font-bold tracking-[0.4em] text-white outline-none focus:border-cyan-400 shadow-inner"
+                    />
+                    <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
+                      <span>Didn&apos;t receive code?</span>
+                      {twoFAResendCooldown > 0 ? (
+                        <span className="text-gray-500 font-semibold">Resend in {twoFAResendCooldown}s</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendTwoFactor}
+                          className="text-cyan-400 hover:underline font-bold"
+                        >
+                          Resend 2FA Code
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5">
+                      Emergency Recovery Code (8-Codes Format)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      value={backupCode}
+                      onChange={(e) => setBackupCode(e.target.value)}
+                      placeholder="ANI-XXXX-XXXX"
+                      className="w-full h-11 px-4 rounded-xl border border-amber-500/40 bg-[#121327] text-white font-mono text-sm tracking-wider outline-none focus:border-amber-400"
+                    />
+                    <p className="text-[11px] text-gray-400 mt-1.5 leading-relaxed">
+                      Enter any of your 8 backup codes. Once used, the code will be automatically renewed with a fresh one.
+                    </p>
+                  </div>
+                )}
 
-            {/* Submit Button */}
-            <motion.button
-              custom={3} variants={inputVariants} initial="hidden" animate="visible"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              type="submit"
-              disabled={loading}
-              className="w-full p-4 mt-2 rounded-2xl font-black text-sm flex justify-center items-center gap-2 transition-all bg-gradient-to-r from-[#00f0ff] via-[#a855f7] to-[#ff4dd2] text-black hover:text-white hover:shadow-[0_0_30px_rgba(0,240,255,0.4)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-xl"
-            >
-              {loading ? (
-                 <Loader2 size={20} className="animate-spin text-white" />
+                <button
+                  type="submit"
+                  disabled={isLoading || (twoFAMode === 'otp' ? twoFACode.length !== 6 : !backupCode.trim())}
+                  className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-black font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-cyan-500/20 hover:opacity-95 transition disabled:opacity-50 cursor-pointer"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Verifying 2FA...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Authenticate &amp; Sign In</span>
+                      <ShieldCheck size={16} />
+                    </>
+                  )}
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTwoFAStep(false);
+                      setTwoFACode('');
+                      setBackupCode('');
+                      setError(null);
+                    }}
+                    className="text-xs text-gray-400 hover:text-white underline cursor-pointer"
+                  >
+                    ← Cancel and return to sign in
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : (
+            <>
+              {/* Mode Switcher Tabs */}
+              <div className="flex p-1 rounded-2xl bg-[#121327] border border-white/5 mb-5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode('password');
+                    setError(null);
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    loginMode === 'password'
+                      ? 'bg-[#ff4dd2] text-black shadow-md font-black'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Lock size={13} /> Password
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode('otp');
+                    setError(null);
+                    setOtpStep('request');
+                  }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    loginMode === 'otp'
+                      ? 'bg-gradient-to-r from-indigo-600 to-[#ff4dd2] text-white shadow-md font-black'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Zap size={13} /> 6-Digit Email OTP
+                </button>
+              </div>
+
+              {/* Form Content */}
+              {loginMode === 'password' ? (
+                <form onSubmit={handlePasswordSignIn} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5">
+                      Email Address
+                    </label>
+                    <div className="relative flex items-center">
+                      <Mail size={16} className="absolute left-3.5 text-gray-500" />
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@example.com"
+                        className="w-full h-11 pl-10 pr-4 rounded-xl border border-white/10 bg-[#121327] text-white text-xs outline-none focus:border-[#ff4dd2] focus:bg-[#161730] transition placeholder-gray-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-gray-300">
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotOpen(true);
+                          setForgotEmail(email);
+                        }}
+                        className="text-xs text-[#ff4dd2] hover:underline font-semibold cursor-pointer"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <Lock size={16} className="absolute left-3.5 text-gray-500" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full h-11 pl-10 pr-10 rounded-xl border border-white/10 bg-[#121327] text-white text-xs outline-none focus:border-[#ff4dd2] focus:bg-[#161730] transition placeholder-gray-600"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 text-gray-500 hover:text-white transition cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full h-11 mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff4dd2] to-indigo-600 text-white font-extrabold text-xs tracking-wider uppercase shadow-lg shadow-[#ff4dd2]/20 hover:opacity-95 active:scale-[0.99] transition disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Signing In...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Sign In</span>
+                        <ArrowRight size={15} />
+                      </>
+                    )}
+                  </button>
+                </form>
               ) : (
-                <>
-                  <span>Sign In to Account</span>
-                  <ArrowRight size={18} />
-                </>
+                <div className="space-y-4">
+                  {otpStep === 'request' ? (
+                    <form onSubmit={handleRequestOtp} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5">
+                          Enter Email for 6-Digit Login Code
+                        </label>
+                        <div className="relative flex items-center">
+                          <Mail size={16} className="absolute left-3.5 text-gray-500" />
+                          <input
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="name@example.com"
+                            className="w-full h-11 pl-10 pr-4 rounded-xl border border-white/10 bg-[#121327] text-white text-xs outline-none focus:border-indigo-400 focus:bg-[#161730] transition placeholder-gray-600"
+                          />
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-gray-400 leading-relaxed">
+                        A 6-digit security code will be sent to your email from Anime Nation India.
+                      </p>
+
+                      <button
+                        type="submit"
+                        disabled={isLoading || !email.trim()}
+                        className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs tracking-wider uppercase shadow-md transition disabled:opacity-50 cursor-pointer"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Sending Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Send 6-Digit Code</span>
+                            <Zap size={15} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleVerifyOtp} className="space-y-4">
+                      <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs flex items-center justify-between">
+                        <span className="text-gray-300 truncate max-w-[240px]">{email}</span>
+                        <button
+                          type="button"
+                          onClick={() => setOtpStep('request')}
+                          className="text-xs text-[#ff4dd2] hover:underline font-bold"
+                        >
+                          Change
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-1.5 text-center">
+                          Enter 6-Digit Code
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          required
+                          autoFocus
+                          value={loginOtpCode}
+                          onChange={(e) => setLoginOtpCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="123456"
+                          className="w-full h-12 rounded-xl border border-white/15 bg-[#121327] text-center font-orbitron text-xl font-bold tracking-[0.4em] text-white outline-none focus:border-[#ff4dd2]"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <span>Didn&apos;t get code?</span>
+                        {resendCooldown > 0 ? (
+                          <span className="text-gray-500 font-semibold">Resend in {resendCooldown}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleRequestOtp}
+                            className="text-[#ff4dd2] hover:underline font-bold"
+                          >
+                            Resend Code
+                          </button>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isLoading || loginOtpCode.length !== 6}
+                        className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#ff4dd2] to-indigo-600 text-white font-extrabold text-xs tracking-wider uppercase shadow-lg transition disabled:opacity-50 cursor-pointer"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Verifying...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Verify &amp; Sign In</span>
+                            <CheckCircle2 size={16} />
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </div>
               )}
-            </motion.button>
-          </form>
+            </>
+          )}
+
+          {/* Social Logins */}
+          <SocialAuthButtons mode="signin" />
 
           {/* Switch to Sign Up */}
-          <motion.div custom={4} variants={inputVariants} initial="hidden" animate="visible" className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-sm">
-            <span className="text-gray-400">New to Anime Nation India?</span>
-            <Link
-              href="/signup"
-              className="font-extrabold text-[#00f0ff] hover:text-white transition-colors bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 px-4 py-2 rounded-xl border border-[#00f0ff]/30 shadow-md flex items-center gap-1.5"
-            >
-              <Sparkles size={14} /> Join Clan (Sign Up)
-            </Link>
-          </motion.div>
+          <div className="mt-6 border-t border-white/10 pt-4 text-center">
+            <p className="text-xs text-gray-400">
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className="font-bold text-[#ff4dd2] hover:underline">
+                Sign up for free
+              </Link>
+            </p>
+          </div>
+        </div>
 
+        {/* Back to Home Link */}
+        <div className="mt-5 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft size={13} />
+            <span>Back to home / Continue as guest</span>
+          </Link>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {forgotOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="w-full max-w-sm bg-[#0c0d1e] border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <KeyRound size={16} className="text-[#ff4dd2]" />
+                <h3 className="text-xs font-black font-orbitron uppercase text-white">
+                  Reset Password
+                </h3>
+              </div>
+              <button
+                onClick={() => setForgotOpen(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {forgotError && (
+              <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-medium">
+                {forgotError}
+              </div>
+            )}
+
+            {forgotSuccess && (
+              <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium flex items-center gap-1.5">
+                <CheckCircle2 size={14} />
+                <span>{forgotSuccess}</span>
+              </div>
+            )}
+
+            {forgotStep === 'email' ? (
+              <form onSubmit={handleRequestForgotOtp} className="space-y-3.5">
+                <p className="text-xs text-gray-400">
+                  Enter your email to receive a 6-digit password reset code.
+                </p>
+                <input
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full h-10 px-3.5 rounded-xl border border-white/10 bg-[#121327] text-white text-xs outline-none focus:border-[#ff4dd2]"
+                />
+                <button
+                  type="submit"
+                  disabled={forgotLoading || !forgotEmail.trim()}
+                  className="w-full h-10 rounded-xl bg-gradient-to-r from-[#ff4dd2] to-indigo-600 text-white font-bold text-xs cursor-pointer disabled:opacity-50"
+                >
+                  {forgotLoading ? 'Sending...' : 'Send Reset Code'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleConfirmResetPassword} className="space-y-3">
+                <p className="text-xs text-gray-400">
+                  Enter the 6-digit code sent to <strong className="text-white">{forgotEmail}</strong> and your new password.
+                </p>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                    6-Digit Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={forgotCode}
+                    onChange={(e) => setForgotCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full h-10 px-3.5 rounded-xl border border-white/10 bg-[#121327] text-white text-center font-orbitron text-base font-bold tracking-widest outline-none focus:border-[#ff4dd2]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={forgotNewPass}
+                    onChange={(e) => setForgotNewPass(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="w-full h-10 px-3.5 rounded-xl border border-white/10 bg-[#121327] text-white text-xs outline-none focus:border-[#ff4dd2]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={forgotLoading || forgotCode.length !== 6 || !forgotNewPass}
+                  className="w-full h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-[#ff4dd2] text-white font-bold text-xs cursor-pointer disabled:opacity-50 mt-1"
+                >
+                  {forgotLoading ? 'Saving...' : 'Confirm & Save Password'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

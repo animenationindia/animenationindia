@@ -1,13 +1,44 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Check, X, FolderPlus, ListPlus, Loader2 } from 'lucide-react';
+import {
+  Plus,
+  Check,
+  X,
+  FolderPlus,
+  ListPlus,
+  Loader2,
+  Folder,
+  Sparkles,
+  BookOpen,
+  Film,
+  Tv,
+  Flame,
+  Star,
+  Heart,
+  Clapperboard,
+  Eye,
+  ThumbsUp,
+  ThumbsDown,
+  Ban,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth-client';
+import { getUserCatalogs, saveUserCatalog } from '@/app/actions/catalogs';
+import {
+  CatalogData,
+  CatalogThumbnail,
+  mergeWithDefaultCatalogs,
+  dispatchCatalogsUpdated,
+  dispatchWatchlistUpdated,
+} from '@/lib/catalogs-shared';
+import { useWatchlist } from '@/hooks/useWatchlist';
 
 interface CustomListModalProps {
   isOpen: boolean;
   onClose: () => void;
   anime: {
-    mal_id: number;
+    mal_id: number | string;
     title: string;
     image: string;
     format?: string;
@@ -15,44 +46,64 @@ interface CustomListModalProps {
   };
 }
 
-interface CustomList {
-  _id: string;
-  name: string;
-  description: string;
-  items: Array<{ mal_id: number }>;
-}
+const THUMBNAIL_ICONS: Record<CatalogThumbnail, any> = {
+  Folder,
+  Sparkles,
+  BookOpen,
+  Film,
+  Tv,
+  Flame,
+  Star,
+  Heart,
+  Clapperboard,
+  Eye,
+  ThumbsUp,
+  ThumbsDown,
+  Ban,
+};
 
 export default function CustomListModal({ isOpen, onClose, anime }: CustomListModalProps) {
-  const [lists, setLists] = useState<CustomList[]>([]);
+  const router = useRouter();
+  const { data: session } = useSession();
+  const { watchlist, isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
+
+  const [catalogs, setCatalogs] = useState<CatalogData[]>(() => mergeWithDefaultCatalogs([]));
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newListName, setNewListName] = useState('');
-  const [newListDesc, setNewListDesc] = useState('');
   const [creating, setCreating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const fetchLists = async () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-    const userId = localStorage.getItem('user_id');
-    if (!token || !userId) {
-      setIsLoggedIn(false);
-      setLoading(false);
-      return;
-    }
+  const isAuthed = Boolean(
+    session?.user?.id ||
+    (typeof window !== 'undefined' && localStorage.getItem('user_id')) ||
+    isLoggedIn
+  );
 
-    setIsLoggedIn(true);
+  const fetchCatalogs = async () => {
+    setLoading(true);
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/lists/user/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLists(data);
+      const res = await getUserCatalogs();
+      if (res.authenticated) {
+        setIsLoggedIn(true);
+        const merged = mergeWithDefaultCatalogs(res.catalogs);
+        setCatalogs(merged);
+      } else {
+        const clientUserId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+        if (clientUserId) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+        const merged = mergeWithDefaultCatalogs(res.catalogs || []);
+        setCatalogs(merged);
       }
     } catch {
-      console.error('Failed to fetch custom lists');
+      console.error('Failed to fetch Neon DB catalogs');
+      const clientUserId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+      setIsLoggedIn(Boolean(clientUserId));
+      setCatalogs(mergeWithDefaultCatalogs([]));
     } finally {
       setLoading(false);
     }
@@ -60,105 +111,121 @@ export default function CustomListModal({ isOpen, onClose, anime }: CustomListMo
 
   useEffect(() => {
     if (isOpen) {
-      fetchLists();
+      fetchCatalogs();
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const toggleItemInList = async (list: CustomList) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-    const isAlreadyInList = list.items.some((i) => i.mal_id === anime.mal_id);
+  const animeIdStr = String(anime.mal_id);
 
-    try {
-      if (isAlreadyInList) {
-        // Remove
-        const res = await fetch(`${backendUrl}/api/lists/${list._id}/items/${anime.mal_id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          setMessage(`Removed from ${list.name}`);
-          setLists((prev) =>
-            prev.map((l) =>
-              l._id === list._id
-                ? { ...l, items: l.items.filter((i) => i.mal_id !== anime.mal_id) }
-                : l
-            )
-          );
-        }
+  const toggleItemInCatalog = async (cat: CatalogData) => {
+    const isWatchlist = cat.id === 'watchlist';
+
+    if (isWatchlist) {
+      const isAlreadyIn = isInWatchlist(anime.mal_id);
+      if (isAlreadyIn) {
+        await removeFromWatchlist(anime.mal_id, anime.format || 'Anime');
+        setMessage('Removed from Main Watchlist');
       } else {
-        // Add
-        const res = await fetch(`${backendUrl}/api/lists/${list._id}/items`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ anime }),
+        await addToWatchlist({
+          animeId: anime.mal_id,
+          title: anime.title,
+          image: anime.image,
+          status: 'PLAN_TO_WATCH',
+          type: anime.format || 'Anime',
+          mediaType: anime.format || 'Anime',
+          rating: anime.score ? String(anime.score) : undefined,
         });
-        if (res.ok) {
-          setMessage(`Added to ${list.name}!`);
-          setLists((prev) =>
-            prev.map((l) =>
-              l._id === list._id
-                ? { ...l, items: [...l.items, { mal_id: anime.mal_id }] }
-                : l
-            )
-          );
-        }
+        setMessage('Added to Main Watchlist!');
       }
       setTimeout(() => setMessage(null), 2000);
+      return;
+    }
+
+    const isAlreadyInList = cat.itemIds.map(String).includes(animeIdStr);
+    const updatedItemIds = isAlreadyInList
+      ? cat.itemIds.filter((id) => String(id) !== animeIdStr)
+      : [...cat.itemIds, anime.mal_id];
+
+    const updatedCat: CatalogData = {
+      ...cat,
+      itemIds: updatedItemIds,
+    };
+
+    const nextList = catalogs.map((c) => (c.id === cat.id ? updatedCat : c));
+    setCatalogs(nextList);
+
+    setMessage(isAlreadyInList ? `Removed from ${cat.name}` : `Added to ${cat.name}!`);
+    setTimeout(() => setMessage(null), 2000);
+
+    // Save directly in Neon PostgreSQL
+    try {
+      await saveUserCatalog(updatedCat);
+      dispatchCatalogsUpdated(nextList);
+
+      // ALWAYS ensure title is also registered in Main Watchlist when added to any folder
+      if (!isAlreadyInList && !isInWatchlist(anime.mal_id)) {
+        await addToWatchlist({
+          animeId: anime.mal_id,
+          title: anime.title,
+          image: anime.image,
+          status: 'PLAN_TO_WATCH',
+          type: anime.format || 'Anime',
+          mediaType: anime.format || 'Anime',
+          rating: anime.score ? String(anime.score) : undefined,
+        });
+        dispatchWatchlistUpdated();
+      }
     } catch {
-      setMessage('Error updating list');
+      setMessage('Error saving to Neon DB');
     }
   };
 
-  const handleCreateList = async (e: React.FormEvent) => {
+  const handleCreateCatalog = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-    if (!newListName.trim() || !token) return;
+    if (!newListName.trim()) return;
 
     setCreating(true);
+    const newCatalog: CatalogData = {
+      id: `cat_${Date.now()}`,
+      name: newListName.trim(),
+      color: 'pink',
+      thumbnail: 'Folder',
+      itemIds: [anime.mal_id],
+      custom: true,
+    };
+
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/lists`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: newListName.trim(),
-          description: newListDesc.trim(),
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const createdList = data.list;
-
-        // Auto-add current anime to this new list
-        await fetch(`${backendUrl}/api/lists/${createdList._id}/items`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ anime }),
-        });
-
-        createdList.items = [{ mal_id: anime.mal_id }];
-        setLists((prev) => [createdList, ...prev]);
+      const res = await saveUserCatalog(newCatalog);
+      if (res.success) {
+        const nextList = [newCatalog, ...catalogs];
+        setCatalogs(nextList);
         setNewListName('');
-        setNewListDesc('');
         setShowCreateForm(false);
-        setMessage(`Created and added to ${createdList.name}!`);
+        dispatchCatalogsUpdated(nextList);
+
+        // ALWAYS ensure it is also saved in Main Watchlist!
+        if (!isInWatchlist(anime.mal_id)) {
+          await addToWatchlist({
+            animeId: anime.mal_id,
+            title: anime.title,
+            image: anime.image,
+            status: 'PLAN_TO_WATCH',
+            type: anime.format || 'Anime',
+            mediaType: anime.format || 'Anime',
+            rating: anime.score ? String(anime.score) : undefined,
+          });
+          dispatchWatchlistUpdated();
+        }
+
+        setMessage(`Created and added to ${newCatalog.name}!`);
         setTimeout(() => setMessage(null), 2500);
+      } else {
+        setMessage(res.error || 'Failed to create folder in Neon DB');
       }
     } catch {
-      setMessage('Failed to create list');
+      setMessage('Failed to create folder');
     } finally {
       setCreating(false);
     }
@@ -170,7 +237,7 @@ export default function CustomListModal({ isOpen, onClose, anime }: CustomListMo
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
         >
           <X size={18} />
         </button>
@@ -181,7 +248,7 @@ export default function CustomListModal({ isOpen, onClose, anime }: CustomListMo
             <ListPlus size={20} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Add to Animenation List</h3>
+            <h3 className="text-lg font-bold text-white">Add to Custom Folder</h3>
             <p className="text-xs text-gray-400 truncate max-w-[260px]">{anime.title}</p>
           </div>
         </div>
@@ -194,79 +261,96 @@ export default function CustomListModal({ isOpen, onClose, anime }: CustomListMo
           </div>
         )}
 
-        {!isLoggedIn ? (
+        {/* Loading State - Prevents any login flash */}
+        {loading ? (
+          <div className="py-12 flex flex-col items-center justify-center gap-3">
+            <Loader2 size={24} className="animate-spin text-[#ff4dd2]" />
+            <p className="text-xs text-gray-400 font-medium">Loading your folders...</p>
+          </div>
+        ) : !isAuthed ? (
           <div className="text-center py-8">
-            <p className="text-sm text-gray-400 mb-4">Please log in to manage your custom lists.</p>
+            <p className="text-sm text-gray-400 mb-4">Please log in to manage your custom folders.</p>
             <button
-              onClick={onClose}
-              className="bg-[#ff4dd2] text-black font-extrabold px-6 py-2 rounded-xl text-xs"
+              onClick={() => {
+                const returnUrl = typeof window !== 'undefined' ? window.location.pathname : '/';
+                router.push(`/signin?callbackUrl=${encodeURIComponent(returnUrl)}`);
+              }}
+              className="bg-[#ff4dd2] text-black font-extrabold px-6 py-2 rounded-xl text-xs cursor-pointer hover:bg-[#ff7be0] transition-colors"
             >
-              Close
+              Sign In
             </button>
           </div>
         ) : (
           <>
-            {/* List Selection Grid */}
-            <div className="max-h-60 overflow-y-auto space-y-2 pr-1 mb-4 custom-scrollbar">
-              {loading ? (
-                <div className="py-8 text-center text-gray-400 flex items-center justify-center gap-2">
-                  <Loader2 size={18} className="animate-spin text-[#ff4dd2]" /> Loading lists...
-                </div>
-              ) : lists.length === 0 && !showCreateForm ? (
-                <div className="text-center py-6 text-gray-400 text-xs">
-                  No custom lists found. Create your first list below!
-                </div>
-              ) : (
-                lists.map((list) => {
-                  const isInList = list.items.some((i) => i.mal_id === anime.mal_id);
-                  return (
-                    <button
-                      key={list._id}
-                      onClick={() => toggleItemInList(list)}
-                      className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left ${
-                        isInList
-                          ? 'bg-[#ff4dd2]/10 border-[#ff4dd2]/50 text-white shadow-md shadow-[#ff4dd2]/10'
-                          : 'bg-white/5 border-white/5 hover:border-white/20 text-gray-300 hover:text-white'
-                      }`}
-                    >
-                      <div className="flex-1 min-w-0 pr-3">
-                        <p className="text-sm font-bold truncate">{list.name}</p>
-                        {list.description && (
-                          <p className="text-[11px] text-gray-400 truncate">{list.description}</p>
-                        )}
-                        <span className="text-[10px] text-gray-500 mt-1 block">
-                          {list.items.length} items
-                        </span>
-                      </div>
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all ${
-                          isInList
-                            ? 'bg-[#ff4dd2] border-[#ff4dd2] text-black'
-                            : 'border-white/20 bg-black/40'
+            {/* Folder Selection List */}
+            <div className="max-h-64 overflow-y-auto space-y-2 pr-1 mb-4 custom-scrollbar">
+              {catalogs.map((cat) => {
+                const isWatchlist = cat.id === 'watchlist';
+                const isInList = isWatchlist
+                  ? isInWatchlist(anime.mal_id)
+                  : cat.itemIds.map(String).includes(animeIdStr);
+                const itemCount = isWatchlist
+                  ? watchlist.length
+                  : cat.itemIds.length;
+
+                const IconComp =
+                  cat.thumbnail && THUMBNAIL_ICONS[cat.thumbnail]
+                    ? THUMBNAIL_ICONS[cat.thumbnail]
+                    : Folder;
+
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => toggleItemInCatalog(cat)}
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left cursor-pointer ${
+                      isInList
+                        ? 'bg-[#ff4dd2]/10 border-[#ff4dd2]/50 text-white shadow-md shadow-[#ff4dd2]/10'
+                        : 'bg-white/5 border-white/5 hover:border-white/20 text-gray-300 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
+                      <span
+                        className={`p-2 rounded-xl bg-white/5 border border-white/10 ${
+                          isInList ? 'text-[#ff4dd2] border-[#ff4dd2]/30' : 'text-gray-400'
                         }`}
                       >
-                        {isInList && <Check size={14} className="stroke-[3]" />}
+                        <IconComp size={16} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{cat.name}</p>
+                        <span className="text-[10px] text-gray-500 mt-0.5 block">
+                          {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                        </span>
                       </div>
-                    </button>
-                  );
-                })
-              )}
+                    </div>
+                    <div
+                      className={`w-6 h-6 rounded-full flex items-center justify-center border transition-all shrink-0 ${
+                        isInList
+                          ? 'bg-[#ff4dd2] border-[#ff4dd2] text-black'
+                          : 'border-white/20 bg-black/40'
+                      }`}
+                    >
+                      {isInList && <Check size={14} className="stroke-[3]" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Create New List Accordion Form */}
+            {/* Create New Folder Accordion Form */}
             {showCreateForm ? (
               <form
-                onSubmit={handleCreateList}
+                onSubmit={handleCreateCatalog}
                 className="bg-[#15162c] border border-white/10 rounded-2xl p-4 mb-3 animate-in fade-in"
               >
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <FolderPlus size={14} className="text-[#ff4dd2]" /> Create a list
+                    <FolderPlus size={14} className="text-[#ff4dd2]" /> Create a folder
                   </h4>
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="text-gray-400 hover:text-white"
+                    className="text-gray-400 hover:text-white cursor-pointer"
                   >
                     <X size={14} />
                   </button>
@@ -275,35 +359,22 @@ export default function CustomListModal({ isOpen, onClose, anime }: CustomListMo
                 <div className="space-y-3">
                   <div>
                     <label className="text-[11px] font-semibold text-gray-300 block mb-1">
-                      List name *
+                      Folder name *
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. My Top 10 Shonen"
+                      placeholder="e.g. Masterpieces / Favorites"
                       value={newListName}
                       onChange={(e) => setNewListName(e.target.value)}
                       className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ff4dd2]"
                     />
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-semibold text-gray-300 block mb-1">
-                      Description (optional)
-                    </label>
-                    <textarea
-                      placeholder="What is this list about?"
-                      rows={2}
-                      value={newListDesc}
-                      onChange={(e) => setNewListDesc(e.target.value)}
-                      className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#ff4dd2] resize-none"
-                    />
-                  </div>
-
                   <button
                     type="submit"
                     disabled={creating || !newListName.trim()}
-                    className="w-full bg-[#ff4dd2] hover:bg-[#ff7be0] text-black font-extrabold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full bg-[#ff4dd2] hover:bg-[#ff7be0] text-black font-extrabold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                   >
                     {creating ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -319,13 +390,13 @@ export default function CustomListModal({ isOpen, onClose, anime }: CustomListMo
                 onClick={() => setShowCreateForm(true)}
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-dashed border-white/20 text-xs font-bold text-[#ff4dd2] hover:text-white transition-all mb-4 cursor-pointer"
               >
-                <Plus size={16} /> + New list
+                <Plus size={16} /> + New folder
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="w-full py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
             >
               Done
             </button>

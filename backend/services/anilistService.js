@@ -46,8 +46,11 @@ async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutM
 
         if (!res.ok) {
           if (res.status === 429) {
+            console.warn('[AniList 429]: Rate limit reached on upstream AniList.');
+            anilistBlockedUntil = Date.now() + 60 * 1000;
+            if (cached) return cached.data;
             if (attempt < maxRetries) {
-              await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
               continue;
             }
           }
@@ -347,36 +350,33 @@ async function getTopManga(page = 1, limit = 24) {
 // 8. Manga Single Details
 async function getMangaDetails(id) {
   const numId = Number(id);
-  const isMal = numId <= 65000;
-  const query = isMal
-    ? `
-      query ($idMal: Int) {
-        Media(idMal: $idMal, type: MANGA, isAdult: false) {
-          id idMal title { english romaji native }
-          coverImage { extraLarge large } bannerImage
-          averageScore chapters volumes format status genres
-          description startDate { year month day }
-          staff(perPage: 4) { nodes { id name { full } } }
-        }
+  if (!numId || isNaN(numId)) return null;
+
+  const query = `
+    query ($id: Int) {
+      byMal: Media(idMal: $id, type: MANGA, isAdult: false) {
+        id idMal title { english romaji native }
+        coverImage { extraLarge large } bannerImage
+        averageScore chapters volumes format status genres
+        description startDate { year month day }
+        countryOfOrigin
+        staff(perPage: 4) { nodes { id name { full } } }
       }
-    `
-    : `
-      query ($id: Int) {
-        Media(id: $id, type: MANGA, isAdult: false) {
-          id idMal title { english romaji native }
-          coverImage { extraLarge large } bannerImage
-          averageScore chapters volumes format status genres
-          description startDate { year month day }
-          staff(perPage: 4) { nodes { id name { full } } }
-        }
+      byId: Media(id: $id, type: MANGA, isAdult: false) {
+        id idMal title { english romaji native }
+        coverImage { extraLarge large } bannerImage
+        averageScore chapters volumes format status genres
+        description startDate { year month day }
+        countryOfOrigin
+        staff(perPage: 4) { nodes { id name { full } } }
       }
-    `;
+    }
+  `;
 
   try {
-    const vars = isMal ? { idMal: numId } : { id: numId };
-    const res = await fetchAniList(query, vars, 6 * 60 * 60 * 1000);
-    if (res?.data?.Media) {
-      const media = res.data.Media;
+    const res = await fetchAniList(query, { id: numId }, 6 * 60 * 60 * 1000);
+    const media = res?.data?.byMal || res?.data?.byId;
+    if (media) {
       return { ...media, title: normalizeTitleObject(media.title) };
     }
   } catch {}

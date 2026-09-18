@@ -54,10 +54,11 @@ export default function TrailerModal({ isOpen, onClose, youtubeId, title }: Trai
           {/* Video Container 16:9 */}
           <div className="relative w-full aspect-video bg-black">
             <iframe
-              src={`https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+              src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
               title={`${title} Official Trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
               className="w-full h-full border-0"
             />
           </div>

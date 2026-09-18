@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, X, ChevronDown, Check, Loader2, Bookmark } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useSession } from '@/lib/auth-client';
 import { useWatchlist } from '../hooks/useWatchlist';
 
 interface WatchlistDropdownProps {
@@ -19,9 +20,20 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
   const [isUpdating, setIsUpdating] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { data: session } = useSession();
 
   const { getItemStatus, addToWatchlist, removeFromWatchlist } = useWatchlist();
   const status = getItemStatus(animeId);
+
+  const checkAuthAndPrompt = (): boolean => {
+    const isAuthed = Boolean(session?.user || (typeof window !== 'undefined' && localStorage.getItem('user_id')));
+    if (!isAuthed) {
+      const returnUrl = typeof window !== 'undefined' ? window.location.pathname : '/';
+      router.push(`/signin?callbackUrl=${encodeURIComponent(returnUrl)}`);
+      return false;
+    }
+    return true;
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -35,21 +47,14 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
   }, []);
 
   const updateStatus = async (newStatus: string) => {
+    if (!checkAuthAndPrompt()) return;
+
     setIsUpdating(true);
     setIsOpen(false);
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id') || localStorage.getItem('userId');
-      
-      if (!token || !userId) {
-        alert("Please login first to manage your Watchlist!");
-        router.push('/auth');
-        return;
-      }
-
       if (newStatus === 'REMOVE') {
-        await removeFromWatchlist(animeId);
+        await removeFromWatchlist(animeId, type);
       } else {
         await addToWatchlist({
           animeId,
@@ -57,8 +62,11 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
           image,
           status: newStatus,
           type,
+          mediaType: type,
         });
       }
+    } catch (err) {
+      console.error('Failed to update watchlist status:', err);
     } finally {
       setIsUpdating(false);
     }
@@ -100,7 +108,11 @@ export default function WatchlistDropdown({ animeId, title, image, variant = 'de
       {/* 🔴 Main Button */}
       <motion.button
         whileTap={{ scale: 0.97 }}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!checkAuthAndPrompt()) return;
+          setIsOpen(!isOpen);
+        }}
         disabled={isUpdating}
         className={variant === 'icon'
           ? `w-[44px] h-[44px] md:w-[48px] md:h-[48px] flex-shrink-0 flex items-center justify-center border transition-colors group/btn rounded-2xl disabled:opacity-70 cursor-pointer ${

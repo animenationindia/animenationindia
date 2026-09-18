@@ -20,21 +20,21 @@ function PersonCard({ person, linkType = 'character' }: { person: PersonData; li
   const likes = person.favourites > 1000 ? `${(person.favourites / 1000).toFixed(1)}k+` : person.favourites;
 
   return (
-    <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/5 gpu-accelerate">
+    <Link href={`/${linkType}/${person.id}`} className="block relative group w-full aspect-[3/4] rounded-xl overflow-hidden cursor-pointer bg-[#121214] border border-white/10 group-hover:border-[#ff4dd2]/50 group-hover:shadow-[0_8px_25px_rgba(0,0,0,0.8),0_0_15px_rgba(255,77,210,0.3)] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-[1.03] active:scale-[0.97]">
       {person.image?.large && (
-        <img src={person.image.large} alt={name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        <img src={person.image.large} alt={name} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-108 group-hover:brightness-105" />
       )}
       
       {/* Top Likes Badge */}
-      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1 z-20">
-        <Heart size={12} className="fill-white text-white" />
+      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1 z-20 border border-white/10">
+        <Heart size={12} className="fill-[#ff4dd2] text-[#ff4dd2]" />
         <span className="text-white text-[10px] font-bold">{likes}</span>
       </div>
 
       {/* Bottom Name Gradient */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent z-10"></div>
       <div className="absolute bottom-0 left-0 w-full p-3 z-20 text-center">
-        <h4 className="text-white text-sm font-bold truncate group-hover:text-[#ff6400] transition-colors">{name}</h4>
+        <h4 className="text-white text-sm font-bold truncate group-hover:text-[#ff4dd2] transition-colors">{name}</h4>
       </div>
     </Link>
   );

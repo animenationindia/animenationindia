@@ -10,7 +10,14 @@ export async function GET(req: Request) {
     
     if (q && q.trim().length > 0) {
       const trailers = await searchLiveAnimeTrailers(q.trim());
-      return NextResponse.json({ success: true, trailers });
+      return NextResponse.json(
+        { success: true, trailers },
+        {
+          headers: {
+            'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=86400',
+          },
+        }
+      );
     }
 
     const filter = (searchParams.get('filter') as 'all' | 'airing' | 'upcoming') || 'all';
@@ -18,7 +25,14 @@ export async function GET(req: Request) {
     const limit = parseInt(searchParams.get('limit') || '24', 10);
 
     const trailers = await getLiveAnimeTrailers({ filter, page, limit });
-    return NextResponse.json({ success: true, trailers, page, limit });
+    return NextResponse.json(
+      { success: true, trailers, page, limit },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=86400',
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ success: false, trailers: [], error: error.message }, { status: 500 });
   }

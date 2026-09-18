@@ -3,114 +3,207 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bookmark, User, Search, X, Loader2, LogOut, Settings, Menu, Home, Flame, CalendarDays, Layers, MonitorPlay, Newspaper, Mail, Sparkles, BookOpen, Heart, ListPlus, Music, ChevronRight } from 'lucide-react';
+import { 
+  Bookmark, 
+  User, 
+  Search, 
+  X, 
+  LogOut, 
+  Settings, 
+  Home, 
+  Flame, 
+  CalendarDays, 
+  Layers, 
+  MonitorPlay, 
+  Newspaper, 
+  Mail, 
+  Sparkles, 
+  BookOpen, 
+  Award,
+  MessageSquare,
+  Users,
+  HelpCircle,
+  ShieldCheck,
+  ChevronDown,
+  LogIn
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { logoutAction } from '@/app/actions/auth';
+import { useSession, signOut as betterSignOut } from '@/lib/auth-client';
+import { useWatchlist } from '@/hooks/useWatchlist';
 
-interface LiveSearchResult {
-  id: number;
-  idMal: number | null;
-  title: {
-    english: string | null;
-    romaji: string;
-  };
-  coverImage: {
-    large: string;
-  };
-  format: string;
-  seasonYear: number | null;
-}
+const ADMIN_EMAILS = [
+  'shouvikdaswork@gmail.com',
+  'animenationindia.global@gmail.com',
+  'animenationindia.support@gmail.com'
+];
+
+const AVATAR_MAP: Record<string, string> = {
+  crimson: '⚡',
+  flame: '🔥',
+  anime: '🔥',
+  cyber: '🌌',
+  director: '🎥',
+  void: '🎥',
+  shadow: '🕶️',
+  star: '⭐',
+  retro: '📼',
+  binge: '🍿',
+  popcorn: '🍿',
+  shinobi: '🥷',
+  ninja: '🥷',
+  dragon: '🐉'
+};
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
   
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const hamburgerBtnRef = useRef<HTMLButtonElement>(null);
 
-  // 🌟 Mounted State for Hydration Mismatch Fix
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Auth state
+  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [toastNotice, setToastNotice] = useState<string | null>(null);
 
-  // 🌟 Click outside to close profile dropdown & mobile menu
+  // Watchlist state
+  const { watchlist } = useWatchlist();
+
+  const lastScrollY = useRef(0);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 🌟 Auto-close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (profileRef.current && !profileRef.current.contains(target)) {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        profileDropdownRef.current &&
+        !profileDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsProfileOpen(false);
       }
-      if (
-        isMenuOpen &&
-        menuRef.current &&
-        !menuRef.current.contains(target) &&
-        hamburgerBtnRef.current &&
-        !hamburgerBtnRef.current.contains(target)
-      ) {
-        setIsMenuOpen(false);
-      }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMenuOpen]);
 
-  // User Authentication State
-  const [user, setUser] = useState<any>(null);
+    if (isProfileOpen) {
+      document.addEventListener('pointerdown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('pointerdown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
 
-  // Scroll Event Listener for Dynamic Glassmorphism
+  // 🌟 Handle Header Reveal / Hide on Scroll
   useEffect(() => {
+    setMounted(true);
+
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > 40) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+
+      if (currentScrollY < 10) {
+        setIsNavVisible(true);
+      } else if (currentScrollY > lastScrollY.current && currentScrollY > 120) {
+        if (!isProfileOpen) {
+          setIsNavVisible(false);
+        }
+      } else if (currentScrollY < lastScrollY.current) {
+        setIsNavVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
     };
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isProfileOpen]);
 
-  // Search is handled on the dedicated search page (/search)
-
-  // Auth Listener: Updates state immediately when user logs in/out
+  // 🌟 Auth Listener: Updates state immediately when user logs in/out or session updates
   useEffect(() => {
     const checkUser = () => {
       const token = localStorage.getItem('token') || localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id');
-      const userName = localStorage.getItem('user_name') || localStorage.getItem('username');
+      const userId = session?.user?.id || localStorage.getItem('user_id');
+      const userName = session?.user?.name || localStorage.getItem('user_name') || localStorage.getItem('username');
+      const userEmail = session?.user?.email || localStorage.getItem('user_email') || localStorage.getItem('email') || '';
+      const userRole = (session?.user as any)?.role || localStorage.getItem('user_role') || '';
+      const userAvatar = session?.user?.image || localStorage.getItem('user_avatar') || localStorage.getItem('ani_avatar') || null;
       
-      if (token && userId) {
+      if ((session?.user && session.user.id) || (token && userId)) {
+        const emailLower = userEmail.toLowerCase();
+        const checkAdmin = ADMIN_EMAILS.includes(emailLower) || userRole === 'admin';
+        setIsAdmin(checkAdmin);
+
         setUser({
-          id: userId,
-          email: '',
+          id: userId || 'usr_active',
+          email: userEmail || '',
           user_metadata: {
-            full_name: userName || 'Otaku',
-            avatar_url: null
+            full_name: userName || (checkAdmin ? 'Master Admin' : 'Otaku Explorer'),
+            avatar_url: userAvatar
           }
         });
       } else {
         setUser(null);
+        setIsAdmin(false);
       }
     };
 
     checkUser();
-
     window.addEventListener('auth-change', checkUser);
+    
+    const handleAvatarChange = (e: any) => {
+      const newAvatar = e.detail;
+      setUser((prev: any) => prev ? {
+        ...prev,
+        user_metadata: {
+          ...prev.user_metadata,
+          avatar_url: newAvatar
+        }
+      } : null);
+    };
+    window.addEventListener('ani-avatar-changed', handleAvatarChange);
+
     return () => {
       window.removeEventListener('auth-change', checkUser);
+      window.removeEventListener('ani-avatar-changed', handleAvatarChange);
     };
-  }, []);
+  }, [session]);
+
+  // 🌟 Auto-dismiss Toast Notice
+  useEffect(() => {
+    if (toastNotice) {
+      const timer = setTimeout(() => setToastNotice(null), 3200);
+      return () => clearTimeout(timer);
+    }
+  }, [toastNotice]);
 
   // Logout Handler
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutAction().catch(() => {});
+      await betterSignOut().catch(() => {});
+    } catch {}
     localStorage.removeItem('user_token');
     localStorage.removeItem('user_name');
     localStorage.removeItem('user_id');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_avatar');
+    localStorage.removeItem('ani_avatar');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.dispatchEvent(new Event('auth-change'));
+    setIsProfileOpen(false);
+    setToastNotice('Signed out successfully.');
     router.push('/');
+    router.refresh();
   };
 
   const navLinks = [
@@ -125,366 +218,523 @@ export default function Navbar() {
     { name: 'Contact', path: '/contact', icon: Mail },
   ];
 
-  // Search navigation is handled directly via router.push('/search')
+  const isActive = (path: string) => {
+    if (path === '/home' || path === '/') {
+      return pathname === '/' || pathname === '/home';
+    }
+    return pathname.startsWith(path);
+  };
 
   return (
     <>
-      <div className={`fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-[#050716] to-transparent z-40 pointer-events-none transition-opacity duration-500 ${pathname === '/' ? 'md:hidden' : ''} ${isScrolled ? 'opacity-100' : 'opacity-0'}`} />
-      <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ${pathname === '/' ? 'md:hidden' : ''} ${
-        isScrolled 
-          ? 'bg-[#050716]/95 backdrop-blur-2xl border-b border-[#ff4dd2]/40 shadow-[0_4px_30px_rgba(255,77,210,0.15)]' 
-          : 'bg-[#121326]/60 backdrop-blur-xl border-b border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]'
-      }`}>
-        <div className="w-full px-4 md:px-8 xl:px-12 h-[72px] flex items-center justify-between relative">
-          {/* Subtle glowing bottom border when scrolled */}
-          <div className={`absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ff4dd2]/80 to-transparent transition-opacity duration-500 ${isScrolled ? 'opacity-100' : 'opacity-0'}`} />
-        
-        {/* Left: Logo + Nav */}
-        <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 h-full">
-          <Link href="/" className="flex items-center gap-2 group flex-shrink-0">
-            <div className="relative w-10 h-10 min-w-[40px] min-h-[40px] max-w-[40px] max-h-[40px] rounded-full overflow-hidden shadow-[0_0_15px_rgba(255, 77, 210,0.5),inset_0_2px_4px_rgba(255,255,255,0.3)] bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center text-xs text-center border border-[#ff4dd2]/30 group-hover:scale-105 transition-transform shrink-0">
-              <Image src="/ani-logo.png" alt="Logo" fill sizes="40px" priority className="object-contain" />
-            </div>
-            <span className="font-orbitron hidden sm:block text-base lg:text-[20px] text-transparent bg-clip-text bg-gradient-to-b from-[#ffffff] to-[#ff4dd2] tracking-wide transition-all duration-300 drop-shadow-[0_4px_10px_rgba(255, 77, 210,0.6)] font-black">
-              Anime Nation India
-            </span>
-          </Link>
-
-          <nav className="hidden xl:flex items-center h-full gap-0 xl:gap-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.path;
-              return (
-              <Link 
-                key={link.name} 
-                href={link.path} 
-                className="relative px-2.5 xl:px-3.5 py-2 group overflow-hidden rounded-lg transition-all"
-              >
-                {isActive && (
-                  <motion.div layoutId="nav-pill" className="absolute inset-0 bg-white/5 border border-white/10 rounded-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]" />
-                )}
-                <span className={`relative text-[15px] font-bold z-10 transition-colors duration-300 ${
-                  isActive ? 'text-white text-shadow-sm' : 'text-gray-400 group-hover:text-white'
-                }`}>
-                  {link.name}
-                </span>
-                {/* 3D Bottom Glow on Hover */}
-                {!isActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-[#ff4dd2] group-hover:w-1/2 transition-all duration-300 shadow-[0_0_10px_rgba(255, 77, 210,0.8)] opacity-0 group-hover:opacity-100" />
-                )}
-              </Link>
-            )})}
-          </nav>
-        </div>
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 md:gap-4 h-full">
-          <button onClick={() => router.push('/search')} className="w-10 h-10 flex items-center justify-center rounded-xl bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 text-gray-300 hover:text-[#ff4dd2] hover:shadow-[0_5px_15px_rgba(255, 77, 210,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all cursor-pointer">
-            <Search size={20} />
-          </button>
-          
-
-          
-          <button 
-            onClick={() => router.push('/watchlist')} 
-            className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl bg-transparent hover:bg-white/5 border border-transparent hover:border-white/10 text-gray-300 hover:text-[#ff4dd2] hover:shadow-[0_5px_15px_rgba(255, 77, 210,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all cursor-pointer"
+      {/* 🌟 Floating Action Toast Notification */}
+      {toastNotice && (
+        <div 
+          className="fixed bottom-6 left-1/2 z-[150] flex -translate-x-1/2 items-center gap-3 rounded-full border border-[#ff4dd2]/40 bg-[#070814]/95 px-5 py-2.5 text-xs font-bold text-white shadow-[0_10px_35px_rgba(255,77,210,0.3)] backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-3"
+          role="status"
+        >
+          <Sparkles size={14} className="text-[#ff4dd2] animate-spin" />
+          <span>{toastNotice}</span>
+          <button
+            type="button"
+            onClick={() => setToastNotice(null)}
+            className="rounded-full p-1 text-gray-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            aria-label="Dismiss notice"
           >
-            <Bookmark size={20} />
+            <X size={13} />
           </button>
+        </div>
+      )}
 
-          {/* 🌟 Conditional Auth Button */}
-          {mounted && user ? (
-            <div className="relative h-full flex items-center ml-2" ref={profileRef}>
-              <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-b from-gray-700 to-gray-900 overflow-hidden flex items-center justify-center border border-white/20 shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_2px_4px_rgba(255,255,255,0.2)]">
-                  {user.user_metadata?.avatar_url ? (
-                    <Image src={user.user_metadata.avatar_url} alt="Avatar" width={36} height={36} />
+      {/* Top Ambient Glow Gradient */}
+      <div 
+        className={`fixed top-0 left-0 w-full h-24 bg-gradient-to-b from-[#050716] via-[#050716]/60 to-transparent z-40 pointer-events-none transition-opacity duration-500 ${
+          pathname === '/' ? 'md:hidden' : ''
+        } ${isScrolled ? 'opacity-100' : 'opacity-0'}`} 
+      />
+      
+      {/* ========================================================================= */}
+      {/* MAIN NAVBAR (RESPONSIVE WITH SMART SCROLL UP/DOWN & BLUR)                 */}
+      {/* ========================================================================= */}
+      <header 
+        className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ease-out ${
+          pathname === '/' ? 'md:hidden' : ''
+        } ${
+          isNavVisible ? 'translate-y-0' : '-translate-y-full md:translate-y-0'
+        } ${
+          isScrolled 
+            ? 'bg-[#050716]/95 backdrop-blur-2xl border-b border-[#ff4dd2]/30 shadow-[0_8px_32px_rgba(0,0,0,0.85),0_0_20px_rgba(255,77,210,0.12)]' 
+            : 'bg-[#0a0b1c]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]'
+        }`}
+      >
+        <div className="w-full px-3.5 sm:px-6 md:px-8 xl:px-12 h-[68px] sm:h-[72px] flex items-center justify-between relative">
+          
+          {/* Subtle Glowing Bottom Accent Line */}
+          <div 
+            className={`absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#ff4dd2]/80 to-transparent transition-opacity duration-500 ${
+              isScrolled ? 'opacity-100' : 'opacity-0'
+            }`} 
+          />
+        
+          {/* 🌟 Left: Brand Logo & Desktop Nav Links */}
+          <div className="flex items-center gap-2 lg:gap-4 xl:gap-6 h-full">
+            <Link 
+              href="/" 
+              className="flex items-center gap-2 group flex-shrink-0 touch-manipulation select-none active:scale-95 transition-transform"
+            >
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden shadow-[0_0_15px_rgba(255,77,210,0.5),inset_0_2px_4px_rgba(255,255,255,0.3)] bg-gradient-to-b from-gray-800 to-gray-900 flex items-center justify-center text-xs text-center border border-[#ff4dd2]/40 group-hover:scale-105 transition-transform shrink-0">
+                <Image src="/ani-logo.png" alt="Anime Nation India Logo" fill sizes="40px" priority className="object-contain" />
+              </div>
+              <span className="font-orbitron hidden sm:block text-base lg:text-[19px] text-transparent bg-clip-text bg-gradient-to-b from-[#ffffff] via-white to-[#ff4dd2] tracking-wide transition-all duration-300 drop-shadow-[0_4px_12px_rgba(255,77,210,0.5)] font-black">
+                Anime Nation India
+              </span>
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center h-full gap-0.5 xl:gap-1.5">
+              {navLinks.map((link) => {
+                const active = isActive(link.path);
+                return (
+                  <Link 
+                    key={link.name} 
+                    href={link.path} 
+                    className={`relative px-3 xl:px-3.5 py-1.5 rounded-lg font-bold text-[14px] xl:text-[15px] transition-all select-none touch-manipulation group ${
+                      active
+                        ? 'bg-white/10 border border-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                    }`}
+                  >
+                    <span className="relative z-10">{link.name}</span>
+                    {!active && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-[2px] bg-[#ff4dd2] group-hover:w-3/5 transition-all duration-300 shadow-[0_0_10px_rgba(255,77,210,0.8)] opacity-0 group-hover:opacity-100 rounded-full" />
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* 🌟 Right: Search, My List & 7media Profile Dynamic Popup */}
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 h-full">
+            
+            {/* Quick Search */}
+            <button 
+              type="button"
+              onClick={() => router.push('/search')} 
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent hover:bg-white/10 border border-transparent hover:border-white/10 text-gray-300 hover:text-[#ff4dd2] hover:shadow-[0_0_15px_rgba(255,77,210,0.25)] transition-all cursor-pointer touch-manipulation active:scale-90 select-none"
+              aria-label="Search"
+              title="Quick Search (Press 'S')"
+            >
+              <Search size={19} />
+            </button>
+            
+            {/* My List & Catalogs Quick Button */}
+            <button 
+              type="button"
+              onClick={() => router.push('/my-list')} 
+              className="relative hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 items-center justify-center rounded-xl bg-transparent hover:bg-white/10 border border-transparent hover:border-white/10 text-gray-300 hover:text-[#ff4dd2] hover:shadow-[0_0_15px_rgba(255,77,210,0.25)] transition-all cursor-pointer touch-manipulation active:scale-90 select-none"
+              title="My List & Custom Folders"
+              aria-label="My List"
+            >
+              <Bookmark size={19} />
+              {mounted && watchlist.length > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-[#ff4dd2] text-black text-[9.5px] font-black flex items-center justify-center shadow-[0_0_10px_rgba(255,77,210,0.7)] animate-in fade-in zoom-in duration-150">
+                  {watchlist.length > 99 ? '99+' : watchlist.length}
+                </span>
+              )}
+            </button>
+
+            {/* 🌟 UNIFIED PROFILE & POPUP MENU HUB (Desktop & Mobile, Logged-In & Guest) */}
+            <div className="relative h-full flex items-center" ref={profileDropdownRef}>
+              <button 
+                type="button"
+                onClick={() => setIsProfileOpen((prev) => !prev)} 
+                className={`flex items-center gap-1.5 cursor-pointer p-1 sm:p-1.5 rounded-full border transition-all touch-manipulation select-none active:scale-95 ${
+                  isProfileOpen 
+                    ? 'border-[#ff4dd2] bg-[#ff4dd2]/20 shadow-[0_0_20px_rgba(255,77,210,0.4)]' 
+                    : mounted && user 
+                      ? 'border-white/20 hover:border-[#ff4dd2]/50 hover:bg-white/5'
+                      : 'border-[#ff4dd2]/40 bg-[#ff4dd2]/10 hover:border-[#ff4dd2] hover:bg-[#ff4dd2]/20 shadow-[0_0_12px_rgba(255,77,210,0.2)]'
+                }`}
+                aria-label="User account and navigation menu"
+                aria-expanded={isProfileOpen}
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#1a1b35] via-[#24264a] to-[#ff4dd2]/30 overflow-hidden flex items-center justify-center border border-white/25 shadow-inner">
+                  {mounted && user ? (
+                    user.user_metadata?.avatar_url && user.user_metadata.avatar_url.startsWith('http') ? (
+                      <Image 
+                        src={user.user_metadata.avatar_url} 
+                        alt="Avatar" 
+                        width={36} 
+                        height={36} 
+                        className="object-cover w-full h-full" 
+                      />
+                    ) : user.user_metadata?.avatar_url && AVATAR_MAP[user.user_metadata.avatar_url] ? (
+                      <span className="text-base">{AVATAR_MAP[user.user_metadata.avatar_url]}</span>
+                    ) : (
+                      <User size={17} className="text-[#ff4dd2]" />
+                    )
                   ) : (
-                    <User size={18} className="text-gray-300" />
+                    <User size={17} className="text-[#ff4dd2]" />
                   )}
                 </div>
+                <ChevronDown 
+                  size={13} 
+                  className={`text-gray-300 transition-transform duration-200 ${isProfileOpen ? 'rotate-180 text-[#ff4dd2]' : ''}`} 
+                />
               </button>
               
-              {/* 3D Dropdown Menu */}
-              <div className={`absolute right-0 top-full mt-4 w-52 bg-[#121326] border border-[#ff4dd2]/40 overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,1)] transition-all duration-300 z-[100] rounded-2xl transform origin-top ${isProfileOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}>
-                
-                {/* Clickable Profile Header */}
-                <Link 
-                  href="/profile" 
-                  onClick={() => setIsProfileOpen(false)} 
-                  className="p-4 border-b border-white/10 flex items-center gap-3 bg-gradient-to-b from-white/5 to-transparent hover:bg-white/10 transition-colors group cursor-pointer"
-                >
-                  <div className="w-10 h-10 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ff4dd2]/50 shadow-[0_0_10px_rgba(255, 77, 210,0.3)] group-hover:scale-105 transition-transform">
-                    {user.user_metadata?.avatar_url ? (
-                      <Image src={user.user_metadata.avatar_url} alt="Avatar" width={40} height={40} />
+              {/* 🌟 Dynamic Island Style Popup */}
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.16, ease: "easeOut" }}
+                    className="absolute right-0 top-[calc(100%+8px)] w-[295px] sm:w-[325px] max-w-[calc(100vw-20px)] max-h-[min(520px,calc(100vh-95px))] overflow-y-auto overscroll-contain dropdown-scrollbar bg-[#070814]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-3.5 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(255,77,210,0.18)] z-[120] text-left flex flex-col gap-2"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                  >
+                    {/* 1. Header User/Guest Info Card */}
+                    {mounted && user ? (
+                      <>
+                        <div className="flex items-center gap-3 px-1.5 py-1 border-b border-white/10 pb-3 shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-[#121326] border border-[#ff4dd2]/50 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(255,77,210,0.25)] overflow-hidden">
+                            {user.user_metadata?.avatar_url && user.user_metadata.avatar_url.startsWith('http') ? (
+                              <Image src={user.user_metadata.avatar_url} alt="Avatar" width={40} height={40} className="object-cover w-full h-full" />
+                            ) : user.user_metadata?.avatar_url && AVATAR_MAP[user.user_metadata.avatar_url] ? (
+                              <span className="text-lg">{AVATAR_MAP[user.user_metadata.avatar_url]}</span>
+                            ) : (
+                              <User size={20} className="text-[#ff4dd2]" />
+                            )}
+                          </div>
+                          <div className="overflow-hidden min-w-0 flex-1">
+                            <p className="text-white font-black text-[13.5px] sm:text-sm truncate tracking-tight flex items-center gap-1.5">
+                              <span className="truncate">{user.user_metadata?.full_name || 'Otaku'}</span>
+                              {isAdmin && (
+                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-500 text-black shrink-0">
+                                  ADMIN
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400 font-medium truncate">
+                              {user.email || 'animenationindia.global@gmail.com'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Golden Glowing ADMIN PANEL Shortcut (if Admin) */}
+                        {isAdmin && (
+                          <Link 
+                            href="/admin" 
+                            onClick={() => setIsProfileOpen(false)}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/25 to-amber-500/20 border border-amber-500/50 text-amber-300 hover:text-white hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] transition-all font-black text-xs tracking-wider uppercase group shadow-sm shrink-0"
+                          >
+                            <ShieldCheck size={16} className="text-amber-400 fill-amber-400/30 group-hover:scale-110 transition-transform" />
+                            <span>ADMIN PANEL</span>
+                          </Link>
+                        )}
+
+                        {/* User Quick Links */}
+                        <div className="flex flex-col gap-1 py-0.5 shrink-0">
+                          <Link 
+                            href="/profile" 
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                          >
+                            <User size={17} className="text-[#ff4dd2] group-hover:scale-110 transition-transform" />
+                            <span>My Profile</span>
+                          </Link>
+
+                          <Link 
+                            href="/my-list" 
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center justify-between px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Bookmark size={17} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                              <span>My List &amp; Folders</span>
+                            </div>
+                            {mounted && watchlist.length > 0 && (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#ff4dd2]/20 text-[#ff4dd2] border border-[#ff4dd2]/30">
+                                {watchlist.length}
+                              </span>
+                            )}
+                          </Link>
+
+                          <Link 
+                            href="/profile?tab=badges" 
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all group"
+                          >
+                            <Award size={17} className="text-yellow-400 group-hover:scale-110 transition-transform" />
+                            <span>Badges &amp; Rewards</span>
+                          </Link>
+                        </div>
+                      </>
                     ) : (
-                      <User size={20} className="text-[#ff4dd2]" />
-                    )}
-                  </div>
-                  <div className="overflow-hidden min-w-0">
-                    <p className="text-white font-bold text-sm truncate group-hover:text-[#ff4dd2] transition-colors">{user.user_metadata?.full_name || 'Space Voyager'}</p>
-                    <p className="text-[11px] text-gray-400">View Profile →</p>
-                  </div>
-                </Link>
-
-                <div className="py-2">
-                  <Link 
-                    href="/profile" 
-                    onClick={() => setIsProfileOpen(false)} 
-                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <User size={18} className="text-[#ff4dd2]" /> Profile
-                  </Link>
-
-                  <Link 
-                    href="/settings" 
-                    onClick={() => setIsProfileOpen(false)} 
-                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <Settings size={18} className="text-gray-400" /> Settings
-                  </Link>
-                  
-                  <Link 
-                    href="/watchlist?tab=watchlist" 
-                    onClick={() => setIsProfileOpen(false)} 
-                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <Bookmark size={18} className="text-indigo-400" /> Watchlist
-                  </Link>
-
-                  <Link 
-                    href="/watchlist?tab=favorites" 
-                    onClick={() => setIsProfileOpen(false)} 
-                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <Heart size={18} className="text-rose-400" /> Favorites
-                  </Link>
-
-                  <Link 
-                    href="/watchlist?tab=custom-lists" 
-                    onClick={() => setIsProfileOpen(false)} 
-                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <ListPlus size={18} className="text-amber-400" /> My Lists
-                  </Link>
-
-                  <Link 
-                    href="/watchlist?tab=playlists" 
-                    onClick={() => setIsProfileOpen(false)} 
-                    className="flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <Music size={18} className="text-[#ff4dd2]" /> My Playlists 🎵
-                  </Link>
-                  
-                  <div className="h-px bg-white/10 w-full my-2" />
-
-                  <button 
-                    onClick={() => {
-                      setIsProfileOpen(false);
-                      handleLogout();
-                    }} 
-                    className="w-full flex items-center gap-4 px-5 py-2.5 text-[13px] font-bold text-gray-300 hover:text-[#ef4444] hover:bg-white/10 transition-colors cursor-pointer text-left"
-                  >
-                    <LogOut size={18} className="text-gray-400 hover:text-[#ef4444]" /> Log Out
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button 
-              onClick={() => router.push('/signin')} 
-              className="hidden md:flex items-center gap-2 text-gray-300 hover:text-white font-bold text-[14px] cursor-pointer transition-all px-4 py-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 hover:shadow-[0_5px_15px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] ml-2"
-            >
-              <User size={18} />
-              <span className="hidden lg:inline-block tracking-wide">LOG IN</span>
-            </button>
-          )}
-
-          <button 
-            ref={hamburgerBtnRef}
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className={`xl:hidden flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 cursor-pointer ml-1 active:scale-90 ${
-              isMenuOpen 
-                ? 'bg-[#ff4dd2] border border-[#ff4dd2] text-[#050716] shadow-[0_0_20px_rgba(255, 77, 210,0.8)]' 
-                : 'bg-transparent hover:bg-white/5 active:bg-[#1A1A24] border border-transparent hover:border-white/10 text-gray-300 hover:text-white'
-            }`}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? (
-              <X size={22} />
-            ) : (
-              <Menu size={22} />
-            )}
-          </button>
-
-        </div>
-      </div>
-    </header>
-
-      {/* Search overlay removed - search button directs straight to dedicated search route */}
-
-      {/* 🌟 Side Navigation Drawer */}
-      <AnimatePresence>
-        {isMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setIsMenuOpen(false)}
-              className="fixed inset-0 bg-[#050716]/90 backdrop-blur-md z-[80]"
-            />
-            {/* 3D Drawer */}
-            <motion.div 
-              ref={menuRef}
-              initial={{ x: '100%', opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: '100%', opacity: 0 }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-[80px] sm:top-[90px] bottom-3 right-3 w-[calc(100%-24px)] sm:w-[360px] max-w-[90vw] bg-[#0c0d1e] border border-[#ff4dd2]/40 shadow-[0_0_60px_rgba(255, 77, 210,0.3)] z-[90] flex flex-col rounded-3xl overflow-hidden"
-            >
-              <div className="p-5 sm:p-6 flex-1 flex flex-col gap-6 overflow-y-auto custom-scrollbar relative">
-                
-                {/* Close Button */}
-                <button 
-                  onClick={() => setIsMenuOpen(false)} 
-                  className="absolute top-5 right-5 w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5 cursor-pointer z-[100]"
-                >
-                  <X size={18} />
-                </button>
-
-                {/* 🌟 User Profile Card at Top of Drawer */}
-                {mounted && user ? (
-                  <Link
-                    href="/profile"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff4dd2]/50 hover:bg-[#ff4dd2]/10 transition-all group mt-1"
-                  >
-                    <div className="w-11 h-11 rounded-full bg-gray-900 overflow-hidden flex items-center justify-center shrink-0 border border-[#ff4dd2]/50 shadow-[0_0_10px_rgba(255, 77, 210,0.3)] group-hover:scale-105 transition-transform">
-                      {user.user_metadata?.avatar_url ? (
-                        <Image src={user.user_metadata.avatar_url} alt="Avatar" width={44} height={44} />
-                      ) : (
-                        <User size={22} className="text-[#ff4dd2]" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-white font-extrabold text-sm truncate group-hover:text-[#ff4dd2] transition-colors">
-                        {user.user_metadata?.full_name || 'Space Voyager'}
-                      </p>
-                      <span className="text-[10px] text-gray-400 block font-semibold">
-                        View Profile & Library →
-                      </span>
-                    </div>
-                  </Link>
-                ) : (
-                  <Link
-                    href="/signin"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#ff4dd2]/20 to-indigo-600/20 border border-[#ff4dd2]/40 hover:border-[#ff4dd2] transition-all group mt-1"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#ff4dd2] flex items-center justify-center text-black font-black">
-                        <User size={20} className="fill-black" />
-                      </div>
-                      <div>
-                        <p className="text-white font-extrabold text-xs">Join Anime Nation</p>
-                        <p className="text-[10px] text-gray-300">Login or Create Account</p>
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="text-[#ff4dd2] group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                )}
-
-                {/* Section: Main Navigation */}
-                <div>
-                  <h3 className="text-[#ff4dd2] text-[11px] font-black tracking-widest uppercase mb-3 flex items-center gap-2">
-                    <span className="w-4 h-[2px] bg-[#ff4dd2] inline-block shadow-[0_0_8px_rgba(255, 77, 210,0.8)]"></span> NAVIGATION
-                  </h3>
-                  
-                  <div className="flex flex-col gap-1.5">
-                    {navLinks.map((link) => {
-                      const isActive = pathname === link.path;
-                      const Icon = link.icon;
-                      return (
-                        <Link 
-                          key={link.name} 
-                          href={link.path} 
-                          onClick={() => setIsMenuOpen(false)}
-                          className={`text-[14px] font-bold px-3.5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-3.5 group relative overflow-hidden ${
-                            isActive ? 'text-white bg-[#ff4dd2]/15 border border-[#ff4dd2]/30' : 'text-gray-300 hover:text-white hover:bg-white/5'
-                          }`}
+                      /* Guest Otaku Card */
+                      <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#121328] via-[#0d0e1f] to-[#ff4dd2]/10 border border-[#ff4dd2]/30 shadow-lg flex flex-col gap-2.5 shrink-0">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 flex items-center justify-center text-[#ff4dd2]">
+                              <User size={16} />
+                            </div>
+                            <div>
+                              <p className="text-white font-black text-xs">Guest Otaku</p>
+                              <p className="text-[10px] text-gray-400 font-medium">Join Anime Nation India</p>
+                            </div>
+                          </div>
+                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#ff4dd2]/20 text-[#ff4dd2] border border-[#ff4dd2]/30">
+                            FREE
+                          </span>
+                        </div>
+                        
+                        <Link
+                          href="/signin"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#ff4dd2] to-[#d628ab] hover:from-[#ff60d7] hover:to-[#e034b5] text-white font-black text-xs shadow-[0_0_20px_rgba(255,77,210,0.4)] transition-all active:scale-95 cursor-pointer tracking-wider uppercase"
                         >
-                          <Icon size={18} className={`${isActive ? 'text-[#ff4dd2]' : 'text-gray-400 group-hover:text-[#ff4dd2]'}`} />
-                          <span className="tracking-wide group-hover:text-[#ff4dd2] transition-colors">{link.name}</span>
+                          <LogIn size={15} />
+                          <span>SIGN IN / JOIN CLAN</span>
                         </Link>
-                      );
-                    })}
-                  </div>
-                </div>
 
-                {/* Section: User Library & Lists */}
-                <div className="pt-4 border-t border-white/10 flex flex-col gap-1.5">
-                  <h3 className="text-indigo-400 text-[11px] font-black tracking-widest uppercase mb-2 flex items-center gap-2">
-                    <span className="w-4 h-[2px] bg-indigo-400 inline-block"></span> MY COLLECTIONS
-                  </h3>
+                        <Link
+                          href="/signup"
+                          onClick={() => setIsProfileOpen(false)}
+                          className="text-center text-[11px] font-bold text-gray-300 hover:text-[#ff4dd2] transition-colors"
+                        >
+                          Don't have an account? <span className="text-[#ff4dd2] underline">Sign Up Free</span>
+                        </Link>
+                      </div>
+                    )}
 
-                  <Link 
-                    href="/watchlist?tab=watchlist" 
-                    onClick={() => setIsMenuOpen(false)} 
-                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
-                  >
-                    <Bookmark size={17} className="text-indigo-400" /> Watchlist
-                  </Link>
-
-                  <Link 
-                    href="/watchlist?tab=favorites" 
-                    onClick={() => setIsMenuOpen(false)} 
-                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
-                  >
-                    <Heart size={17} className="text-rose-400" /> Favorites
-                  </Link>
-
-                  <Link 
-                    href="/watchlist?tab=custom-lists" 
-                    onClick={() => setIsMenuOpen(false)} 
-                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
-                  >
-                    <ListPlus size={17} className="text-amber-400" /> My Custom Lists
-                  </Link>
-
-                  <Link 
-                    href="/watchlist?tab=playlists" 
-                    onClick={() => setIsMenuOpen(false)} 
-                    className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
-                  >
-                    <Music size={17} className="text-[#ff4dd2]" /> My Playlists 🎵
-                  </Link>
-
-                  {mounted && user && (
-                    <>
+                    {/* 2. Discover & Browse Navigation Links */}
+                    <div className="border-t border-white/10 pt-2 flex flex-col gap-1 shrink-0">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#ff4dd2] px-3 py-1">
+                        DISCOVER
+                      </span>
+                      
                       <Link 
-                        href="/settings" 
-                        onClick={() => setIsMenuOpen(false)} 
-                        className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-gray-300 hover:text-white hover:bg-white/5 font-bold text-xs transition-all group"
+                        href="/home" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
                       >
-                        <Settings size={17} className="text-gray-400" /> Account Settings
+                        <Home size={17} className="text-gray-400 group-hover:text-[#ff4dd2] transition-colors" />
+                        <span>Home</span>
                       </Link>
 
-                      <div className="h-px bg-white/10 my-1" />
-
-                      <button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          handleLogout();
-                        }}
-                        className="flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-rose-400 hover:bg-rose-500/10 font-bold text-xs transition-all cursor-pointer text-left"
+                      <Link 
+                        href="/new" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
                       >
-                        <LogOut size={17} /> Sign Out
-                      </button>
-                    </>
-                  )}
-                </div>
+                        <Sparkles size={17} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                        <span>New Releases</span>
+                      </Link>
 
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                      <Link 
+                        href="/manga" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <BookOpen size={17} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                        <span>Manga</span>
+                      </Link>
+
+                      <Link 
+                        href="/popular" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <Flame size={17} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                        <span>Popular</span>
+                      </Link>
+
+                      <Link 
+                        href="/simulcast" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <MonitorPlay size={17} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+                        <span>Simulcast</span>
+                      </Link>
+
+                      <Link 
+                        href="/genres" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <Layers size={17} className="text-pink-400 group-hover:scale-110 transition-transform" />
+                        <span>Genres</span>
+                      </Link>
+
+                      <Link 
+                        href="/schedule" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <CalendarDays size={17} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+                        <span>Schedule</span>
+                      </Link>
+
+                      <Link 
+                        href="/news" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <Newspaper size={17} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                        <span>News</span>
+                      </Link>
+                    </div>
+
+                    {/* 3. Community & Settings */}
+                    <div className="border-t border-white/10 pt-2 flex flex-col gap-1 shrink-0">
+                      <Link 
+                        href="/forums" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all group"
+                      >
+                        <MessageSquare size={17} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                        <span>Community &amp; Chat</span>
+                      </Link>
+
+                      <Link 
+                        href="/watch-party" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 transition-all group"
+                      >
+                        <Users size={17} className="text-cyan-400 group-hover:scale-110 transition-transform" />
+                        <span>Watch Party Room</span>
+                      </Link>
+
+                      <Link 
+                        href="/contact" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <Mail size={17} className="text-gray-400 group-hover:text-white transition-colors" />
+                        <span>Contact Desk</span>
+                      </Link>
+
+                      <Link 
+                        href="/settings" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-200 hover:text-white hover:bg-white/10 transition-all group"
+                      >
+                        <Settings size={17} className="text-gray-400 group-hover:text-white transition-colors" />
+                        <span>Settings</span>
+                      </Link>
+                    </div>
+
+                    {/* 4. Divider */}
+                    <div className="h-[1px] bg-white/10 w-full my-0.5 shrink-0" />
+
+                    {/* 5. Sign Out (if Logged In) & Help */}
+                    <div className="flex flex-col gap-1 shrink-0">
+                      {mounted && user && (
+                        <button 
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
+                        >
+                          <LogOut size={17} className="text-rose-400" />
+                          <span>Sign Out</span>
+                        </button>
+                      )}
+
+                      <Link 
+                        href="/faq" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-[13.5px] font-bold text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+                      >
+                        <HelpCircle size={17} className="text-gray-400" />
+                        <span>Help &amp; FAQ</span>
+                      </Link>
+                    </div>
+
+                    {/* 6. Lead Architect Card (With full bottom scroll clearance) */}
+                    <div className="mt-1 p-3 rounded-2xl bg-gradient-to-br from-[#121327]/90 to-[#0a0b16]/90 border border-white/10 relative overflow-hidden group shrink-0 mb-3 shadow-md">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Sparkles size={13} className="text-[#ff4dd2] animate-pulse" />
+                        <span className="text-[10px] font-black tracking-widest text-[#ff4dd2] uppercase">
+                          LEAD ARCHITECT
+                        </span>
+                      </div>
+                      <p className="text-white font-extrabold text-[13.5px] mb-1.5">Shouvik Das</p>
+                      
+                      <div className="flex items-center gap-2 text-xs font-bold">
+                        <a 
+                          href="https://shouvikdasportfolio.vercel.app/" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[#ff4dd2] hover:underline"
+                        >
+                          Portfolio
+                        </a>
+                        <span className="text-gray-600">•</span>
+                        <a 
+                          href="https://github.com/Shouvikdasprojects" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-white"
+                        >
+                          GitHub
+                        </a>
+                        <span className="text-gray-600">•</span>
+                        <a 
+                          href="https://x.com/shouvikdas155" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-white"
+                        >
+                          𝕏
+                        </a>
+                        <span className="text-gray-600">•</span>
+                        <a 
+                          href="https://heylink.me/ShouvikDas/" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-emerald-400 hover:underline"
+                        >
+                          Linktree
+                        </a>
+                      </div>
+                    </div>
+
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 🌟 MOBILE HORIZONTAL PILLS QUICK-BAR (TOUCH-FRIENDLY SWIPE)               */}
+        {/* ========================================================================= */}
+        <div className="lg:hidden border-t border-white/10 bg-[#050716]/90 px-3 py-1.5 backdrop-blur-xl">
+          <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x">
+            {navLinks.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={`shrink-0 rounded-full px-3 py-1 text-center text-xs font-bold transition-all select-none touch-manipulation active:scale-95 ${
+                    active
+                      ? 'bg-[#ff4dd2] text-white shadow-[0_0_12px_rgba(255,77,210,0.6)] font-black'
+                      : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border border-white/5'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </header>
     </>
   );
 }
+

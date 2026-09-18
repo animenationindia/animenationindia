@@ -56,14 +56,14 @@ export default function SettingsPage() {
       const name = localStorage.getItem('user_name');
       
       if (!token || !userId) {
-        router.push('/auth');
+        router.push('/signin');
       } else {
         setUser({
           id: userId,
-          email: '',
+          email: localStorage.getItem('user_email') || '',
           user_metadata: {
             full_name: name || 'Otaku',
-            avatar_url: null
+            avatar_url: localStorage.getItem('user_avatar') || null
           }
         });
         setUsername(name || '');

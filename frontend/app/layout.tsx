@@ -47,17 +47,23 @@ export const metadata: Metadata = {
 };
 
 import { WatchlistProvider } from "../context/WatchlistContext";
+import { MusicPlayerProvider } from "../context/MusicPlayerContext";
 import ScrollToTop from "../components/ScrollToTop";
-import AIAnimeRecommender from "../components/AIAnimeRecommender";
+import InstallAppPrompt from "../components/InstallAppPrompt";
+import FloatingCyberPlayer from "../components/FloatingCyberPlayer";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" className="overflow-x-hidden dark" suppressHydrationWarning>
       <head>
-        <meta name="referrer" content="no-referrer" />
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`
-            (function() {
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        <meta name="theme-color" content="#ff2a5f" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{
+            __html: `(function() {
               try {
                 var savedTheme = localStorage.getItem('theme');
                 var theme = savedTheme ? savedTheme : 'dark';
@@ -69,39 +75,46 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   document.documentElement.classList.remove('dark');
                 }
               } catch (e) {}
-            })();
-          `}
-        </Script>
+            })();`,
+          }}
+        />
       </head>
       <body suppressHydrationWarning className="bg-[#050716] text-[#ffffff] min-h-screen flex flex-col font-sans selection:bg-[#ff4dd2] selection:text-white overflow-x-hidden w-full max-w-[100vw] pb-[60px] md:pb-0">
         <ScrollToTop />
         <WatchlistProvider>
-          <Script 
-            src="https://news.google.com/swg/js/v1/swg-basic.js" 
-            strategy="afterInteractive" 
-          />
-          <Script id="swg-basic-init" strategy="afterInteractive">
-            {`
-              (self.SWG_BASIC = self.SWG_BASIC || []).push( basicSubscriptions => {
-                basicSubscriptions.init({
-                  type: "NewsArticle",
-                  isPartOfType: ["Product"],
-                  isPartOfProductId: "CAow4N3HDA:openaccess",
-                  clientOptions: { theme: "light", lang: "en" },
-                });
-              });
-            `}
-          </Script>
-          <Navbar />
-          <BackButton />
-          {/* Main Content */}
-          <div className="flex-grow w-full min-h-[calc(100dvh-72px)] overflow-x-hidden relative">
-            {children}
-          </div>
-          <Footer />
-          <MobileBottomNav />
-          <BackToTop />
-          <AIAnimeRecommender />
+          <MusicPlayerProvider>
+            <Script 
+              src="https://news.google.com/swg/js/v1/swg-basic.js" 
+              strategy="afterInteractive" 
+            />
+            <Script id="swg-basic-init" strategy="afterInteractive">
+              {`
+                if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                  (self.SWG_BASIC = self.SWG_BASIC || []).push( function(basicSubscriptions) {
+                    try {
+                      basicSubscriptions.init({
+                        type: "NewsArticle",
+                        isPartOfType: ["Product"],
+                        isPartOfProductId: "CAow4N3HDA:openaccess",
+                        clientOptions: { theme: "light", lang: "en" },
+                      });
+                    } catch (e) {}
+                  });
+                }
+              `}
+            </Script>
+            <Navbar />
+            <BackButton />
+            {/* Main Content */}
+            <div className="flex-grow w-full min-h-[calc(100dvh-72px)] overflow-x-hidden relative">
+              {children}
+            </div>
+            <Footer />
+            <FloatingCyberPlayer />
+            <MobileBottomNav />
+            <BackToTop />
+            <InstallAppPrompt />
+          </MusicPlayerProvider>
         </WatchlistProvider>
       </body>
     </html>

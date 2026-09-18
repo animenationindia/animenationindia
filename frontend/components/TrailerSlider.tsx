@@ -52,7 +52,7 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
   };
 
   return (
-    <section className="mb-14 relative group/trailer-section">
+    <section className="mb-14 relative group/trailer-section" suppressHydrationWarning>
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
@@ -112,52 +112,61 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
           const thumbnailUrl = anime.trailer?.thumbnail || `https://i.ytimg.com/vi/${anime.trailer.id}/hqdefault.jpg`;
 
           return (
-            <SwiperSlide key={`slide-${anime.id || idx}-${anime.trailer.id}`}>
+            <SwiperSlide key={`slide-${anime.id || idx}-${anime.trailer.id}`} className="h-auto">
               <div 
-                className="relative aspect-video rounded-xl overflow-hidden cursor-pointer group/card bg-[#0a0c1a] border border-white/10 hover:border-[#ff4dd2]/60 hover:shadow-[0_0_25px_rgba(255,77,210,0.3)] transition-all duration-300 flex flex-col"
+                className="group relative rounded-xl overflow-hidden bg-[#0a0c1a] border border-white/5 hover:border-[#ff4dd2]/60 hover:shadow-[0_0_25px_rgba(255,77,210,0.25)] transition-all duration-300 flex flex-col h-full cursor-pointer"
                 onClick={() => setSelectedTrailer(anime)}
               >
-                {/* Thumbnail Image */}
-                <img 
-                  src={thumbnailUrl} 
-                  alt={title} 
-                  loading="lazy"
-                  onError={(e) => {
-                    const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
-                    if (e.currentTarget.src !== fallback) {
-                      e.currentTarget.src = fallback;
-                    }
-                  }}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-105" 
-                />
+                {/* Thumbnail & Video Header */}
+                <div className="relative aspect-video w-full overflow-hidden bg-black/40">
+                  <img 
+                    src={thumbnailUrl} 
+                    alt={title} 
+                    loading="lazy"
+                    onError={(e) => {
+                      const fallback = anime.coverImage?.large || anime.coverImage?.medium || '/placeholder-poster.png';
+                      if (e.currentTarget.src !== fallback) {
+                        e.currentTarget.src = fallback;
+                      }
+                    }}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-                {/* Dark Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 group-hover/card:via-black/20 transition-colors" />
-
-                {/* Status Badge */}
-                {anime.status && (
-                  <span className="absolute top-2.5 left-2.5 text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/10 text-[#00f7ff] shadow">
-                    {formatStatus(anime.status)}
-                  </span>
-                )}
-
-                {/* HD Badge */}
-                <span className="absolute top-2.5 right-2.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-600/90 text-white shadow">
-                  HD
-                </span>
-
-                {/* Play Button */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white group-hover/card:bg-[#ff4dd2] group-hover/card:scale-110 group-hover/card:shadow-[0_0_15px_rgba(255,77,210,0.8)] transition-all border border-white/20 group-hover/card:border-[#ff4dd2]">
-                    <Play size={20} className="ml-1 fill-white" />
+                  {/* Center Play Button */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-black/70 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:scale-110 group-hover:bg-[#ff4dd2] group-hover:border-[#ff4dd2] transition-all shadow-lg">
+                      <Play size={18} className="ml-0.5 fill-white" />
+                    </div>
                   </div>
+
+                  {/* Status Badge (Top Left) */}
+                  {anime.status && (
+                    <span className="absolute top-2.5 left-2.5 text-[9px] md:text-[10px] uppercase font-bold tracking-wider px-2 md:px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[#00f7ff]">
+                      {formatStatus(anime.status)}
+                    </span>
+                  )}
+
+                  {/* HD Badge (Bottom Right) */}
+                  <span className="absolute bottom-2.5 right-2.5 text-[9px] md:text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-red-600/90 text-white shadow">
+                    HD Trailer
+                  </span>
                 </div>
 
-                {/* Title and Bottom Bar */}
-                <div className="absolute bottom-0 left-0 right-0 p-3.5 bg-gradient-to-t from-black via-black/80 to-transparent">
-                  <h3 className="text-white font-semibold text-xs md:text-sm line-clamp-1 group-hover/card:text-[#ff4dd2] transition-colors">
-                    {title}
-                  </h3>
+                {/* Card Bottom Details (Title & Action Bar) */}
+                <div className="p-3.5 md:p-4 flex flex-col flex-1 justify-between bg-gradient-to-b from-[#0a0c1a] to-[#0d1024]">
+                  <div>
+                    <h3 className="text-white font-semibold text-xs md:text-sm line-clamp-2 group-hover:text-[#ff4dd2] transition-colors leading-snug">
+                      {title}
+                    </h3>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[11px] md:text-xs text-[#a0a0a0]">
+                    <span className="group-hover:text-white transition-colors">Click to Watch</span>
+                    <span className="text-[#ff4dd2] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity font-semibold">
+                      Play Video <ArrowRight size={12} />
+                    </span>
+                  </div>
                 </div>
               </div>
             </SwiperSlide>
@@ -194,7 +203,7 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
               <div className="flex items-center gap-3 min-w-0 pr-4">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#ff4dd2] animate-pulse flex-shrink-0" />
                 <h3 className="text-white font-bold text-sm sm:text-base md:text-lg truncate">
-                  {selectedTrailer.title?.english || selectedTrailer.title?.romaji || 'Official Anime Trailer'}
+                  {toEnglishTitle(selectedTrailer.title?.english || selectedTrailer.title?.romaji || 'Official Anime Trailer')}
                 </h3>
               </div>
               <button 
@@ -209,10 +218,11 @@ export default function TrailerSlider({ trailers }: { trailers: any[] }) {
             {/* Video Player 16:9 */}
             <div className="relative aspect-video w-full bg-black">
               <iframe 
-                src={`https://www.youtube-nocookie.com/embed/${selectedTrailer.trailer.id}?autoplay=1&rel=0&modestbranding=1`}
+                src={`https://www.youtube.com/embed/${selectedTrailer.trailer.id}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
                 title={selectedTrailer.title?.english || 'Anime Trailer'}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full border-0"
               />
             </div>

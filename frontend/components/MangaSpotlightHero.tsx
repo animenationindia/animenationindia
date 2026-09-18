@@ -138,7 +138,15 @@ export default function MangaSpotlightHero({ spotlights }: MangaSpotlightHeroPro
           {/* Action Button & Carousel Dots */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <Link
-              href={`/manga/${current.id}`}
+              href={(() => {
+                const originCountry = (current.countryOfOrigin || '').toUpperCase();
+                const fmt = (current.format || '').toUpperCase();
+                const linkId = current.idMal || current.id;
+                if (originCountry === 'KR' || fmt === 'MANHWA') return `/read/manhwa/${linkId}`;
+                if (originCountry === 'CN' || fmt === 'MANHUA') return `/read/manhua/${linkId}`;
+                if (fmt === 'NOVEL' || fmt === 'LIGHT NOVEL') return `/read/novels/${linkId}`;
+                return `/read/manga/${linkId}`;
+              })()}
               className="inline-flex items-center gap-2 bg-[#ff4dd2] hover:bg-[#ff7be0] text-[#050716] font-black px-6 py-3 rounded-xl text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 shadow-[0_4px_20px_rgba(255,77,210,0.4)] hover:shadow-[0_4px_30px_rgba(255,77,210,0.6)] cursor-pointer hover:scale-105"
             >
               Read Details <ChevronRight size={16} />
