@@ -33,7 +33,7 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
       const proxyRes = await fetch(proxyUrl, {
         headers: { 'Accept': 'application/json' },
         signal: AbortSignal.timeout(timeoutMs),
-        cache: 'no-store'
+        next: { revalidate: 600 }
       });
       if (proxyRes.ok) {
         const data = await proxyRes.json();

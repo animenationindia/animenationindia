@@ -11,7 +11,7 @@ const trustedOrigins = [
   'http://127.0.0.1:3000',
   'https://animenationindia.online',
   'https://www.animenationindia.online',
-  'https://animenationindia.animenationindia-global.workers.dev',
+  'https://animenationindia.vercel.app',
 ];
 
 export const auth = betterAuth({

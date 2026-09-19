@@ -118,7 +118,8 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
         },
         body: JSON.stringify({ query, variables }),
         signal: controller.signal,
-        cache: 'no-store'
+        next: revalidate > 0 ? { revalidate } : undefined,
+        cache: revalidate === 0 ? 'no-store' : undefined,
       }).catch(() => null);
 
       // 2. Fallback to Backend Proxy if direct AniList is blocked or failing
@@ -134,7 +135,8 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
             },
             body: JSON.stringify({ query, variables }),
             signal: proxyController.signal,
-            cache: 'no-store'
+            next: revalidate > 0 ? { revalidate } : undefined,
+            cache: revalidate === 0 ? 'no-store' : undefined,
           }).catch(() => null);
           clearTimeout(proxyTimer);
           if (proxyRes && proxyRes.ok) {

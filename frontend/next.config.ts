@@ -15,12 +15,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['pg', 'pg-cloudflare'],
-  outputFileTracingIncludes: {
-    '**/*': [
-      './node_modules/pg-cloudflare/**/*',
-    ],
-  },
+  serverExternalPackages: ['pg'],
   compress: true,
   reactStrictMode: true,
   turbopack: {},
