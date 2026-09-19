@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-export const dynamic = 'force-dynamic';
+export const revalidate = 1800; // 30 minute cache
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Hero from '../../components/Hero';

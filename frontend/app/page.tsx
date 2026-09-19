@@ -2,7 +2,7 @@ import nextDynamic from 'next/dynamic';
 import { getTrendingAnimeAniList } from '../lib/api';
 import type { Metadata } from 'next';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 86400; // 24 ghonta cache
 
 export const metadata: Metadata = {
   title: "Anime Nation India - Watch Anime, Live Schedule, Reviews & Watchlist",
