@@ -125,6 +125,7 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'https://animenationindia.online',
   'https://www.animenationindia.online',
+  'https://animenationindia.vercel.app',
   'https://animenationindia.animenationindia-global.workers.dev',
   'https://anilist.co',
   'https://myanimelist.net',
@@ -139,6 +140,7 @@ const corsOptions = {
       allowedOrigins.includes(origin) ||
       (typeof origin === 'string' && (
         origin.endsWith('.animenationindia.online') ||
+        origin.endsWith('.vercel.app') ||
         origin.endsWith('.workers.dev') ||
         origin.endsWith('.onrender.com') ||
         origin.includes('localhost') ||
