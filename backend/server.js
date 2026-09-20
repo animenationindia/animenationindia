@@ -2399,7 +2399,7 @@ app.get('/api/home', async (req, res) => {
   }
 });
 
-// 2. Full Anime Details (Tier 1: Official MAL v2 -> Tier 2: AniList GraphQL)
+// 2. Full Anime Details (Tier 1: Official MAL v2 5-Key Pool [PRIMARY] -> Tier 2: AniList GraphQL [BACKUP])
 app.get('/api/anime/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -2408,6 +2408,19 @@ app.get('/api/anime/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid ID" });
     }
 
+    // ─── TIER 1 [PRIMARY]: Official MyAnimeList v2 5-Key Pool ───
+    if (numId <= 65000) {
+      try {
+        const malData = await malService.getAnimeDetails(numId);
+        if (malData && malData.id) {
+          return res.json({ success: true, data: malData, source: 'mal_official_pool' });
+        }
+      } catch (malErr) {
+        console.warn(`[MAL Tier 1 Primary] Fetch failed for ID ${numId}, switching to AniList Backup:`, malErr.message);
+      }
+    }
+
+    // ─── TIER 2 [BACKUP / ANILIST ID]: AniList GraphQL Resilience Engine ───
     const isMalId = numId <= 65000;
     const query = isMalId
       ? `query ($id: Int) {
@@ -2445,23 +2458,23 @@ app.get('/api/anime/:id', async (req, res) => {
           }
         }`;
 
-    let anilistRes = null;
     try {
-      anilistRes = await anilistService.fetchAniList(query, { id: numId });
-    } catch {}
-
-    const media = anilistRes?.data?.Media;
-    if (media) {
-      return res.json({ success: true, data: media, source: 'anilist_proxy' });
-    }
-
-    // Seamless Fallback: Official MAL v2 Multi-Key Pool
-    try {
-      const malData = await malService.getAnimeDetails(id);
-      if (malData) {
-        return res.json({ success: true, data: malData, source: 'mal_api' });
+      const anilistRes = await anilistService.fetchAniList(query, { id: numId });
+      const media = anilistRes?.data?.Media;
+      if (media) {
+        return res.json({ success: true, data: media, source: 'anilist_fallback' });
       }
     } catch {}
+
+    // ─── FINAL FALLBACK: If ID was > 65000 and AniList failed, try MAL as last resort ───
+    if (numId > 65000) {
+      try {
+        const malData = await malService.getAnimeDetails(numId);
+        if (malData && malData.id) {
+          return res.json({ success: true, data: malData, source: 'mal_final_resort' });
+        }
+      } catch {}
+    }
 
     return res.status(404).json({ success: false, message: "Anime not found" });
   } catch (error) { 

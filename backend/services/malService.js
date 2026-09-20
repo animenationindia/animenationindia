@@ -105,26 +105,37 @@ async function getAnimeDetails(id) {
   return {
     mal_id: raw.id,
     id: raw.id,
+    idMal: raw.id,
     title: toEnglishTitle(alt.en || raw.title),
     title_english: toEnglishTitle(alt.en || raw.title),
     title_japanese: alt.ja || '',
     synopsis: raw.synopsis || '',
+    description: raw.synopsis || '',
     images: {
       webp: { image_url: largePic, small_image_url: raw.main_picture?.medium || largePic, large_image_url: largePic },
       jpg: { image_url: largePic, small_image_url: raw.main_picture?.medium || largePic, large_image_url: largePic }
     },
+    coverImage: {
+      extraLarge: largePic,
+      large: largePic,
+      medium: raw.main_picture?.medium || largePic
+    },
+    bannerImage: raw.pictures?.[0]?.large || largePic,
     trailer: null,
     score: typeof raw.mean === 'number' ? raw.mean : null,
+    averageScore: typeof raw.mean === 'number' ? Math.round(raw.mean * 10) : null,
     scored_by: raw.num_scoring_users || null,
     rank: raw.rank || null,
     popularity: raw.popularity || null,
     members: raw.num_list_users || null,
     type: formatMap[raw.media_type] || raw.media_type?.toUpperCase() || 'TV',
+    format: formatMap[raw.media_type] || raw.media_type?.toUpperCase() || 'TV',
     status: statusMap[raw.status] || raw.status || 'Finished Airing',
     episodes: raw.num_episodes || null,
     duration: raw.average_episode_duration ? `${Math.round(raw.average_episode_duration / 60)} min` : null,
     rating: raw.rating ? raw.rating.toUpperCase() : 'PG-13',
     season: raw.start_season?.season ? `${raw.start_season.season.toUpperCase()} ${raw.start_season.year || ''}`.trim() : null,
+    seasonYear: raw.start_season?.year || (raw.start_date ? new Date(raw.start_date).getFullYear() : null),
     year: raw.start_season?.year || (raw.start_date ? new Date(raw.start_date).getFullYear() : null),
     aired: {
       from: raw.start_date || null,
