@@ -2408,46 +2408,54 @@ app.get('/api/anime/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid ID" });
     }
 
-    const query = `
-      query ($id: Int) {
-        byMal: Media(idMal: $id, type: ANIME, isAdult: false) {
-          id
-          idMal
-          title { romaji english native }
-          coverImage { extraLarge large medium }
-          bannerImage
-          description
-          averageScore
-          episodes
-          format
-          status
-          seasonYear
-          genres
-          studios(isMain: true) { nodes { name } }
-        }
-        byId: Media(id: $id, type: ANIME, isAdult: false) {
-          id
-          idMal
-          title { romaji english native }
-          coverImage { extraLarge large medium }
-          bannerImage
-          description
-          averageScore
-          episodes
-          format
-          status
-          seasonYear
-          genres
-          studios(isMain: true) { nodes { name } }
-        }
-      }
-    `;
-    const anilistRes = await anilistService.fetchAniList(query, { id: numId });
-    const media = anilistRes?.data?.byMal || anilistRes?.data?.byId;
+    const isMalId = numId <= 65000;
+    const query = isMalId
+      ? `query ($id: Int) {
+          Media(idMal: $id, type: ANIME, isAdult: false) {
+            id
+            idMal
+            title { romaji english native }
+            coverImage { extraLarge large medium }
+            bannerImage
+            description
+            averageScore
+            episodes
+            format
+            status
+            seasonYear
+            genres
+            studios(isMain: true) { nodes { name } }
+          }
+        }`
+      : `query ($id: Int) {
+          Media(id: $id, type: ANIME, isAdult: false) {
+            id
+            idMal
+            title { romaji english native }
+            coverImage { extraLarge large medium }
+            bannerImage
+            description
+            averageScore
+            episodes
+            format
+            status
+            seasonYear
+            genres
+            studios(isMain: true) { nodes { name } }
+          }
+        }`;
+
+    let anilistRes = null;
+    try {
+      anilistRes = await anilistService.fetchAniList(query, { id: numId });
+    } catch {}
+
+    const media = anilistRes?.data?.Media;
     if (media) {
       return res.json({ success: true, data: media, source: 'anilist_proxy' });
     }
 
+    // Seamless Fallback: Official MAL v2 Multi-Key Pool
     try {
       const malData = await malService.getAnimeDetails(id);
       if (malData) {
@@ -2455,10 +2463,10 @@ app.get('/api/anime/:id', async (req, res) => {
       }
     } catch {}
 
-    res.status(404).json({ success: false, message: "Anime not found" });
+    return res.status(404).json({ success: false, message: "Anime not found" });
   } catch (error) { 
-    console.error("❌ Anime Details Error:", error);
-    res.status(500).json({ success: false, message: "Internal server error" }); 
+    console.error("❌ Anime Details Error:", error.message || error);
+    return res.status(500).json({ success: false, message: "Internal server error" }); 
   }
 });
 

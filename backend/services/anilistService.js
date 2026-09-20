@@ -3,82 +3,96 @@ const { toEnglishTitle, normalizeTitleObject } = require('./titleCleaner');
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 const memoryCache = new Map();
+const negativeCache = new Map(); // Tracks 404/invalid queries (24-hour negative cache)
 const inFlightRequests = new Map();
-const DEFAULT_TTL = 30 * 60 * 1000; // 30 mins
+const DEFAULT_TTL = 2 * 60 * 60 * 1000; // 2 hours default TTL
 const malService = require('./malService');
 
 let anilistBlockedUntil = 0;
+let lastRequestPromise = Promise.resolve();
+const MIN_REQUEST_GAP_MS = 750; // Max ~80 requests/min to strictly respect AniList 90 req/min quota
 
-async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutMs = 4000) {
+async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutMs = 5000) {
   const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
+  // 1. Negative cache check: If query previously returned 404, avoid redundant calls
+  const negEntry = negativeCache.get(cacheKey);
+  if (negEntry && (Date.now() - negEntry < 24 * 60 * 60 * 1000)) {
+    return null;
+  }
+
+  // 2. Return fresh data from memory cache
   const cached = memoryCache.get(cacheKey);
   if (cached && (Date.now() - cached.timestamp < ttlMs)) {
     return cached.data;
   }
 
+  // 3. Upstream 429 cooldown active: return stale cache or null safely without calling AniList
   if (Date.now() < anilistBlockedUntil) {
-    if (cached) return cached.data;
+    return cached ? cached.data : null;
   }
 
+  // 4. Return existing in-flight Promise for identical requests (Request deduplication)
   if (inFlightRequests.has(cacheKey)) {
     return inFlightRequests.get(cacheKey);
   }
 
   const execute = async () => {
-    let lastError = null;
-    const maxRetries = 2;
+    // Chain with rate-limiting queue to ensure at least MIN_REQUEST_GAP_MS between outgoing calls
+    await lastRequestPromise;
+    lastRequestPromise = new Promise(resolve => setTimeout(resolve, MIN_REQUEST_GAP_MS));
 
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const res = await fetch(ANILIST_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Origin': 'https://anilist.co',
-            'Referer': 'https://anilist.co/',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-          },
-          body: JSON.stringify({ query, variables }),
-          signal: AbortSignal.timeout(timeoutMs)
-        });
+    try {
+      const res = await fetch(ANILIST_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Origin': 'https://anilist.co',
+          'Referer': 'https://anilist.co/',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+        },
+        body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(timeoutMs)
+      });
 
-        if (!res.ok) {
-          if (res.status === 429) {
-            console.warn('[AniList 429]: Rate limit reached on upstream AniList.');
-            anilistBlockedUntil = Date.now() + 60 * 1000;
-            if (cached) return cached.data;
-            if (attempt < maxRetries) {
-              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-              continue;
-            }
-          }
-          if (res.status === 403) {
-            anilistBlockedUntil = Date.now() + 2 * 60 * 1000;
-          }
-          if (cached) return cached.data;
-          throw new Error(`AniList HTTP ${res.status}: ${res.statusText}`);
+      if (!res.ok) {
+        if (res.status === 429) {
+          const retryAfterSec = Number(res.headers.get('retry-after')) || 60;
+          anilistBlockedUntil = Date.now() + retryAfterSec * 1000;
+          console.warn(`[AniList 429]: Rate limit reached on upstream AniList. Cooldown for ${retryAfterSec}s.`);
+          return cached ? cached.data : null;
         }
 
-        const data = await res.json();
-        if (data && (data.data || !data.errors)) {
-          memoryCache.set(cacheKey, { data, timestamp: Date.now() });
-          return data;
-        } else if (data && data.errors) {
-          if (cached) return cached.data;
-          return data;
+        if (res.status === 404) {
+          negativeCache.set(cacheKey, Date.now());
+          return null;
         }
-      } catch (err) {
-        lastError = err;
-        if (attempt < maxRetries) {
-          await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+
+        if (res.status === 403) {
+          anilistBlockedUntil = Date.now() + 2 * 60 * 1000;
+          return cached ? cached.data : null;
         }
+
+        return cached ? cached.data : null;
       }
-    }
 
-    if (cached) return cached.data;
-    throw lastError || new Error('Failed to fetch from AniList GraphQL');
+      const data = await res.json();
+      if (data && data.data) {
+        memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+        return data;
+      } else if (data && data.errors && data.errors.length > 0) {
+        const is404 = data.errors.some(e => e.status === 404 || (e.message && e.message.toLowerCase().includes('not found')));
+        if (is404) {
+          negativeCache.set(cacheKey, Date.now());
+          return null;
+        }
+        return cached ? cached.data : null;
+      }
+      return null;
+    } catch (err) {
+      return cached ? cached.data : null;
+    }
   };
 
   const promise = execute().finally(() => {
@@ -352,30 +366,32 @@ async function getMangaDetails(id) {
   const numId = Number(id);
   if (!numId || isNaN(numId)) return null;
 
-  const query = `
-    query ($id: Int) {
-      byMal: Media(idMal: $id, type: MANGA, isAdult: false) {
-        id idMal title { english romaji native }
-        coverImage { extraLarge large } bannerImage
-        averageScore chapters volumes format status genres
-        description startDate { year month day }
-        countryOfOrigin
-        staff(perPage: 4) { nodes { id name { full } } }
-      }
-      byId: Media(id: $id, type: MANGA, isAdult: false) {
-        id idMal title { english romaji native }
-        coverImage { extraLarge large } bannerImage
-        averageScore chapters volumes format status genres
-        description startDate { year month day }
-        countryOfOrigin
-        staff(perPage: 4) { nodes { id name { full } } }
-      }
-    }
-  `;
+  const isMal = numId <= 65000;
+  const query = isMal
+    ? `query ($id: Int) {
+        Media(idMal: $id, type: MANGA, isAdult: false) {
+          id idMal title { english romaji native }
+          coverImage { extraLarge large } bannerImage
+          averageScore chapters volumes format status genres
+          description startDate { year month day }
+          countryOfOrigin
+          staff(perPage: 4) { nodes { id name { full } } }
+        }
+      }`
+    : `query ($id: Int) {
+        Media(id: $id, type: MANGA, isAdult: false) {
+          id idMal title { english romaji native }
+          coverImage { extraLarge large } bannerImage
+          averageScore chapters volumes format status genres
+          description startDate { year month day }
+          countryOfOrigin
+          staff(perPage: 4) { nodes { id name { full } } }
+        }
+      }`;
 
   try {
     const res = await fetchAniList(query, { id: numId }, 6 * 60 * 60 * 1000);
-    const media = res?.data?.byMal || res?.data?.byId;
+    const media = res?.data?.Media;
     if (media) {
       return { ...media, title: normalizeTitleObject(media.title) };
     }
