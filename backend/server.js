@@ -200,12 +200,8 @@ app.get('/api/jikan/proxy', (req, res) => {
 });
 
 // ============================================================================
-// 🔥 High-Speed Official MyAnimeList (MAL) API Proxy (10-Min In-Memory Cache) 🔥
+// 🔥 High-Speed Official MyAnimeList (MAL) API Proxy (5-Key Pool & Deduplication) 🔥
 // ============================================================================
-const malProxyCache = new Map();
-const MAL_PROXY_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
-const MAL_CLIENT_ID = process.env.MAL_CLIENT_ID || 'f6cd787eb297c144b5cebd2ef50026c3';
-
 app.get('/api/mal/proxy', async (req, res) => {
   try {
     let endpoint = req.query.endpoint || req.query.path;
@@ -220,36 +216,13 @@ app.get('/api/mal/proxy', async (req, res) => {
       return res.status(400).json({ error: 'Endpoint query parameter is required (e.g. /anime/5114?fields=...)' });
     }
 
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const cached = malProxyCache.get(cleanEndpoint);
-    if (cached && (Date.now() - cached.timestamp < MAL_PROXY_CACHE_TTL)) {
-      return res.json(cached.data);
-    }
-
-    const targetUrl = `https://api.myanimelist.net/v2${cleanEndpoint}`;
-    const malRes = await fetch(targetUrl, {
-      headers: {
-        'X-MAL-CLIENT-ID': MAL_CLIENT_ID,
-        'User-Agent': 'AnimeNationIndia/1.0 (https://www.animenationindia.online)',
-        'Accept': 'application/json'
-      },
-      signal: AbortSignal.timeout(6000)
-    });
-
-    if (!malRes.ok) {
-      if (cached) return res.json(cached.data);
-      const errText = await malRes.text();
-      return res.status(malRes.status).json({ error: errText || `MAL API Error: ${malRes.status}` });
-    }
-
-    const data = await malRes.json();
+    const data = await malService.fetchMAL(endpoint);
     if (data) {
-      malProxyCache.set(cleanEndpoint, { data, timestamp: Date.now() });
+      return res.status(200).json(data);
     }
-    return res.status(200).json(data);
+    return res.status(502).json({ error: 'Failed to retrieve data from MyAnimeList' });
   } catch (err) {
-    console.error('MAL Proxy Error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(502).json({ error: err.message || 'MAL Proxy Error' });
   }
 });
 
@@ -382,7 +355,16 @@ const messageSchema = new mongoose.Schema({
   message: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
-const Message = mongoose.model('Message', messageSchema);
+// ==========================================
+// 🚀 PERSISTENT DETAILS CACHE (48-Hour TTL Index)
+// ==========================================
+const animeCacheSchema = new mongoose.Schema({
+  cacheKey: { type: String, required: true, unique: true, index: true },
+  data: { type: mongoose.Schema.Types.Mixed, required: true },
+  source: { type: String, default: 'mal_official_pool' },
+  createdAt: { type: Date, default: Date.now, expires: 48 * 3600 } // Auto-purged after 48 hours
+});
+const AnimeCache = mongoose.models.AnimeCache || mongoose.model('AnimeCache', animeCacheSchema);
 
 // ==========================================
 // 📰 ARTICLE SCHEMA (Google News & Magazine Engine)
@@ -2399,7 +2381,7 @@ app.get('/api/home', async (req, res) => {
   }
 });
 
-// 2. Full Anime Details (Tier 1: Official MAL v2 5-Key Pool [PRIMARY] -> Tier 2: AniList GraphQL [BACKUP])
+// 2. Full Anime Details (Tier 0: MongoDB 48h Cache -> Tier 1: Official MAL v2 5-Key Pool -> Tier 2: AniList GraphQL)
 app.get('/api/anime/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -2408,11 +2390,24 @@ app.get('/api/anime/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid ID" });
     }
 
+    // ─── TIER 0 [ZERO COLD-START DROP]: MongoDB Persistent Cache ───
+    try {
+      const cachedDoc = await AnimeCache.findOne({ cacheKey: `anime:${numId}` }).lean();
+      if (cachedDoc && cachedDoc.data) {
+        return res.json({ success: true, data: cachedDoc.data, source: cachedDoc.source || 'mongo_cache' });
+      }
+    } catch {}
+
     // ─── TIER 1 [PRIMARY]: Official MyAnimeList v2 5-Key Pool ───
     if (numId <= 65000) {
       try {
         const malData = await malService.getAnimeDetails(numId);
         if (malData && malData.id) {
+          AnimeCache.updateOne(
+            { cacheKey: `anime:${numId}` },
+            { data: malData, source: 'mal_official_pool', createdAt: new Date() },
+            { upsert: true }
+          ).catch(() => {});
           return res.json({ success: true, data: malData, source: 'mal_official_pool' });
         }
       } catch (malErr) {
@@ -2462,6 +2457,11 @@ app.get('/api/anime/:id', async (req, res) => {
       const anilistRes = await anilistService.fetchAniList(query, { id: numId });
       const media = anilistRes?.data?.Media;
       if (media) {
+        AnimeCache.updateOne(
+          { cacheKey: `anime:${numId}` },
+          { data: media, source: 'anilist_fallback', createdAt: new Date() },
+          { upsert: true }
+        ).catch(() => {});
         return res.json({ success: true, data: media, source: 'anilist_fallback' });
       }
     } catch {}
@@ -2471,6 +2471,11 @@ app.get('/api/anime/:id', async (req, res) => {
       try {
         const malData = await malService.getAnimeDetails(numId);
         if (malData && malData.id) {
+          AnimeCache.updateOne(
+            { cacheKey: `anime:${numId}` },
+            { data: malData, source: 'mal_final_resort', createdAt: new Date() },
+            { upsert: true }
+          ).catch(() => {});
           return res.json({ success: true, data: malData, source: 'mal_final_resort' });
         }
       } catch {}
@@ -2483,12 +2488,20 @@ app.get('/api/anime/:id', async (req, res) => {
   }
 });
 
-// 3. Anime Recommendations (Tier 1: Official MAL -> Tier 2: AniList GraphQL)
+// 3. Anime Recommendations (Tier 0: MongoDB Cache -> Tier 1: Official MAL -> Tier 2: AniList GraphQL)
 app.get('/api/anime/:id/recommendations', async (req, res) => {
   try {
     const id = req.params.id;
+    try {
+      const cachedDoc = await AnimeCache.findOne({ cacheKey: `recs:${id}` }).lean();
+      if (cachedDoc && cachedDoc.data) {
+        return res.json({ success: true, data: cachedDoc.data, source: 'mongo_cache' });
+      }
+    } catch {}
+
     const malRecs = await malService.getRecommendations(id);
     if (malRecs && malRecs.length > 0) {
+      AnimeCache.updateOne({ cacheKey: `recs:${id}` }, { data: malRecs, source: 'mal_official_v2', createdAt: new Date() }, { upsert: true }).catch(() => {});
       return res.json({ success: true, data: malRecs, source: 'mal_official_v2' });
     }
 
@@ -2517,6 +2530,9 @@ app.get('/api/anime/:id/recommendations', async (req, res) => {
         images: { jpg: { image_url: n.mediaRecommendation.coverImage?.large } }
       }
     }));
+    if (formatted.length > 0) {
+      AnimeCache.updateOne({ cacheKey: `recs:${id}` }, { data: formatted, source: 'anilist_proxy', createdAt: new Date() }, { upsert: true }).catch(() => {});
+    }
     res.json({ success: true, data: formatted, source: 'anilist_proxy' });
   } catch (error) { 
     console.error("❌ Anime Recommendations Error:", error);
@@ -2524,11 +2540,21 @@ app.get('/api/anime/:id/recommendations', async (req, res) => {
   }
 });
 
-// 4. Anime Characters & Voice Actors (AniList GraphQL Proxy)
+// 4. Anime Characters & Voice Actors (Tier 0: MongoDB Cache -> Tier 1: AniList GraphQL)
 app.get('/api/anime/:id/characters', async (req, res) => {
   try {
     const id = req.params.id;
+    try {
+      const cachedDoc = await AnimeCache.findOne({ cacheKey: `chars:${id}` }).lean();
+      if (cachedDoc && cachedDoc.data) {
+        return res.json({ success: true, data: cachedDoc.data, source: 'mongo_cache' });
+      }
+    } catch {}
+
     const chars = await anilistService.getAnimeCharacters(id);
+    if (chars && chars.length > 0) {
+      AnimeCache.updateOne({ cacheKey: `chars:${id}` }, { data: chars, source: 'anilist_proxy', createdAt: new Date() }, { upsert: true }).catch(() => {});
+    }
     res.json({ success: true, data: chars || [] });
   } catch (error) { 
     console.error("❌ Anime Characters Error:", error);
@@ -2632,21 +2658,6 @@ app.post('/api/anilist/proxy', async (req, res) => {
       errors: [{ message: err.message || 'AniList Proxy Error' }],
       data: null
     });
-  }
-});
-
-// 2. Official MAL v2 Multi-Key Pool Proxy
-app.get('/api/mal/proxy', async (req, res) => {
-  try {
-    const endpoint = req.query.endpoint;
-    if (!endpoint) {
-      return res.status(400).json({ error: 'Endpoint parameter is required' });
-    }
-
-    const data = await malService.fetchMAL(endpoint);
-    return res.json(data);
-  } catch (err) {
-    return res.status(502).json({ error: err.message || 'MAL Proxy Error' });
   }
 });
 

@@ -97,7 +97,7 @@ export default function WatchPageContent({ anime, episodes, tmdbData = null }: W
   };
 
   return (
-    <div className="relative w-full min-h-screen pb-16">
+    <div className="relative w-full min-h-screen pt-32 lg:pt-28 pb-16">
       {/* 💡 Cinema Mode (Lights Off) Dark Backdrop Overlay */}
       {lightsOff && (
         <div 
@@ -316,7 +316,7 @@ export default function WatchPageContent({ anime, episodes, tmdbData = null }: W
         {/* Right Side: Details Card */}
         <div className="w-full xl:w-[420px] flex-shrink-0 flex flex-col gap-6">
           
-          <div className="bg-[#0b0c20]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 sticky top-28">
+          <div className="bg-[#0b0c20]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col gap-5 sticky top-[120px] lg:top-24">
             
             {/* Banner & Cover Art overlay section with ClearArt Logo */}
             <div className="relative w-full rounded-2xl overflow-hidden h-48 border border-white/10 shadow-lg select-none">

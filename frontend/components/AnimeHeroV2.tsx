@@ -311,7 +311,7 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* HERO CONTENT CONTAINER                                      */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="relative container mx-auto px-4 pt-24 lg:pt-32 pb-12 max-w-[1500px]">
+      <div className="relative container mx-auto px-4 pt-32 lg:pt-36 pb-12 max-w-[1500px]">
 
         {/* Breadcrumb */}
         <nav className="text-gray-400 text-xs mb-5 flex items-center gap-2 drop-shadow-md">

@@ -115,7 +115,7 @@ export default async function MasterReadHubPage({ searchParams }: ReadHubProps) 
     }
 
     return (
-      <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pb-24">
+      <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pt-28 lg:pt-20 pb-24">
         <ReadHubNavigation />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
@@ -204,7 +204,7 @@ export default async function MasterReadHubPage({ searchParams }: ReadHubProps) 
   const topNovels = (topNovelsRes?.media || []).slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pb-28">
+    <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pt-28 lg:pt-20 pb-28">
       {/* 1. Global Read Sticky Navigation */}
       <ReadHubNavigation />
 

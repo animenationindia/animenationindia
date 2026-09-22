@@ -43,29 +43,51 @@ async function fetchMAL(endpoint, ttlMs = DEFAULT_CACHE_TTL, timeoutMs = 12000) 
   }
 
   const execute = async () => {
-    const clientId = getNextClientId();
-    const targetUrl = `${MAL_API_BASE}${cleanEndpoint}`;
+    let lastErr = null;
+    const maxRetries = 3;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const clientId = getNextClientId();
+      const targetUrl = `${MAL_API_BASE}${cleanEndpoint}`;
 
-    const res = await fetch(targetUrl, {
-      headers: {
-        'X-MAL-CLIENT-ID': clientId,
-        'User-Agent': 'AnimeNationIndia/2.0 (https://www.animenationindia.online)',
-        'Accept': 'application/json'
-      },
-      signal: AbortSignal.timeout(timeoutMs)
-    });
+      try {
+        const res = await fetch(targetUrl, {
+          headers: {
+            'X-MAL-CLIENT-ID': clientId,
+            'User-Agent': 'AnimeNationIndia/2.0 (https://www.animenationindia.online)',
+            'Accept': 'application/json'
+          },
+          signal: AbortSignal.timeout(timeoutMs)
+        });
 
-    if (!res.ok) {
-      if (cached) return cached.data;
-      const errText = await res.text().catch(() => '');
-      throw new Error(`MAL API HTTP ${res.status}: ${errText || res.statusText}`);
+        if (!res.ok) {
+          if (cached) return cached.data;
+          const errText = await res.text().catch(() => '');
+          if (res.status === 429 || res.status >= 500) {
+            lastErr = new Error(`MAL API HTTP ${res.status}: ${errText || res.statusText}`);
+            if (attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, 500 * attempt));
+              continue;
+            }
+          }
+          throw new Error(`MAL API HTTP ${res.status}: ${errText || res.statusText}`);
+        }
+
+        const data = await res.json();
+        if (data) {
+          memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+        }
+        return data;
+      } catch (err) {
+        lastErr = err;
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, 600 * attempt));
+          continue;
+        }
+      }
     }
 
-    const data = await res.json();
-    if (data) {
-      memoryCache.set(cacheKey, { data, timestamp: Date.now() });
-    }
-    return data;
+    if (cached) return cached.data;
+    throw lastErr || new Error(`MAL API failed for ${cleanEndpoint}`);
   };
 
   const promise = execute().finally(() => {

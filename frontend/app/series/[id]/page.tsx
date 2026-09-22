@@ -58,20 +58,45 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     const cleanDesc = sanitizeDescription(rawDesc).replace(/\s+/g, ' ').slice(0, 160);
     const cover = jikanAnime?.images?.jpg?.large_image_url || extraInfo?.coverImage?.extraLarge || extraInfo?.coverImage?.large || '/placeholder-poster.png';
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online';
+    const pageUrl = `${siteUrl}/series/${id}`;
+    const banner = extraInfo?.bannerImage || jikanAnime?.images?.webp?.large_image_url || cover;
+
     return {
       title: `${title} - Watch & Details | Anime Nation India`,
       description: cleanDesc,
+      alternates: {
+        canonical: pageUrl,
+      },
       openGraph: {
         title: `${title} - Watch & Full Details | Anime Nation India`,
         description: cleanDesc,
-        images: [{ url: cover, alt: title }],
+        url: pageUrl,
+        siteName: 'Anime Nation India',
+        locale: 'en_US',
         type: 'video.other',
+        images: [
+          {
+            url: banner,
+            width: 1200,
+            height: 630,
+            alt: `${title} - Anime Nation India`,
+          },
+          {
+            url: cover,
+            width: 800,
+            height: 1200,
+            alt: `${title} Poster`,
+          },
+        ],
       },
       twitter: {
         card: 'summary_large_image',
-        title: `${title} - Anime Nation India`,
+        site: '@AnimeNationIndia',
+        creator: '@AnimeNationIndia',
+        title: `${title} - Watch & Details | Anime Nation India`,
         description: cleanDesc,
-        images: [cover],
+        images: [banner],
       },
     };
   } catch {

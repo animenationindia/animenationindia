@@ -115,7 +115,7 @@ export default function AnimeDetailsContainer({
       <AnimeHUDStats anime={anime} extraInfo={extraInfo} />
 
       {/* 3. STICKY TAB NAV BAR */}
-      <div className="sticky top-[56px] z-40 bg-[#040405]/95 backdrop-blur-xl border-b border-white/[0.06]">
+      <div className="sticky top-[108px] lg:top-[72px] z-40 bg-[#040405]/95 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="container mx-auto max-w-[1500px] px-4">
           <div className="flex items-center gap-1 py-2">
             {tabs.map((tab) => {

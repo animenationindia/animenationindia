@@ -292,7 +292,7 @@ export default function MangaHeroV2({ manga, extraInfo }: MangaHeroV2Props) {
   };
 
   return (
-    <div className="relative w-full pt-20 sm:pt-24 pb-12 overflow-hidden">
+    <div className="relative w-full pt-32 lg:pt-36 pb-12 overflow-hidden">
       {/* Dynamic Background Banner Backdrop */}
       <div className="absolute inset-0 z-0 h-[650px] w-full overflow-hidden">
         <img

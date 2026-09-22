@@ -266,8 +266,8 @@ export default function Navbar() {
           isNavVisible ? 'translate-y-0' : '-translate-y-full md:translate-y-0'
         } ${
           isScrolled 
-            ? 'bg-[#050716]/95 backdrop-blur-2xl border-b border-[#ff4dd2]/30 shadow-[0_8px_32px_rgba(0,0,0,0.85),0_0_20px_rgba(255,77,210,0.12)]' 
-            : 'bg-[#0a0b1c]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]'
+            ? 'bg-[#050716] md:bg-[#050716]/98 backdrop-blur-2xl border-b border-[#ff4dd2]/30 shadow-[0_8px_32px_rgba(0,0,0,0.85),0_0_20px_rgba(255,77,210,0.12)]' 
+            : 'bg-[#050716] md:bg-[#050716]/95 backdrop-blur-2xl border-b border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.7)]'
         }`}
       >
         <div className="w-full px-3.5 sm:px-6 md:px-8 xl:px-12 h-[68px] sm:h-[72px] flex items-center justify-between relative">
@@ -716,7 +716,7 @@ export default function Navbar() {
         {/* ========================================================================= */}
         {/* 🌟 MOBILE HORIZONTAL PILLS QUICK-BAR (TOUCH-FRIENDLY SWIPE)               */}
         {/* ========================================================================= */}
-        <div className="lg:hidden border-t border-white/10 bg-[#050716]/90 px-3 py-1.5 backdrop-blur-xl">
+        <div className="lg:hidden border-t border-white/10 bg-[#050716] px-3 py-1.5 shadow-md">
           <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x">
             {navLinks.map((item) => {
               const active = isActive(item.path);

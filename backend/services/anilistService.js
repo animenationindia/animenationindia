@@ -42,6 +42,11 @@ async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutM
     await lastRequestPromise;
     lastRequestPromise = new Promise(resolve => setTimeout(resolve, MIN_REQUEST_GAP_MS));
 
+    // Instant circuit breaker check: If blocked while waiting in queue, do not send request
+    if (Date.now() < anilistBlockedUntil) {
+      return cached ? cached.data : null;
+    }
+
     try {
       const res = await fetch(ANILIST_API_URL, {
         method: 'POST',

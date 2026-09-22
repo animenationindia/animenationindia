@@ -25,7 +25,7 @@ export default function BackButton() {
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -20 }}
         onClick={() => router.back()}
-        className="fixed top-[85px] md:top-[90px] left-4 md:left-8 z-[60] p-2 md:p-2.5 bg-black/40 backdrop-blur-xl rounded-full border border-white/10 text-white/80 hover:text-white hover:bg-[#f47521]/90 hover:border-[#f47521] hover:scale-110 hover:shadow-[0_0_15px_rgba(244,117,33,0.5)] transition-all group flex items-center justify-center cursor-pointer"
+        className="fixed top-[118px] lg:top-[85px] left-3 sm:left-4 lg:left-8 z-[60] p-2 md:p-2.5 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 text-white/80 hover:text-white hover:bg-[#f47521]/90 hover:border-[#f47521] hover:scale-110 hover:shadow-[0_0_15px_rgba(244,117,33,0.5)] transition-all group flex items-center justify-center cursor-pointer"
         aria-label="Go Back"
         title="Go Back"
       >

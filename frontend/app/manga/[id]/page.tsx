@@ -55,17 +55,35 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       ? 'Light Novel'
       : 'Manga';
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.animenationindia.online';
+    const pageUrl = `${siteUrl}/manga/${id}`;
+
     return {
       title: `${title} - Read ${origin} Online | Anime Nation India`,
       description: cleanDesc,
+      alternates: {
+        canonical: pageUrl,
+      },
       openGraph: {
         title: `${title} - ${origin} Chapters & Details | Anime Nation India`,
         description: cleanDesc,
-        images: [{ url: cover, alt: title }],
+        url: pageUrl,
+        siteName: 'Anime Nation India',
+        locale: 'en_US',
         type: 'book',
+        images: [
+          {
+            url: cover,
+            width: 800,
+            height: 1200,
+            alt: `${title} Poster`,
+          },
+        ],
       },
       twitter: {
         card: 'summary_large_image',
+        site: '@AnimeNationIndia',
+        creator: '@AnimeNationIndia',
         title: `${title} - Anime Nation India`,
         description: cleanDesc,
         images: [cover],

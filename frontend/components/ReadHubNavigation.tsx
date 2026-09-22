@@ -77,7 +77,7 @@ export default function ReadHubNavigation() {
   };
 
   return (
-    <div className="sticky top-16 sm:top-20 z-30 w-full bg-[#070814]/90 backdrop-blur-xl border-y border-white/8 py-2.5 px-4 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
+    <div className="sticky top-[108px] lg:top-[72px] z-30 w-full bg-[#070814]/95 backdrop-blur-xl border-y border-white/8 py-2.5 px-4 transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         {/* Horizontal Tab Pills */}
         <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 w-full md:w-auto">
