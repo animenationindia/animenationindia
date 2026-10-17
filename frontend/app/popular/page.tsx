@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: 'Explore the most popular, trending, and top-rated anime right now.',
 };
 
+export const revalidate = 3600; // 1-hour CDN caching
+
 interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
@@ -22,9 +24,9 @@ export default async function PopularAnimePage({ searchParams }: PageProps) {
   const { media, pageInfo } = await getPopularAnimePageAniList(currentPage);
 
   return (
-    <div className="bg-[#050716] min-h-screen pt-32 lg:pt-36 lg:pt-36 pb-12">
+    <div className="bg-[#050716] min-h-screen pt-28 sm:pt-32 lg:pt-36 pb-12">
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px]">
-        <div className="mb-12">
+        <div className="mb-12 pl-10 sm:pl-12 lg:pl-0">
           <h1 className="text-4xl md:text-5xl font-bebas text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] mb-2">
             Popular & <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Trending</span>
           </h1>

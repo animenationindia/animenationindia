@@ -848,9 +848,9 @@ export default function MyListPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white">
-      <main className="flex-1 px-4 md:px-8 lg:px-12 pt-28 pb-20 max-w-[1720px] mx-auto w-full">
+      <main className="flex-1 px-4 md:px-8 lg:px-12 pt-28 sm:pt-32 lg:pt-36 pb-20 max-w-[1720px] mx-auto w-full">
         {/* Page Header */}
-        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pl-10 sm:pl-12 lg:pl-0">
           <div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black font-orbitron uppercase tracking-tight text-white drop-shadow-[0_0_20px_rgba(255,77,210,0.5)]">
               My List

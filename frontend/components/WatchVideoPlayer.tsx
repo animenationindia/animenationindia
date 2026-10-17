@@ -32,6 +32,20 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
   const [autoNext, setAutoNext] = useState(true);
   const [autoSkipIntro, setAutoSkipIntro] = useState(false);
 
+  // Sync preferences with localStorage
+  useEffect(() => {
+    try {
+      const savedAutoSkip = localStorage.getItem('ani_pref_auto_skip_intro');
+      if (savedAutoSkip !== null) {
+        setAutoSkipIntro(savedAutoSkip === 'true');
+      }
+      const savedAutoNext = localStorage.getItem('ani_pref_auto_play_next');
+      if (savedAutoNext !== null) {
+        setAutoNext(savedAutoNext === 'true');
+      }
+    } catch {}
+  }, []);
+
   const timeoutRef = useRef<NodeJS.Timeout>(null);
 
   // Video URL: A public high-quality MP4 file
@@ -47,6 +61,14 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
       setShowNotice(false);
     }
   }, [episodeNumber]);
+
+  // Automatic skip intro when setting is enabled
+  useEffect(() => {
+    if (autoSkipIntro && currentTime >= 10 && currentTime < 38 && videoRef.current) {
+      videoRef.current.currentTime = 40;
+      setCurrentTime(40);
+    }
+  }, [currentTime, autoSkipIntro]);
 
   // Handle Controls Visibility Timeout with rAF & 50ms Throttling
   useEffect(() => {
@@ -506,7 +528,11 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
                             <span className="text-gray-300 font-medium">Autoplay Next Episode</span>
                             <button
                               type="button"
-                              onClick={() => setAutoNext(!autoNext)}
+                              onClick={() => {
+                                const newVal = !autoNext;
+                                setAutoNext(newVal);
+                                try { localStorage.setItem('ani_pref_auto_play_next', String(newVal)); } catch {}
+                              }}
                               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                 autoNext ? 'bg-[#ff4dd2]' : 'bg-gray-700'
                               }`}
@@ -522,7 +548,11 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
                             <span className="text-gray-300 font-medium">Auto Skip Intro (10s-40s)</span>
                             <button
                               type="button"
-                              onClick={() => setAutoSkipIntro(!autoSkipIntro)}
+                              onClick={() => {
+                                const newVal = !autoSkipIntro;
+                                setAutoSkipIntro(newVal);
+                                try { localStorage.setItem('ani_pref_auto_skip_intro', String(newVal)); } catch {}
+                              }}
                               className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                 autoSkipIntro ? 'bg-[#ff4dd2]' : 'bg-gray-700'
                               }`}

@@ -1,6 +1,8 @@
 import { getFilteredAnimeAniList } from '../../lib/api';
 import CategoryLayout from '../../components/CategoryLayout';
 
+export const revalidate = 1800; // 30-minute CDN caching
+
 interface SearchParams {
   page?: string;
   season?: string;

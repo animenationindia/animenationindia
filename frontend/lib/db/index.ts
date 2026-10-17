@@ -1,29 +1,12 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
+import { neon } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
-let dbUrl = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_xHZldnK6ap9T@ep-delicate-mode-b38ydh09-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
-if (dbUrl.includes('sslmode=require')) {
-  dbUrl = dbUrl.replace('sslmode=require', 'sslmode=verify-full');
-} else if (dbUrl && !dbUrl.includes('sslmode=')) {
-  dbUrl += dbUrl.includes('?') ? '&sslmode=verify-full' : '?sslmode=verify-full';
-}
+const dbUrl = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_xHZldnK6ap9T@ep-delicate-mode-b38ydh09-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var _pgPool: Pool | undefined;
-}
+// 🚀 Neon HTTP Client for Cloudflare Workers Free Tier
+// Uses standard HTTPS fetch() with 0ms Worker CPU wait time, eliminating Error 1108
+const sql = neon(dbUrl);
 
-export const pool = globalThis._pgPool || new Pool({
-  connectionString: dbUrl,
-  ssl: { rejectUnauthorized: false },
-  max: 5,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
+export const db = drizzle(sql, { schema });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis._pgPool = pool;
-}
-
-export const db = drizzle(pool, { schema });

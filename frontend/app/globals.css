@@ -249,6 +249,20 @@ body {
     pointer-events: none;
     z-index: 30;
   }
+
+  /* GPU-Accelerated Floating Card Animation (Compositor Thread Only - 0% CPU Overhead) */
+  @keyframes float-card {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  .animate-float-card {
+    animation: float-card 4.5s ease-in-out infinite;
+  }
 }
 
 /* Google Translate UI Hacks */

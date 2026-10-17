@@ -1,0 +1,38 @@
+/* schedule.css - Clean, Classy styling for Anime Nation India Schedule */
+
+/* Hide scrollbar for category tabs */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 12, 28, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 77, 210, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 77, 210, 0.4);
+}
+
+/* Smooth transitions for schedule cards */
+.schedule-card-glow {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.schedule-card-glow:hover {
+  box-shadow: 0 10px 30px -10px rgba(255, 77, 210, 0.2);
+}

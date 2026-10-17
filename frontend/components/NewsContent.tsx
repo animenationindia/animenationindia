@@ -102,7 +102,7 @@ export default async function NewsContent() {
   return (
     <div className="w-full relative z-10">
       {/* ═══ Page Header with Discover Badge & Publish Button ═══ */}
-      <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#2A2B30]/40 pb-8">
+      <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#2A2B30]/40 pb-8 pl-10 sm:pl-12 lg:pl-0">
         <div className="flex items-center gap-3">
           <div className="bg-[#ff4dd2]/10 border border-[#ff4dd2]/30 p-2.5 rounded-xl">
             <Newspaper size={26} className="text-[#ff4dd2]" />

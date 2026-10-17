@@ -64,7 +64,7 @@ export default async function ReadCategoryPage({ config, searchParams }: ReadCat
     : `${config.title}`;
 
   return (
-    <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pb-24">
+    <div className="min-h-screen bg-[#040405] text-white selection:bg-[#ff4dd2] selection:text-white pt-28 sm:pt-32 lg:pt-24 pb-24">
       {/* 1. Global Read Hub Sticky Sub-Nav */}
       <ReadHubNavigation />
 

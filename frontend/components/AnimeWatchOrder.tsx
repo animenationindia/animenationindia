@@ -49,7 +49,7 @@ export default function AnimeWatchOrder({ steps }: AnimeWatchOrderProps) {
                 : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10'
             }`}
           >
-            All (${steps.length})
+            All ({steps.length})
           </button>
           {mainOnlySteps.length > 1 && mainOnlySteps.length < steps.length && (
             <button
@@ -60,7 +60,7 @@ export default function AnimeWatchOrder({ steps }: AnimeWatchOrderProps) {
                   : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10'
               }`}
             >
-              Main Story (${mainOnlySteps.length})
+              Main Story ({mainOnlySteps.length})
             </button>
           )}
         </div>

@@ -276,7 +276,7 @@ export async function getUserTwoFactorDetails() {
   }
 }
 
-export async function toggleUserTwoFactorStatus({ enabled }: { enabled: boolean }) {
+export async function toggleUserTwoFactorStatus({ enabled, deliveryEmail }: { enabled: boolean; deliveryEmail?: string }) {
   try {
     const sessionUser = await resolveAuthUser();
     if (!sessionUser?.id || !sessionUser.email) {
@@ -288,6 +288,8 @@ export async function toggleUserTwoFactorStatus({ enabled }: { enabled: boolean 
       .from(userTwoFactor)
       .where(eq(userTwoFactor.userId, sessionUser.id))
       .limit(1);
+
+    const emailToUse = deliveryEmail?.trim() || sessionUser.email;
 
     if (enabled) {
       // Generate 8 fresh backup recovery codes
@@ -301,7 +303,7 @@ export async function toggleUserTwoFactorStatus({ enabled }: { enabled: boolean 
           .update(userTwoFactor)
           .set({
             enabled: true,
-            deliveryEmail: sessionUser.email,
+            deliveryEmail: emailToUse,
             backupCodes: codesJson,
             updatedAt: new Date(),
           })
@@ -311,19 +313,19 @@ export async function toggleUserTwoFactorStatus({ enabled }: { enabled: boolean 
           id: `2fa_${Date.now()}`,
           userId: sessionUser.id,
           enabled: true,
-          deliveryEmail: sessionUser.email,
+          deliveryEmail: emailToUse,
           backupCodes: codesJson,
         });
       }
 
       // Send 2FA Enabled Alert Email
       await sendSecurityAlertEmail({
-        email: sessionUser.email,
+        email: emailToUse,
         event: '2fa_enabled',
         userName: sessionUser.name || 'Otaku',
       });
 
-      return { success: true, enabled: true, backupCodes: codes };
+      return { success: true, enabled: true, deliveryEmail: emailToUse, backupCodes: codes };
     } else {
       if (records.length > 0) {
         await db
@@ -342,7 +344,7 @@ export async function toggleUserTwoFactorStatus({ enabled }: { enabled: boolean 
         userName: sessionUser.name || 'Otaku',
       });
 
-      return { success: true, enabled: false, backupCodes: [] };
+      return { success: true, enabled: false, deliveryEmail: '', backupCodes: [] };
     }
   } catch (err: any) {
     console.error('Error toggling 2FA:', err);

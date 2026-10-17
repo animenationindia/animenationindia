@@ -97,7 +97,7 @@ export default function WatchPageContent({ anime, episodes, tmdbData = null }: W
   };
 
   return (
-    <div className="relative w-full min-h-screen pt-32 lg:pt-28 pb-16">
+    <div className="relative w-full">
       {/* 💡 Cinema Mode (Lights Off) Dark Backdrop Overlay */}
       {lightsOff && (
         <div 
@@ -114,7 +114,7 @@ export default function WatchPageContent({ anime, episodes, tmdbData = null }: W
         <div className="flex-1 w-full flex flex-col gap-6">
           
           {/* Breadcrumb Navigation */}
-          <nav className="flex flex-wrap items-center gap-3 text-sm font-bold text-gray-400 mb-2">
+          <nav className="flex flex-wrap items-center gap-3 text-sm font-bold text-gray-400 mb-2 pl-10 sm:pl-12 lg:pl-0">
             <Link 
               href={`/series/${anime.mal_id || anime.id}`} 
               className="hover:text-[#ff4dd2] transition-colors flex items-center gap-1 bg-[#121326]/50 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/5 shadow-md group"

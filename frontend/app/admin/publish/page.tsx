@@ -18,6 +18,7 @@ import {
   Layers,
   Send,
   Loader2,
+  Shield,
 } from 'lucide-react';
 import { createArticle, deleteArticle, ArticleItem } from '../../../lib/articles';
 import { BACKEND_URL } from '../../../lib/config';
@@ -216,8 +217,14 @@ export default function AdminPublishPage() {
             </p>
           </div>
 
-          <div className="hidden sm:block text-right">
-            <span className="inline-flex items-center gap-1.5 text-xs bg-[#121326] border border-[#ff4dd2]/30 text-[#ff4dd2] px-3 py-1.5 rounded-full font-semibold">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin?tab=articles"
+              className="inline-flex items-center gap-2 text-xs font-bold bg-[#ff4dd2]/20 border border-[#ff4dd2]/40 text-[#ff4dd2] hover:bg-[#ff4dd2] hover:text-black px-4 py-2 rounded-xl transition-all shadow-[0_0_15px_rgba(255,77,210,0.3)]"
+            >
+              <Shield size={14} /> Master Admin Control Panel
+            </Link>
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs bg-[#121326] border border-[#ff4dd2]/30 text-[#ff4dd2] px-3 py-1.5 rounded-full font-semibold">
               <Sparkles size={12} /> Google News Ready
             </span>
           </div>

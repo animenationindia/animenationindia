@@ -99,11 +99,11 @@ export default function SimulcastClient() {
   }, [year, season, page]);
 
   return (
-    <div className="bg-[#050716] min-h-screen pt-32 lg:pt-36 lg:pt-36 pb-12">
+    <div className="bg-[#050716] min-h-screen pt-28 sm:pt-32 lg:pt-36 pb-12">
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px]">
         
         {/* Header & Filters */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pl-10 sm:pl-12 lg:pl-0">
           <div>
             <h1 className="text-4xl md:text-5xl font-bebas text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.2)] mb-2">
               Simulcast <span className="text-[#ff4dd2] drop-shadow-[0_0_10px_rgba(255, 77, 210,0.6)]">Season</span>

@@ -84,6 +84,9 @@ export default function AnimeFranchiseUniverse({ relations }: AnimeFranchiseUniv
                   <img
                     src={cover}
                     alt={title}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/placeholder-poster.png';
+                    }}
                     className="w-full h-full object-cover"
                   />
                 ) : (

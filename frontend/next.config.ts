@@ -15,7 +15,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['pg'],
+  serverExternalPackages: [],
   compress: true,
   reactStrictMode: true,
   turbopack: {},
@@ -72,7 +72,29 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    if (process.env.NODE_ENV === 'development') {
+      return [
+        {
+          source: '/(.*)',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'no-cache, no-store, must-revalidate',
+            },
+          ],
+        },
+      ];
+    }
     return [
+      {
+        source: '/api/auth/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
       {
         source: '/(.*).(png|jpg|jpeg|gif|svg|ico|webp|woff2|json|txt|css|js)',
         headers: [
@@ -88,6 +110,15 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, s-maxage=3600, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/:path(series|watch|popular|upcoming|trending|ongoing|new|newest|schedule|browse|characters|character|genres|genre|top-movies|top-tv|trailers|news|read)/:subpath*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=1800, stale-while-revalidate=86400',
           },
         ],
       },

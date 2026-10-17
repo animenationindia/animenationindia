@@ -42,10 +42,12 @@ export async function getUserFavoriteSongIds(): Promise<{ songIds: string[]; aut
 
     const songs: SongItem[] = JSON.parse(rows[0].songs || '[]');
     const songIds = songs.map((s) => String(s.songId));
-
     return { songIds, authenticated: true };
-  } catch (err) {
-    console.error('Error fetching favorite songs from Neon DB:', err);
+  } catch (err: any) {
+    if (err?.code === '42P01') {
+      return { songIds: [], authenticated: false };
+    }
+    console.warn('Notice: Failed to fetch favorite songs:', err?.message || err);
     return { songIds: [], authenticated: false };
   }
 }
@@ -116,8 +118,11 @@ export async function toggleUserFavoriteSong(song: SongItem): Promise<{
 
     return { success: true, isFavorite: isNowFavorite };
   } catch (err: any) {
-    console.error('Error toggling favorite song in Neon DB:', err);
-    return { success: false, isFavorite: false, error: err.message };
+    if (err?.code === '42P01') {
+      return { success: false, isFavorite: false, error: 'Song playlists feature is temporarily unavailable.' };
+    }
+    console.warn('Notice: Failed to toggle favorite song:', err?.message || err);
+    return { success: false, isFavorite: false, error: err?.message || 'Failed to update favorite song' };
   }
 }
 
@@ -154,8 +159,11 @@ export async function getUserSongPlaylists(): Promise<{
     });
 
     return { playlists: parsed, authenticated: true };
-  } catch (err) {
-    console.error('Error fetching song playlists from Neon DB:', err);
+  } catch (err: any) {
+    if (err?.code === '42P01') {
+      return { playlists: [], authenticated: false };
+    }
+    console.warn('Notice: Failed to fetch song playlists:', err?.message || err);
     return { playlists: [], authenticated: false };
   }
 }

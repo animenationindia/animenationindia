@@ -10,7 +10,7 @@ import {
   Sparkles, TrendingUp, Clock, ArrowUpRight,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { BACKEND_URL } from '../lib/config';
+import { useWatchlist } from '../context/WatchlistContext';
 import ErrorState from './ErrorState';
 
 function highlightText(text: string, query: string) {
@@ -194,18 +194,12 @@ function SkeletonGrid() {
 }
 
 // ─── Result Card ─────────────────────────────────────────────────────────────
-let wlCache: unknown[] | null = null;
-let wlPromise: Promise<unknown[]> | null = null;
-if (typeof window !== 'undefined') {
-  window.addEventListener('auth-change', () => { wlCache = null; wlPromise = null; });
-}
-
 import { sanitizeDescription } from '../lib/sanitize';
 
 function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia; priority?: boolean; index?: number }) {
-  const [saved, setSaved] = useState(false);
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const { isInWatchlist, addToWatchlist, removeFromWatchlist } = useWatchlist();
 
   const title = anime.title?.english || anime.title?.romaji || 'Unknown';
   const linkId = anime.idMal 
@@ -218,42 +212,32 @@ function ResultCard({ anime, priority = false, index = 0 }: { anime: AnimeMedia;
   const desc = sanitizeDescription(anime.description);
   const year = anime.seasonYear || anime.startDate?.year;
 
+  const saved = isInWatchlist(linkId);
+
   useEffect(() => {
     const frame = requestAnimationFrame(() => setMounted(true));
-    const checkWL = async () => {
-      const token = localStorage.getItem('user_token');
-      const userId = localStorage.getItem('user_id');
-      if (!token || !userId) return;
-      try {
-        if (!wlCache && !wlPromise) {
-          wlPromise = fetch(`${BACKEND_URL}/api/watchlist/${userId}`, {
-            headers: { Authorization: 'Bearer ' + token },
-          }).then(r => r.ok ? r.json() : []).then(d => { wlCache = d; return d; }).catch(() => []);
-        }
-        const list = (wlCache || await wlPromise) as { mal_id?: number; anime_id?: number }[];
-        if (list.some(item => Number(item.mal_id || item.anime_id) === Number(linkId))) setSaved(true);
-      } catch { /* */ }
-    };
-    checkWL();
     return () => cancelAnimationFrame(frame);
-  }, [linkId]);
+  }, []);
 
   const toggleSave = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    const token = localStorage.getItem('user_token');
-    const userId = localStorage.getItem('user_id');
-    if (!token || !userId) { alert('Please login first!'); router.push('/auth'); return; }
-    const next = !saved; setSaved(next);
     try {
-      if (next) {
-        const p = { mal_id: Number(linkId), title, title_english: title, type: isManga ? 'Manga' : 'Anime', images: { webp: { large_image_url: cover } }, score: anime.averageScore ? anime.averageScore / 10 : null, anime_id: Number(linkId), anime_title: title, anime_image: cover, status: 'PLAN_TO_WATCH' };
-        await fetch(`${BACKEND_URL}/api/watchlist`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ anime: p, userId }) });
-        if (wlCache) (wlCache as unknown[]).push(p);
+      if (saved) {
+        await removeFromWatchlist(linkId, isManga ? 'manga' : 'anime');
       } else {
-        await fetch(`${BACKEND_URL}/api/watchlist/${userId}/${linkId}`, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
-        if (wlCache) wlCache = (wlCache as { mal_id?: number; anime_id?: number }[]).filter(i => Number(i.mal_id || i.anime_id) !== Number(linkId));
+        await addToWatchlist({
+          animeId: linkId,
+          title,
+          image: cover,
+          posterPath: cover,
+          mediaType: isManga ? 'manga' : 'anime',
+          rating: anime.averageScore ? (anime.averageScore / 10).toFixed(1) : undefined,
+          year: year ? String(year) : undefined,
+        });
       }
-    } catch { setSaved(!next); }
+    } catch (err) {
+      console.error('Watchlist toggle error:', err);
+    }
   };
 
   if (!mounted) return (
@@ -650,7 +634,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <main className="min-h-screen bg-[#050716] pt-28 lg:pt-32 pb-24 relative overflow-hidden selection:bg-[#ff6400] selection:text-white">
+    <main className="min-h-screen bg-[#050716] pt-28 sm:pt-32 lg:pt-36 pb-24 relative overflow-hidden selection:bg-[#ff4dd2] selection:text-white">
 
       {/* Ambient decorative blobs */}
       <div className="absolute top-[-15%] left-[-15%] w-[55%] h-[55%] bg-[#ff6400]/[0.04] blur-[180px] rounded-full pointer-events-none" />
@@ -673,7 +657,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
       <div className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] relative z-10">
 
         {/* ─────────────── SEARCH BAR ─────────────── */}
-        <div className="w-full max-w-4xl mx-auto mb-6 relative z-50" ref={containerRef}>
+        <div className="w-full max-w-4xl mx-auto mb-6 relative z-50 pl-10 sm:pl-12 lg:pl-0" ref={containerRef}>
 
           {/* Glow effect behind input */}
           <div className={`absolute inset-0 rounded-[20px] transition-opacity duration-500 pointer-events-none ${inputFocused ? 'opacity-100' : 'opacity-0'}`}>

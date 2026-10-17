@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 // app/series/[id]/page.tsx
+export const revalidate = 86400; // 24-hour Edge CDN caching to prevent Cloudflare Worker CPU limits
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { 
@@ -209,7 +210,7 @@ export default async function AnimeDetails({ params }: { params: Promise<Params>
               type: isManga ? 'MANGA' : 'ANIME',
               format: isManga ? 'MANGA' : 'TV',
               coverImage: {
-                large: `https://api-cdn.myanimelist.net/images/anime/${entry.mal_id}.jpg`,
+                large: '/placeholder-poster.png',
               },
               startDate: null
             }

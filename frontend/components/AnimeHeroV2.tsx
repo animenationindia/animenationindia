@@ -25,7 +25,6 @@ import {
   ThumbsDown,
   Eye,
   EyeOff,
-  Users,
   Sparkles,
   BookOpen,
 } from 'lucide-react';
@@ -56,7 +55,7 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
-  const [showPartyNotice, setShowPartyNotice] = useState(false);
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
 
   // ─── Reaction States ───
   const [isWatched, setIsWatched] = useState(false);
@@ -65,14 +64,22 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
 
   const langRef = useRef<HTMLDivElement>(null);
 
-  const checkAuthAndPrompt = (): boolean => {
+  const checkAuthAndPrompt = (reason?: string): boolean => {
     const isAuthed = Boolean(session?.user || (typeof window !== 'undefined' && localStorage.getItem('user_id')));
     if (!isAuthed) {
+      if (reason) setAuthNotice(reason);
       const returnUrl = typeof window !== 'undefined' ? window.location.pathname : '/';
-      router.push(`/signin?callbackUrl=${encodeURIComponent(returnUrl)}`);
+      setTimeout(() => {
+        router.push(`/signin?callbackUrl=${encodeURIComponent(returnUrl)}`);
+      }, reason ? 1400 : 0);
       return false;
     }
     return true;
+  };
+
+  const handleRateClick = () => {
+    if (!checkAuthAndPrompt('Please sign in to rate this anime')) return;
+    setIsRatingModalOpen(true);
   };
 
   const langInfo = useMemo(() => {
@@ -314,7 +321,7 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
       <div className="relative container mx-auto px-4 pt-32 lg:pt-36 pb-12 max-w-[1500px]">
 
         {/* Breadcrumb */}
-        <nav className="text-gray-400 text-xs mb-5 flex items-center gap-2 drop-shadow-md">
+        <nav className="text-gray-400 text-xs mb-5 flex items-center gap-2 drop-shadow-md pl-10 sm:pl-12 lg:pl-0">
           <Link href="/" className="hover:text-[#ff4dd2] transition-colors">Home</Link>
           <span>/</span>
           <Link href="/browse" className="hover:text-[#ff4dd2] transition-colors">Anime</Link>
@@ -459,19 +466,19 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
               {englishTitle}
             </h1>
 
-            {/* ── GENRE PILLS (Non-clickable for now) ── */}
-            {/* TODO: Replace <span> with <Link href={...}> when genre discovery engine is ready */}
+            {/* ── GENRE PILLS (Clickable Link to Browse by Genre) ── */}
             {genres.length > 0 && (
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 mb-4">
                 {genres.slice(0, 8).map((g: any, i: number) => {
                   const genreName = typeof g === 'string' ? g : g.name;
                   return (
-                    <span
+                    <Link
                       key={`${genreName}-${i}`}
-                      className="bg-white/5 text-gray-300 text-[11px] font-bold px-3 py-1 rounded-full border border-white/10 cursor-default select-none"
+                      href={`/browse/all?genre=${encodeURIComponent(genreName)}`}
+                      className="bg-white/5 hover:bg-[#ff4dd2]/20 text-gray-300 hover:text-[#ff4dd2] text-[11px] font-bold px-3 py-1 rounded-full border border-white/10 hover:border-[#ff4dd2]/40 transition-all duration-200 active:scale-95 shadow-sm"
                     >
                       {genreName}
-                    </span>
+                    </Link>
                   );
                 })}
               </div>
@@ -507,18 +514,7 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
                 </button>
               )}
 
-              {/* 3. Watch Party */}
-              <button
-                type="button"
-                onClick={() => setShowPartyNotice(true)}
-                className="flex items-center gap-2 border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/30 px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider text-purple-300 transition-all active:scale-95 shadow-[0_0_15px_rgba(168,85,247,0.15)] cursor-pointer"
-                title="Watch together with friends in real-time"
-              >
-                <Users size={15} />
-                <span>Watch Party</span>
-              </button>
-
-              {/* 4. Add to Watchlist (Dropdown) */}
+              {/* 3. Add to Watchlist (Dropdown) */}
               <WatchlistDropdown
                 animeId={animeId}
                 title={englishTitle}
@@ -598,7 +594,7 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
 
               {/* 10. Star Rating */}
               <button
-                onClick={() => setIsRatingModalOpen(true)}
+                onClick={handleRateClick}
                 className="flex items-center gap-2 bg-[#e50914]/15 hover:bg-[#e50914]/25 border border-[#e50914]/40 text-[#ff4d4d] font-extrabold px-4 py-3 rounded-2xl text-xs uppercase tracking-wider shadow-md transition-all duration-300 cursor-pointer active:scale-95"
               >
                 <Star size={15} className={userRating ? 'fill-[#ff4d4d]' : ''} />
@@ -751,47 +747,22 @@ export default function AnimeHeroV2({ anime, extraInfo, characters = [], tmdbDat
         }}
       />
 
-      {/* ── Watch Party Coming Soon Modal ── */}
+      {/* ── Toast Notification (e.g. Login Required Notice) ── */}
       <AnimatePresence>
-        {showPartyNotice && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-md bg-[#0c0d1e] border border-purple-500/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(168,85,247,0.3)] text-center overflow-hidden"
-            >
-              <button
-                onClick={() => setShowPartyNotice(false)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="w-16 h-16 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 mx-auto mb-4 shadow-lg shadow-purple-500/20">
-                <Users size={32} />
-              </div>
-
-              <div className="inline-block bg-purple-500/20 text-purple-300 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-purple-500/30 mb-2">
-                In Development
-              </div>
-
-              <h3 className="text-xl font-black text-white uppercase tracking-wide mb-2">
-                Watch Party — Coming Soon!
-              </h3>
-
-              <p className="text-xs text-gray-300 leading-relaxed mb-6">
-                We are building real-time synchronized video playback and interactive audio chat lobbies so you can stream <span className="text-[#ff4dd2] font-bold">{englishTitle}</span> together with your friends!
-              </p>
-
-              <button
-                onClick={() => setShowPartyNotice(false)}
-                className="w-full py-3 bg-gradient-to-r from-purple-600 to-[#ff4dd2] hover:from-purple-500 hover:to-[#ff7be0] text-black font-black uppercase text-xs tracking-wider rounded-2xl transition-all shadow-lg shadow-purple-500/20 cursor-pointer active:scale-95"
-              >
-                Got It, Stay Tuned!
-              </button>
-            </motion.div>
-          </div>
+        {authNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[300] bg-[#14081c]/95 border border-[#ff4dd2]/50 text-white px-5 py-3 rounded-2xl shadow-[0_10px_35px_rgba(255,77,210,0.3)] flex items-center gap-3 backdrop-blur-2xl"
+          >
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff4dd2] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#ff4dd2]"></span>
+            </span>
+            <span className="text-xs font-bold tracking-wide">{authNotice}</span>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

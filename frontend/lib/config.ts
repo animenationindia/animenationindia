@@ -1,5 +1,5 @@
 // lib/config.ts
 export const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 
   (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:5000'
+    ? 'http://localhost:5050'
     : 'https://animenationindia.onrender.com');

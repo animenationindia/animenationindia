@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { motion, useInView, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useInView, useMotionValue, useSpring, useTransform, useReducedMotion, type MotionValue } from 'framer-motion';
 import { Star, Film } from 'lucide-react';
 import { toEnglishTitle } from '../lib/titleCleaner';
 
@@ -27,49 +27,49 @@ interface LandingPageProps {
 function getScoreTheme(score?: number | null) {
   if (!score) {
     return {
-      border: 'border-white/20',
-      badgeBg: 'bg-black/70',
+      border: 'border-white/15',
+      badgeBg: 'bg-black/80',
       badgeText: 'text-gray-200',
       starColor: 'text-gray-300 fill-gray-300',
-      shadow: 'shadow-[0_8px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]',
+      shadow: 'shadow-[0_10px_25px_rgba(0,0,0,0.6)]',
     };
   }
   const normalized = score > 10 ? score / 10 : score;
   if (normalized >= 9.0) {
     return {
-      border: 'border-amber-400/50',
-      badgeBg: 'bg-amber-950/80 backdrop-blur-md',
+      border: 'border-amber-400/40',
+      badgeBg: 'bg-amber-950/90',
       badgeText: 'text-amber-300 font-extrabold',
       starColor: 'text-amber-400 fill-amber-400',
-      shadow: 'shadow-[0_8px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_0_25px_rgba(245,158,11,0.5)]',
+      shadow: 'shadow-[0_10px_25px_rgba(0,0,0,0.6)]',
     };
   }
   if (normalized >= 8.0) {
     return {
-      border: 'border-[#ff007f]/50',
-      badgeBg: 'bg-[#ff007f]/20 backdrop-blur-md',
+      border: 'border-[#ff007f]/40',
+      badgeBg: 'bg-[#ff007f]/20',
       badgeText: 'text-pink-300 font-extrabold',
       starColor: 'text-pink-400 fill-pink-400',
-      shadow: 'shadow-[0_8px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_0_25px_rgba(255,0,127,0.5)]',
+      shadow: 'shadow-[0_10px_25px_rgba(0,0,0,0.6)]',
     };
   }
   return {
     border: 'border-cyan-500/30',
-    badgeBg: 'bg-cyan-950/70 backdrop-blur-md',
+    badgeBg: 'bg-cyan-950/80',
     badgeText: 'text-cyan-200 font-bold',
     starColor: 'text-cyan-400 fill-cyan-400',
-    shadow: 'shadow-[0_8px_30px_rgba(0,0,0,0.6)] hover:shadow-[0_0_20px_rgba(6,182,212,0.3)]',
+    shadow: 'shadow-[0_10px_25px_rgba(0,0,0,0.6)]',
   };
 }
 
 // ─── Safe Image Component with Fallback ────────────────────────────────────
-function SafeCardImage({ src, alt, sizes }: { src: string; alt: string; sizes: string }) {
+function SafeCardImage({ src, alt }: { src: string; alt: string }) {
   const [error, setError] = useState(false);
 
   if (error || !src) {
     return (
       <div className="w-full h-full bg-gradient-to-br from-[#1a0c28] via-[#0d0515] to-[#250d38] flex flex-col items-center justify-center p-3 text-center">
-        <Film className="w-8 h-8 text-[#ff007f]/60 mb-2 animate-pulse" />
+        <Film className="w-7 h-7 text-[#ff007f]/60 mb-2 animate-pulse" />
         <span className="text-[10px] text-gray-400 font-medium line-clamp-2">{alt}</span>
       </div>
     );
@@ -80,14 +80,15 @@ function SafeCardImage({ src, alt, sizes }: { src: string; alt: string; sizes: s
       src={src} 
       alt={alt} 
       loading="lazy" 
+      decoding="async"
       onError={() => setError(true)}
-      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
     />
   );
 }
 
 // ─── Counter Component for Animated Numbers ────────────────────────────────
-const Counter = ({ from = 0, to, duration = 2, suffix = '' }: { from?: number; to: number; duration?: number; suffix?: string }) => {
+const Counter = ({ from = 0, to, duration = 1.8, suffix = '' }: { from?: number; to: number; duration?: number; suffix?: string }) => {
   const [count, setCount] = useState(from);
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
@@ -118,6 +119,101 @@ const Counter = ({ from = 0, to, duration = 2, suffix = '' }: { from?: number; t
 
   return <span ref={ref}>{count}{suffix}</span>;
 };
+
+// ─── Balanced 8-Card Positioning (Framing the Hero Space) ─────────────────
+interface CardStyle {
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+  rotate: number;
+  scale: number;
+  depth: number;
+}
+
+const cardStyles: CardStyle[] = [
+  // Left 4 cards
+  { top: '8%', left: '3%', rotate: -8, scale: 0.9, depth: 20 },
+  { top: '38%', left: '1.5%', rotate: 6, scale: 0.86, depth: -15 },
+  { top: '68%', left: '3%', rotate: -9, scale: 0.88, depth: 22 },
+  { top: '2%', left: '18%', rotate: 4, scale: 0.82, depth: 14 },
+
+  // Right 4 cards
+  { top: '10%', right: '3%', rotate: 8, scale: 0.9, depth: -20 },
+  { top: '40%', right: '1.5%', rotate: -6, scale: 0.86, depth: 15 },
+  { top: '70%', right: '3%', rotate: 10, scale: 0.88, depth: -22 },
+  { top: '3%', right: '18%', rotate: -5, scale: 0.82, depth: -14 },
+];
+
+// ─── Sub-Component: Parallax Anime Card (Encapsulates Hooks cleanly) ────────
+interface ParallaxCardProps {
+  anime: AnimeNode;
+  styleConfig: CardStyle;
+  index: number;
+  smoothMouseX: MotionValue<number>;
+  smoothMouseY: MotionValue<number>;
+  disableComplexEffects: boolean;
+}
+
+const ParallaxCard = React.memo(function ParallaxCard({
+  anime,
+  styleConfig,
+  index,
+  smoothMouseX,
+  smoothMouseY,
+  disableComplexEffects,
+}: ParallaxCardProps) {
+  const scoreTheme = getScoreTheme(anime.averageScore);
+  const parallaxX = useTransform(smoothMouseX, (val) => val * styleConfig.depth);
+  const parallaxY = useTransform(smoothMouseY, (val) => val * styleConfig.depth);
+  const titleStr = toEnglishTitle(anime.title.english || anime.title.romaji || 'Anime');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 25, rotate: styleConfig.rotate, scale: styleConfig.scale }}
+      animate={{ opacity: 1, y: 0, rotate: styleConfig.rotate, scale: styleConfig.scale }}
+      transition={{ delay: index * 0.07 + 0.1, duration: 0.6, ease: 'easeOut' }}
+      className="absolute pointer-events-auto"
+      style={{
+        top: styleConfig.top,
+        left: styleConfig.left,
+        right: styleConfig.right,
+        bottom: styleConfig.bottom,
+        x: disableComplexEffects ? 0 : parallaxX,
+        y: disableComplexEffects ? 0 : parallaxY,
+        willChange: 'transform',
+      }}
+    >
+      <div
+        className={`relative w-36 h-52 lg:w-40 lg:h-56 rounded-2xl overflow-hidden ${scoreTheme.shadow} border ${scoreTheme.border} group transition-transform duration-300 bg-[#12071f]/95 animate-float-card`}
+        style={{
+          animationDelay: `${index * 0.4}s`,
+          willChange: 'transform',
+        }}
+      >
+        <SafeCardImage src={anime.coverImage.large} alt={titleStr} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-transparent pointer-events-none" />
+
+        {/* Score Badge */}
+        {typeof anime.averageScore === 'number' && !isNaN(anime.averageScore) && (
+          <div className={`absolute top-2 left-2 ${scoreTheme.badgeBg} px-2 py-0.5 rounded-md flex items-center gap-1 border ${scoreTheme.border} shadow-md`}>
+            <Star size={11} className={scoreTheme.starColor} />
+            <span className={`text-[10px] sm:text-xs ${scoreTheme.badgeText}`}>
+              {(anime.averageScore / 10).toFixed(1)}
+            </span>
+          </div>
+        )}
+
+        {/* Title Overlay */}
+        <div className="absolute bottom-2 left-2 right-2">
+          <p className="text-white text-[10px] sm:text-xs font-semibold line-clamp-2 leading-tight drop-shadow-md">
+            {titleStr}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+});
 
 // ─── Main Landing Page Component ───────────────────────────────────────────
 export default function LandingPageClient({ initialAnime }: LandingPageProps) {
@@ -150,69 +246,58 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
 
   const disableComplexEffects = shouldReduceMotion || isLowEndDevice || isMobile;
 
-  // Optimized Mouse Motion Values & Tuned Springs (Active only on Desktop)
+  // Optimized Mouse Motion Values with lightweight springs (Desktop only)
   const rawMouseX = useMotionValue(0);
   const rawMouseY = useMotionValue(0);
-  const rawCursorX = useMotionValue(0);
-  const rawCursorY = useMotionValue(0);
 
-  const springConfig = { stiffness: 80, damping: 18, mass: 0.5 };
+  const springConfig = { stiffness: 60, damping: 20, mass: 0.5 };
   const smoothMouseX = useSpring(rawMouseX, springConfig);
   const smoothMouseY = useSpring(rawMouseY, springConfig);
-  const smoothCursorX = useSpring(rawCursorX, springConfig);
-  const smoothCursorY = useSpring(rawCursorY, springConfig);
 
-  const latestMouseRef = useRef({ x: 0, y: 0, normX: 0, normY: 0, dirty: false });
-
+  // 🎯 Event-Driven Mouse Handler: ONLY updates when mouse moves (Zero Idle CPU cycles)
   useEffect(() => {
     if (disableComplexEffects) return;
     const element = mainRef.current;
     if (!element) return;
 
-    let rAFId: number;
+    let rafScheduled = false;
 
     const onMouseMove = (e: MouseEvent) => {
-      const rect = element.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const normX = (x / rect.width) - 0.5;
-      const normY = (y / rect.height) - 0.5;
-
-      latestMouseRef.current = { x, y, normX, normY, dirty: true };
-    };
-
-    const updateLoop = () => {
-      if (latestMouseRef.current.dirty) {
-        const { x, y, normX, normY } = latestMouseRef.current;
-        rawCursorX.set(x);
-        rawCursorY.set(y);
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        const rect = element.getBoundingClientRect();
+        const normX = ((e.clientX - rect.left) / rect.width) - 0.5;
+        const normY = ((e.clientY - rect.top) / rect.height) - 0.5;
         rawMouseX.set(normX);
         rawMouseY.set(normY);
-        latestMouseRef.current.dirty = false;
-      }
-      rAFId = requestAnimationFrame(updateLoop);
+        rafScheduled = false;
+      });
     };
 
-    element.addEventListener('mousemove', onMouseMove, { passive: true });
-    rAFId = requestAnimationFrame(updateLoop);
+    const onMouseLeave = () => {
+      rawMouseX.set(0);
+      rawMouseY.set(0);
+    };
+
+    // Pause physics if tab is switched/minimized
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        rawMouseX.set(0);
+        rawMouseY.set(0);
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    document.addEventListener('mouseleave', onMouseLeave);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      element.removeEventListener('mousemove', onMouseMove);
-      cancelAnimationFrame(rAFId);
+      window.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseleave', onMouseLeave);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [disableComplexEffects, rawCursorX, rawCursorY, rawMouseX, rawMouseY]);
-
-  // Card Positions & Parallax Depth Factors
-  const cardStyles = [
-    { top: '10%', left: '4%', rotate: -8, scale: 0.9, depth: 22, showMobile: false },
-    { top: '45%', left: '2%', rotate: 6, scale: 0.85, depth: -16, showMobile: false },
-    { bottom: '10%', left: '6%', rotate: -12, scale: 0.95, depth: 26, showMobile: false },
-    { top: '15%', right: '4%', rotate: 10, scale: 0.9, depth: -22, showMobile: false },
-    { top: '50%', right: '2%', rotate: -5, scale: 0.85, depth: 16, showMobile: false },
-    { bottom: '15%', right: '6%', rotate: 12, scale: 0.95, depth: -26, showMobile: false },
-    { top: '-2%', left: '28%', rotate: 4, scale: 0.8, depth: 14, showMobile: false },
-    { bottom: '-2%', right: '28%', rotate: -6, scale: 0.8, depth: -14, showMobile: false },
-  ];
+  }, [disableComplexEffects, rawMouseX, rawMouseY]);
 
   // Animated Title Words
   const titleWords = [
@@ -228,37 +313,19 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
       ref={mainRef}
       className="relative w-full min-h-screen bg-[#0a0510] flex items-center justify-center overflow-hidden selection:bg-[#ff007f] selection:text-white"
     >
-      {/* ── 📱 Mobile Ultra-Lightweight CSS Gradient Backdrop (Zero JS / Zero GPU Overhead) ── */}
+      {/* ── 📱 CSS Gradient Backdrop (Zero JS / Zero GPU Overhead) ── */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a0510] via-[#12071f] to-[#050716] pointer-events-none z-0" />
 
-      {/* ── Desktop GPU-Accelerated Cursor Glow (Disabled on Mobile) ── */}
-      {!disableComplexEffects && (
-        <motion.div
-          className="pointer-events-none hidden md:block absolute w-[450px] h-[450px] rounded-full z-0 opacity-35"
-          style={{
-            x: smoothCursorX,
-            y: smoothCursorY,
-            left: -225,
-            top: -225,
-            background: 'radial-gradient(circle, rgba(255, 0, 127, 0.25) 0%, rgba(255, 0, 127, 0.05) 50%, transparent 70%)',
-            mixBlendMode: 'screen',
-            willChange: 'transform',
-          }}
-        />
-      )}
-
-      {/* ── Ambient Pink Blur Blobs (Optimized blur for Smooth 60FPS) ── */}
-      <motion.div
-        animate={disableComplexEffects ? { opacity: 0.08, scale: 1 } : { opacity: [0.08, 0.14, 0.08], scale: [1, 1.04, 1] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#ff007f] blur-[80px] rounded-full pointer-events-none z-0"
-        style={{ willChange: 'transform, opacity' }}
-      />
-      <motion.div
-        animate={disableComplexEffects ? { opacity: 0.06, scale: 1 } : { opacity: [0.06, 0.11, 0.06], scale: [1, 1.06, 1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#ff007f] blur-[80px] rounded-full pointer-events-none z-0"
-        style={{ willChange: 'transform, opacity' }}
+      {/* ── High-Performance Native Radial Gradient Ambient Glows (0% GPU Blur Cost) ── */}
+      <div
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          background: `
+            radial-gradient(circle at 10% 15%, rgba(255, 0, 127, 0.12) 0%, transparent 45%),
+            radial-gradient(circle at 90% 85%, rgba(255, 0, 127, 0.10) 0%, transparent 45%),
+            radial-gradient(circle at 50% 50%, rgba(18, 7, 31, 0.6) 0%, transparent 70%)
+          `,
+        }}
       />
 
       {/* ── Desktop Floating Anime Cards (Hidden on Mobile to eliminate 100% CPU/GPU overhead) ── */}
@@ -266,11 +333,8 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
         {isLoading
           ? /* Skeleton Loading State */
             cardStyles.map((style, index) => (
-              <motion.div
+              <div
                 key={`skeleton-${index}`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 0.7, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.08 }}
                 className="absolute"
                 style={{
                   top: style.top,
@@ -278,78 +342,29 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
                   right: style.right,
                   bottom: style.bottom,
                   transform: `rotate(${style.rotate}deg) scale(${style.scale})`,
-                  willChange: 'transform',
                 }}
               >
                 <div className="w-36 h-52 lg:w-40 lg:h-56 rounded-2xl overflow-hidden bg-[#150a22]/80 border border-white/10 shadow-lg relative p-3 flex flex-col justify-between">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" />
                   <div className="w-12 h-4 rounded-md bg-white/10 animate-pulse" />
                   <div className="space-y-1.5">
                     <div className="w-3/4 h-3 rounded bg-white/15 animate-pulse" />
                     <div className="w-1/2 h-2.5 rounded bg-white/10 animate-pulse" />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))
-          : /* Loaded Anime Cards with Desktop Parallax */
-            initialAnime.slice(0, 8).map((anime, index) => {
-              const style = cardStyles[index % cardStyles.length];
-              const scoreTheme = getScoreTheme(anime.averageScore);
-
-              const parallaxX = useTransform(smoothMouseX, (val) => val * style.depth);
-              const parallaxY = useTransform(smoothMouseY, (val) => val * style.depth);
-
-              return (
-                <motion.div
-                  key={anime.id}
-                  initial={{ opacity: 0, y: 30, rotate: style.rotate, scale: style.scale }}
-                  animate={{ opacity: 1, y: 0, rotate: style.rotate, scale: style.scale }}
-                  transition={{ delay: index * 0.08 + 0.15, duration: 0.8, ease: 'easeOut' }}
-                  className="absolute"
-                  style={{
-                    top: style.top,
-                    left: style.left,
-                    right: style.right,
-                    bottom: style.bottom,
-                    x: disableComplexEffects ? 0 : parallaxX,
-                    y: disableComplexEffects ? 0 : parallaxY,
-                    willChange: 'transform',
-                  }}
-                >
-                  {/* Floating Bob Motion */}
-                  <motion.div
-                    animate={disableComplexEffects ? { y: 0 } : { y: [0, -12, 0] }}
-                    transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: index * 0.4 }}
-                    className={`relative w-36 h-52 lg:w-40 lg:h-56 rounded-2xl overflow-hidden ${scoreTheme.shadow} border ${scoreTheme.border} group transition-all duration-300 backdrop-blur-sm`}
-                    style={{ willChange: 'transform' }}
-                  >
-                    <SafeCardImage
-                      src={anime.coverImage.large}
-                      alt={toEnglishTitle(anime.title.english || anime.title.romaji)}
-                      sizes="160px"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent" />
-
-                    {/* Score Badge */}
-                    {typeof anime.averageScore === 'number' && !isNaN(anime.averageScore) && (
-                      <div className={`absolute top-2 left-2 ${scoreTheme.badgeBg} px-2 py-0.5 rounded-md flex items-center gap-1 border ${scoreTheme.border} shadow-md`}>
-                        <Star size={11} className={scoreTheme.starColor} />
-                        <span className={`text-[10px] sm:text-xs ${scoreTheme.badgeText}`}>
-                          {(anime.averageScore / 10).toFixed(1)}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Title Overlay */}
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <p className="text-white text-[10px] sm:text-xs font-semibold line-clamp-2 leading-tight drop-shadow-md">
-                        {toEnglishTitle(anime.title.english || anime.title.romaji)}
-                      </p>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              );
-            })}
+          : /* Loaded 8 Balanced Anime Cards */
+            initialAnime.slice(0, 8).map((anime, index) => (
+              <ParallaxCard
+                key={anime.id}
+                anime={anime}
+                styleConfig={cardStyles[index % cardStyles.length]}
+                index={index}
+                smoothMouseX={smoothMouseX}
+                smoothMouseY={smoothMouseY}
+                disableComplexEffects={disableComplexEffects}
+              />
+            ))}
       </div>
 
       {/* ── Main Hero Content Overlay (Instant Critical Rendering) ── */}
@@ -357,10 +372,10 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
         
         {/* Top Pill Badge */}
         <motion.div
-          initial={{ opacity: 0, y: -15 }}
+          initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6 inline-block px-4 py-1.5 rounded-full border border-[#ff007f]/30 bg-[#ff007f]/10 backdrop-blur-md shadow-[0_0_15px_rgba(255,0,127,0.2)]"
+          transition={{ duration: 0.4 }}
+          className="mb-6 inline-block px-4 py-1.5 rounded-full border border-[#ff007f]/30 bg-[#ff007f]/10 shadow-[0_0_15px_rgba(255,0,127,0.15)]"
         >
           <span className="text-[#ff007f] text-xs sm:text-sm font-bold tracking-wider uppercase">Your anime journey starts here</span>
         </motion.div>
@@ -373,7 +388,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
             hidden: { opacity: 0 },
             visible: {
               opacity: 1,
-              transition: { staggerChildren: 0.04, delayChildren: 0.05 },
+              transition: { staggerChildren: 0.03, delayChildren: 0.05 },
             },
           }}
           className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-[1.25] tracking-tight mb-6 flex flex-wrap justify-center gap-x-2.5 gap-y-1"
@@ -384,8 +399,8 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
               <motion.span
                 key={i}
                 variants={{
-                  hidden: { opacity: 0, y: 12, filter: 'blur(3px)' },
-                  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.45 } },
+                  hidden: { opacity: 0, y: 10 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
                 }}
                 className={isPink ? "text-transparent bg-clip-text bg-gradient-to-r from-[#ff007f] to-[#ff4dd2]" : "text-white"}
               >
@@ -397,9 +412,9 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
 
         {/* Subtitle */}
         <motion.p
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.25 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
           className="text-sm sm:text-lg md:text-xl text-gray-300/90 mb-8 md:mb-10 max-w-2xl font-medium mx-auto leading-relaxed"
         >
           Your personal anime companion. Manage your watchlist, discover trending series, and connect with fellow fans.
@@ -407,9 +422,9 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
 
         {/* Action Buttons */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.35 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center gap-3.5 sm:gap-4 justify-center w-full sm:w-auto"
         >
           <Link
@@ -424,7 +439,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
 
           <Link
             href="/browse"
-            className="group px-8 py-3.5 sm:py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/25 text-white font-bold rounded-2xl transition-all duration-300 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto text-center cursor-pointer text-sm sm:text-base"
+            className="group px-8 py-3.5 sm:py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/25 text-white font-bold rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto text-center cursor-pointer text-sm sm:text-base"
           >
             Browse
           </Link>
@@ -433,14 +448,14 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
         {/* ── Scroll-Reveal Stats Section ── */}
         <motion.div
           ref={statsRef}
-          initial={{ opacity: 0, y: 25 }}
-          animate={isStatsInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 25 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={isStatsInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
           className="mt-12 md:mt-14 flex flex-wrap justify-center items-center gap-6 sm:gap-8 md:gap-16 pt-8 border-t border-white/10 w-full max-w-3xl mx-auto"
         >
           <div className="flex flex-col items-center">
             <span className="text-2xl sm:text-4xl font-extrabold text-white mb-0.5 tracking-tight">
-              <Counter to={50} suffix="K+" duration={2.0} />
+              <Counter to={50} suffix="K+" duration={1.8} />
             </span>
             <span className="text-gray-400 text-[11px] sm:text-sm font-medium">Anime Titles</span>
           </div>
@@ -449,7 +464,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
 
           <div className="flex flex-col items-center">
             <span className="text-2xl sm:text-4xl font-extrabold text-white mb-0.5 tracking-tight">
-              <Counter to={60} suffix="+" duration={1.8} />
+              <Counter to={60} suffix="+" duration={1.6} />
             </span>
             <span className="text-gray-400 text-[11px] sm:text-sm font-medium">Genres</span>
           </div>
@@ -458,7 +473,7 @@ export default function LandingPageClient({ initialAnime }: LandingPageProps) {
 
           <div className="flex flex-col items-center">
             <span className="text-2xl sm:text-4xl font-extrabold text-white mb-0.5 tracking-tight">
-              <Counter to={10} suffix="K+" duration={2.0} />
+              <Counter to={10} suffix="K+" duration={1.8} />
             </span>
             <span className="text-gray-400 text-[11px] sm:text-sm font-medium">Theme Songs</span>
           </div>

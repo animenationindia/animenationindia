@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Star, X, Loader2, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Star, X, Loader2, CheckCircle2, AlertCircle, Trash2, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { submitUserReview } from '@/app/actions/catalogs';
 
@@ -28,20 +28,6 @@ const SCORE_LABELS: Record<number, string> = {
   10: '10 - Masterpiece',
 };
 
-const AVAILABLE_TAGS = [
-  'Masterpiece',
-  'Great Cinematography',
-  'Mind Bending',
-  'Emotional Rollercoaster',
-  'Binge-Worthy',
-  'Must Watch',
-  'Great Soundtrack',
-  'Underrated Gem',
-  'Incredible Animation',
-  'Epic Fights',
-  'Peak Fiction',
-];
-
 export default function RatingModal({
   isOpen,
   onClose,
@@ -52,64 +38,54 @@ export default function RatingModal({
   onRatingUpdated,
 }: RatingModalProps) {
   const [hoveredScore, setHoveredScore] = useState<number | null>(null);
-  const [selectedScore, setSelectedScore] = useState<number | null>(currentRating || 9);
+  // Default to empty (null) if no existing rating
+  const [selectedScore, setSelectedScore] = useState<number | null>(currentRating || null);
+  const [showOptionalReview, setShowOptionalReview] = useState(false);
   const [headline, setHeadline] = useState('');
   const [detailedThoughts, setDetailedThoughts] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     if (currentRating) {
       setSelectedScore(currentRating);
-    }
-    // Load existing user review for this anime from localStorage if available
-    try {
-      const savedReviews = JSON.parse(localStorage.getItem(`ani_user_review_${animeId}`) || 'null');
-      if (savedReviews) {
-        if (savedReviews.score) setSelectedScore(savedReviews.score);
-        if (savedReviews.headline) setHeadline(savedReviews.headline);
-        if (savedReviews.detailedThoughts) setDetailedThoughts(savedReviews.detailedThoughts);
-        if (savedReviews.tags) setSelectedTags(savedReviews.tags);
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`ani_user_review_${animeId}`) || 'null');
+        if (saved?.score) {
+          setSelectedScore(saved.score);
+          if (saved.headline) setHeadline(saved.headline);
+          if (saved.detailedThoughts) setDetailedThoughts(saved.detailedThoughts);
+        } else {
+          setSelectedScore(null);
+        }
+      } catch {
+        setSelectedScore(null);
       }
-    } catch {}
+    }
   }, [animeId, currentRating]);
 
   if (!isOpen) return null;
 
   const displayScore = hoveredScore !== null ? hoveredScore : selectedScore;
 
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
-
-  const handlePublish = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    if (!selectedScore) {
-      setMessage({ type: 'error', text: 'Please select a star rating (1 - 10)!' });
-      return;
-    }
-
+  const handleSaveRating = async (scoreToSave: number) => {
     setLoading(true);
     setMessage(null);
 
-    const userName = localStorage.getItem('user_name') || 'Otaku Critic';
-    const userAvatar = localStorage.getItem('user_avatar') || '';
-    const token = localStorage.getItem('user_token') || localStorage.getItem('token');
+    const userName = (typeof window !== 'undefined' && localStorage.getItem('user_name')) || 'Otaku Critic';
+    const userAvatar = (typeof window !== 'undefined' && localStorage.getItem('user_avatar')) || '';
 
     const reviewPayload = {
       id: Date.now(),
       animeId,
       animeTitle,
       animeImage,
-      score: selectedScore,
+      score: scoreToSave,
       headline: headline.trim(),
       detailedThoughts: detailedThoughts.trim(),
-      review: detailedThoughts.trim() || headline.trim(),
-      tags: selectedTags,
+      review: detailedThoughts.trim() || headline.trim() || `Rated ${scoreToSave}/10`,
+      tags: [],
       date: new Date().toISOString(),
       user: {
         username: userName,
@@ -120,42 +96,53 @@ export default function RatingModal({
     };
 
     try {
-      // 1. Save in localStorage for immediate optimistic UI & persistence
+      // 1. Optimistic persistence in localStorage
       localStorage.setItem(`ani_user_review_${animeId}`, JSON.stringify(reviewPayload));
-      
-      // Also maintain user reviews list in localStorage
+
       const allUserReviews = JSON.parse(localStorage.getItem('ani_my_reviews') || '[]');
       const filtered = allUserReviews.filter((r: any) => r.animeId !== animeId);
       filtered.unshift(reviewPayload);
       localStorage.setItem('ani_my_reviews', JSON.stringify(filtered));
 
-      // 2. Dispatch custom event so overview tab updates reviews instantly
       window.dispatchEvent(new CustomEvent('ani-new-review', { detail: reviewPayload }));
 
-      // 3. Submit directly to Neon PostgreSQL via Server Action
+      // 2. Submit directly to Neon PostgreSQL
       try {
         await submitUserReview({
           mediaId: animeId,
           mediaType: 'anime',
-          score: selectedScore,
-          title: headline.trim() || `${animeTitle} Review`,
-          content: detailedThoughts.trim() || headline.trim() || `Rated ${selectedScore}/10`,
-          tags: selectedTags,
+          score: scoreToSave,
+          title: headline.trim() || `${animeTitle} Rating`,
+          content: detailedThoughts.trim() || `Rated ${scoreToSave}/10`,
+          tags: [],
         });
       } catch (neonErr) {
-        console.warn('Neon DB review submission note:', neonErr);
+        console.warn('Neon DB rating note:', neonErr);
       }
 
-      onRatingUpdated(selectedScore, reviewPayload);
-      setMessage({ type: 'success', text: 'Review published successfully! 🎉' });
+      onRatingUpdated(scoreToSave, reviewPayload);
+      setMessage({ type: 'success', text: `Rated ${scoreToSave}/10! Saved successfully 🎉` });
 
       setTimeout(() => {
         onClose();
       }, 700);
     } catch {
-      setMessage({ type: 'error', text: 'Failed to publish review. Saved locally!' });
-      onRatingUpdated(selectedScore, reviewPayload);
+      setMessage({ type: 'error', text: 'Saved locally!' });
+      onRatingUpdated(scoreToSave, reviewPayload);
       setTimeout(() => onClose(), 800);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearRating = async () => {
+    setLoading(true);
+    try {
+      localStorage.removeItem(`ani_user_review_${animeId}`);
+      setSelectedScore(null);
+      onRatingUpdated(null, null);
+      setMessage({ type: 'success', text: 'Rating cleared' });
+      setTimeout(() => onClose(), 600);
     } finally {
       setLoading(false);
     }
@@ -163,7 +150,7 @@ export default function RatingModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 overflow-y-auto">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -173,17 +160,17 @@ export default function RatingModal({
           className="fixed inset-0 bg-black/80 backdrop-blur-md"
         />
 
-        {/* Modal Container (7media Exact Layout with Anime Cyberpunk Polish) */}
+        {/* Modal Container */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="relative w-full max-w-lg bg-[#0e0f14] border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.9)] z-10 text-white my-8 overflow-hidden"
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          className="relative w-full max-w-md bg-[#0a0b16] border border-white/15 rounded-3xl p-6 sm:p-7 shadow-[0_25px_60px_rgba(0,0,0,0.95)] z-10 text-white my-8 overflow-hidden"
         >
           {/* Subtle Ambient Glow */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-[#ff2a5f]/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-44 h-44 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-44 h-44 bg-[#ff4dd2]/15 rounded-full blur-3xl pointer-events-none" />
 
           {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-6">
@@ -192,10 +179,10 @@ export default function RatingModal({
                 <Star className="w-5 h-5 fill-amber-400" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-lg font-black tracking-wide text-white flex items-center gap-2">
-                  <span>RATE &amp; REVIEW</span>
+                <h3 className="text-base font-black tracking-wide text-white uppercase">
+                  Rate This Anime
                 </h3>
-                <p className="text-xs text-gray-400 truncate max-w-[280px] sm:max-w-xs">
+                <p className="text-xs text-gray-400 truncate max-w-[260px]">
                   {animeTitle}
                 </p>
               </div>
@@ -203,13 +190,14 @@ export default function RatingModal({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Message Alert */}
+          {/* Alert Message */}
           {message && (
             <div
               className={`flex items-center gap-2 p-3 rounded-xl text-xs font-semibold mb-4 animate-in fade-in ${
@@ -218,139 +206,146 @@ export default function RatingModal({
                   : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
               }`}
             >
-              {message.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+              {message.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
               <span>{message.text}</span>
             </div>
           )}
 
-          <form onSubmit={handlePublish} className="space-y-5">
-            {/* 1. ⭐ YOUR SCORE (10 Stars Interactive) */}
-            <div className="text-center py-2 bg-white/[0.02] border border-white/5 rounded-2xl">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 block mb-2">
-                YOUR SCORE
-              </span>
-              
-              <div className="flex items-center justify-center gap-1 sm:gap-2 mb-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => {
-                  const isFilled = displayScore !== null && star <= displayScore;
-                  return (
-                    <button
-                      key={star}
-                      type="button"
-                      onMouseEnter={() => setHoveredScore(star)}
-                      onMouseLeave={() => setHoveredScore(null)}
-                      onClick={() => setSelectedScore(star)}
-                      className="p-1 hover:scale-125 transition-transform duration-150 cursor-pointer focus:outline-none"
-                    >
-                      <Star
-                        size={22}
-                        className={`transition-colors ${
-                          isFilled
-                            ? 'text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]'
-                            : 'text-gray-600 hover:text-gray-400'
-                        }`}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
+          {/* ── 10 EMPTY STARS SECTION ── */}
+          <div className="text-center py-4 bg-white/[0.02] border border-white/5 rounded-2xl mb-5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 block mb-3">
+              Tap a star to rate
+            </span>
 
-              <div className="text-sm font-extrabold text-amber-400">
-                {displayScore ? (
-                  <span>
-                    <strong className="text-base text-white">{displayScore}</strong> / 10{' '}
-                    <span className="text-xs text-gray-400 font-semibold ml-1">
-                      ({SCORE_LABELS[displayScore]?.split(' - ')[1] || ''})
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-500">Tap a star to rate</span>
-                )}
-              </div>
-            </div>
-
-            {/* 2. 📝 REVIEW HEADLINE */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">
-                REVIEW HEADLINE
-              </label>
-              <input
-                type="text"
-                value={headline}
-                onChange={(e) => setHeadline(e.target.value)}
-                placeholder="e.g. An absolute masterpiece with stunning visuals"
-                className="w-full h-11 px-4 rounded-xl border border-white/10 bg-[#141520] text-white text-xs outline-none focus:border-amber-400 focus:bg-[#181a28] transition placeholder-gray-500"
-              />
-            </div>
-
-            {/* 3. 💭 DETAILED THOUGHTS */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-300 mb-1.5">
-                DETAILED THOUGHTS
-              </label>
-              <textarea
-                rows={4}
-                value={detailedThoughts}
-                onChange={(e) => setDetailedThoughts(e.target.value)}
-                placeholder="What did you love about the story, acting, direction, or music?"
-                className="w-full p-3.5 rounded-xl border border-white/10 bg-[#141520] text-white text-xs outline-none focus:border-amber-400 focus:bg-[#181a28] transition placeholder-gray-500 resize-none leading-relaxed"
-              />
-            </div>
-
-            {/* 4. 🏷️ ADD TAGS */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-300 mb-2">
-                ADD TAGS
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {AVAILABLE_TAGS.map((tag) => {
-                  const isSelected = selectedTags.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all cursor-pointer select-none border ${
-                        isSelected
-                          ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-sm shadow-amber-500/20 scale-105'
-                          : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10 hover:border-white/20'
+            {/* Stars Row (1 to 10) */}
+            <div className="flex items-center justify-center gap-1 sm:gap-1.5 mb-3 px-2">
+              {Array.from({ length: 10 }, (_, i) => i + 1).map((score) => {
+                const isFilled = displayScore !== null && score <= displayScore;
+                return (
+                  <button
+                    key={score}
+                    type="button"
+                    onMouseEnter={() => setHoveredScore(score)}
+                    onMouseLeave={() => setHoveredScore(null)}
+                    onClick={() => {
+                      setSelectedScore(score);
+                      handleSaveRating(score);
+                    }}
+                    className="p-1 rounded-lg transition-transform hover:scale-125 active:scale-95 cursor-pointer focus:outline-none"
+                    title={`${score}/10`}
+                  >
+                    <Star
+                      className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors duration-150 ${
+                        isFilled
+                          ? 'text-amber-400 fill-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                          : 'text-zinc-600 hover:text-amber-400/60'
                       }`}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
+                    />
+                  </button>
+                );
+              })}
             </div>
 
-            {/* 5. Action Buttons (Cancel + Publish Review) */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            {/* Score Label Display */}
+            <div className="h-6 flex items-center justify-center">
+              {displayScore !== null ? (
+                <span className="text-sm font-extrabold text-amber-400 font-mono tracking-wide animate-in fade-in">
+                  {SCORE_LABELS[displayScore] || `${displayScore}/10`}
+                </span>
+              ) : (
+                <span className="text-xs text-zinc-500 italic">
+                  Not rated yet (0/10)
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Optional Thoughts / Review Collapsible */}
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={() => setShowOptionalReview((prev) => !prev)}
+              className="text-[11px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>Add a review headline or thoughts (optional)</span>
+              <ChevronDown
+                size={13}
+                className={`transition-transform duration-200 ${showOptionalReview ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {showOptionalReview && (
+              <div className="mt-3 space-y-3 pt-3 border-t border-white/5 animate-in fade-in duration-200">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                    Review Headline
+                  </label>
+                  <input
+                    type="text"
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    placeholder="e.g. An absolute masterpiece!"
+                    className="w-full bg-zinc-950/80 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#ff4dd2]/60"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
+                    Your Thoughts
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={detailedThoughts}
+                    onChange={(e) => setDetailedThoughts(e.target.value)}
+                    placeholder="What did you love about this anime?"
+                    className="w-full bg-zinc-950/80 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#ff4dd2]/60 resize-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Actions Footer */}
+          <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+            {selectedScore !== null && (
               <button
                 type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-              >
-                CANCEL
-              </button>
-
-              <button
-                type="submit"
+                onClick={handleClearRating}
                 disabled={loading}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 active:scale-95 transition disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-rose-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Remove rating"
               >
-                {loading ? (
-                  <>
-                    <Loader2 size={15} className="animate-spin text-black" />
-                    <span>PUBLISHING...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>PUBLISH REVIEW</span>
-                  </>
-                )}
+                <Trash2 size={13} />
+                <span className="hidden sm:inline">Clear</span>
               </button>
-            </div>
-          </form>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-zinc-400 hover:text-white transition-colors cursor-pointer ml-auto"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={() => selectedScore && handleSaveRating(selectedScore)}
+              disabled={loading || selectedScore === null}
+              className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg cursor-pointer ${
+                selectedScore !== null && !loading
+                  ? 'bg-gradient-to-r from-amber-500 to-[#ff4dd2] text-black shadow-amber-500/20 hover:opacity-90 active:scale-95'
+                  : 'bg-white/5 border border-white/5 text-zinc-600 cursor-not-allowed opacity-50'
+              }`}
+            >
+              {loading && <Loader2 size={13} className="animate-spin" />}
+              <span>{selectedScore ? `Save (${selectedScore}/10)` : 'Select Rating'}</span>
+            </button>
+          </div>
         </motion.div>
       </div>
     </AnimatePresence>

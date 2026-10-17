@@ -20,7 +20,7 @@ export {
 };
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
 const ANILIST_PROXY_URL = `${BACKEND_BASE_URL}/api/anilist/proxy`;
 
 // ─── Curated Sections Helper (Loaded from MongoDB Atlas with 1-Hour ISR) ─────
@@ -47,7 +47,7 @@ export async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<
 
   // Fallback to localhost:5000 if BACKEND_BASE_URL is not localhost
   if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
-    const localFallback = await tryFetch('http://localhost:5000');
+    const localFallback = await tryFetch('http://localhost:5050');
     if (localFallback && localFallback.length > 0) return localFallback;
   }
 
@@ -599,7 +599,7 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
           airingAt
           episode
           media {
-            id idMal title { english romaji } coverImage { extraLarge large } bannerImage description averageScore
+            id idMal title { english romaji native } coverImage { extraLarge large } bannerImage description averageScore
             episodes format status genres seasonYear studios(isMain: true) { nodes { name } }
           }
         }
@@ -607,23 +607,25 @@ export async function getScheduleAniList(start: number, end: number, page = 1): 
     }
   `;
   try {
-    const [p1, p2] = await Promise.all([
-      fetchAniList(query, { page: 1, start, end }, 3600, 2500),
-      fetchAniList(query, { page: 2, start, end }, 3600, 2500)
+    const [p1, p2, p3] = await Promise.all([
+      fetchAniList(query, { page: 1, start, end }, 1800, 3500),
+      fetchAniList(query, { page: 2, start, end }, 1800, 3500),
+      fetchAniList(query, { page: 3, start, end }, 1800, 3500)
     ]);
 
     const s1 = p1?.data?.Page?.airingSchedules || [];
     const s2 = p2?.data?.Page?.airingSchedules || [];
-    const combined = [...s1, ...s2];
+    const s3 = p3?.data?.Page?.airingSchedules || [];
+    const combined = [...s1, ...s2, ...s3];
     if (combined.length > 0) return combined;
   } catch {}
 
-  // Fallback 1: Live Backend Normalized Schedule Engine (MongoDB Atlas)
+  // Fallback 1: Live Backend Schedule Engine (MongoDB Atlas)
   try {
     const res = await fetch(`${BACKEND_BASE_URL}/api/schedule?start=${start}&end=${end}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 1800 },
       headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(3000)
+      signal: AbortSignal.timeout(4000)
     });
     if (res.ok) {
       const json = await res.json();
@@ -955,9 +957,11 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
 
 // ─── AniList Extra Info Query ───────────────────────────────────────────────
 export async function getAniListExtraInfo(idMalOrAniId: number): Promise<any | null> {
+  const isMal = typeof idMalOrAniId === 'number' && idMalOrAniId > 0 && idMalOrAniId <= 65000;
+
   const query = `
-    query ($id: Int) {
-      Media(id: $id, type: ANIME) {
+    query ($id: Int, $idMal: Int) {
+      Media(id: $id, idMal: $idMal, type: ANIME) {
         id
         idMal
         title { romaji english native }
@@ -975,16 +979,34 @@ export async function getAniListExtraInfo(idMalOrAniId: number): Promise<any | n
         relations {
           edges {
             relationType
-            node { id idMal title { english romaji } coverImage { large } format startDate { year month day } type }
+            node { 
+              id 
+              idMal 
+              title { english romaji native } 
+              coverImage { extraLarge large medium } 
+              format 
+              startDate { year month day } 
+              type 
+              countryOfOrigin 
+            }
           }
         }
       }
     }
   `;
+
   try {
-    const data = await fetchAniList(query, { id: idMalOrAniId });
+    // Primary attempt: If MAL ID range (<= 65000), search by idMal; otherwise by id
+    const primaryVars = isMal ? { idMal: idMalOrAniId } : { id: idMalOrAniId };
+    const data = await fetchAniList(query, primaryVars);
     if (data?.data?.Media) return data.data.Media;
+
+    // Secondary attempt: Fallback to opposite parameter
+    const fallbackVars = isMal ? { id: idMalOrAniId } : { idMal: idMalOrAniId };
+    const fallbackData = await fetchAniList(query, fallbackVars);
+    if (fallbackData?.data?.Media) return fallbackData.data.Media;
   } catch {}
+
   return null;
 }
 

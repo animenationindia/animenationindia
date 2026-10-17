@@ -328,14 +328,14 @@ export default function TrailersPage() {
   }, [gridTrailers, filter]);
 
   return (
-    <div className="bg-[#050716] min-h-screen pt-28 lg:pt-32 pb-16 relative">
+    <div className="bg-[#050716] min-h-screen pt-28 sm:pt-32 lg:pt-36 pb-16 relative">
       {/* Background Neon Ambient Glows */}
       <div className="absolute top-20 left-1/4 w-96 h-96 bg-[#ff4dd2]/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-40 right-1/4 w-96 h-96 bg-[#00f7ff]/10 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="container mx-auto px-4 lg:px-12 max-w-[1600px] relative z-10">
         {/* Header & Live Search Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 border-b border-white/5 pb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 border-b border-white/5 pb-8 pl-10 sm:pl-12 lg:pl-0">
           <div>
             <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-[#ff4dd2] font-semibold mb-2">
               <Film size={15} />

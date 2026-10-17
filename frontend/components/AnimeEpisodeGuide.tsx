@@ -9,10 +9,7 @@ import {
   Calendar,
   Star,
   CheckCircle,
-  Clock,
-  ChevronDown,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import { TMDBEpisode } from '../lib/tmdb-api';
 import AnimeWatchOrder from './AnimeWatchOrder';
@@ -30,6 +27,8 @@ interface AnimeEpisodeGuideProps {
 type ViewMode = 'list' | 'grid';
 type ActiveTab = 'episodes' | 'watchorder';
 
+const CHUNK_SIZE = 50;
+
 export default function AnimeEpisodeGuide({
   anime,
   extraInfo,
@@ -41,17 +40,16 @@ export default function AnimeEpisodeGuide({
   const [activeTab, setActiveTab] = useState<ActiveTab>('episodes');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [watchedEps, setWatchedEps] = useState<Record<number, boolean>>({});
+  const [selectedRange, setSelectedRange] = useState<number>(0);
 
   const animeId = anime.mal_id || anime.id || extraInfo?.idMal || extraInfo?.id || 0;
-  const englishTitle =
-    anime.title_english || extraInfo?.title?.english || anime.title || 'Anime';
   const totalEpisodeCount =
     anime.episodes || extraInfo?.episodes || episodes.length || 12;
 
   // ─── Build episode list ───
   const episodeList = useMemo(() => {
     if (episodes.length > 0) return episodes;
-    // Fallback: generate placeholder episodes from TMDB count or AniList count
+    // Fallback: generate placeholder episodes from count
     return Array.from({ length: totalEpisodeCount }, (_, i) => ({
       mal_id: i + 1,
       title: `Episode ${i + 1}`,
@@ -60,11 +58,19 @@ export default function AnimeEpisodeGuide({
     }));
   }, [episodes, totalEpisodeCount]);
 
+  // ─── Episode Range Chunks (for long anime like Black Clover 170 eps, One Piece 1000+) ───
+  const totalChunks = Math.ceil(episodeList.length / CHUNK_SIZE);
+  const displayedEpisodes = useMemo(() => {
+    if (episodeList.length <= CHUNK_SIZE) return episodeList;
+    const start = selectedRange * CHUNK_SIZE;
+    return episodeList.slice(start, start + CHUNK_SIZE);
+  }, [episodeList, selectedRange]);
+
   // ─── Franchise titles (relations for badge count) ───
   const franchiseCount = relations.filter((r: any) => {
     const fmt = r.node?.format || r.node?.type || '';
     return ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'].includes(fmt?.toUpperCase());
-  }).length + 1; // +1 for current title
+  }).length + 1;
 
   // ─── Watch order steps ───
   const watchOrderSteps = useMemo(() => {
@@ -104,7 +110,7 @@ export default function AnimeEpisodeGuide({
           </div>
           <div>
             <h2 className="text-lg md:text-xl font-black uppercase tracking-tight text-white flex items-center gap-2.5 flex-wrap">
-              <span>Franchise Guide & Episodes</span>
+              <span>Franchise Guide &amp; Episodes</span>
               {franchiseCount > 1 && (
                 <span className="text-[10px] bg-[#ff4dd2]/20 text-[#ff4dd2] px-2.5 py-0.5 rounded-full font-bold border border-[#ff4dd2]/30">
                   {franchiseCount} Franchise Titles
@@ -129,6 +135,7 @@ export default function AnimeEpisodeGuide({
                 : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
             }`}
             title="List View"
+            aria-label="List view"
           >
             <List size={15} />
           </button>
@@ -140,6 +147,7 @@ export default function AnimeEpisodeGuide({
                 : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
             }`}
             title="Grid View"
+            aria-label="Grid view"
           >
             <LayoutGrid size={15} />
           </button>
@@ -170,7 +178,7 @@ export default function AnimeEpisodeGuide({
             }`}
           >
             <Layers size={13} />
-            <span>Release & Watch Order ({watchOrderSteps.length})</span>
+            <span>Release &amp; Watch Order ({watchOrderSteps.length})</span>
           </button>
         )}
       </div>
@@ -181,17 +189,57 @@ export default function AnimeEpisodeGuide({
 
       {activeTab === 'episodes' ? (
         <>
+          {/* Episode Range Tabs (for > 50 episodes) */}
+          {totalChunks > 1 && (
+            <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1.5 scrollbar-hide">
+              <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider shrink-0 mr-1 hidden sm:inline">
+                Episodes:
+              </span>
+              {Array.from({ length: totalChunks }, (_, idx) => {
+                const start = idx * CHUNK_SIZE + 1;
+                const end = Math.min((idx + 1) * CHUNK_SIZE, episodeList.length);
+                const isSelected = selectedRange === idx;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSelectedRange(idx)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#ff4dd2] text-black shadow-md shadow-[#ff4dd2]/25 font-black'
+                        : 'bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10'
+                    }`}
+                  >
+                    {start} - {end}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* ── LIST VIEW ── */}
           {viewMode === 'list' ? (
             <div className="flex flex-col gap-3">
-              {episodeList.map((ep: any, index: number) => {
-                const epNum = ep.mal_id || index + 1;
+              {displayedEpisodes.map((ep: any, index: number) => {
+                const epNum = ep.mal_id || selectedRange * CHUNK_SIZE + index + 1;
                 const tmdbEp = tmdbEpisodes.find((t) => t.episodeNumber === epNum);
                 const epTitle = tmdbEp?.name || ep.title || `Episode ${epNum}`;
                 const epOverview = tmdbEp?.overview || ep.synopsis || null;
-                const epAirDate = tmdbEp?.airDate || (ep.aired ? new Date(ep.aired).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : null);
+                const epAirDate =
+                  tmdbEp?.airDate ||
+                  (ep.aired
+                    ? new Date(ep.aired).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : null);
                 const stillImage = tmdbEp?.stillUrl || ep.images?.jpg?.image_url || null;
-                const runtime = tmdbEp?.runtime ? `${tmdbEp.runtime}m` : (ep.duration ? `${ep.duration}m` : null);
+                const runtime = tmdbEp?.runtime
+                  ? `${tmdbEp.runtime}m`
+                  : ep.duration
+                  ? `${ep.duration}m`
+                  : null;
                 const epScore = ep.score ? String(ep.score) : null;
                 const watched = watchedEps[epNum] || false;
 
@@ -213,6 +261,9 @@ export default function AnimeEpisodeGuide({
                         src={stillImage || posterFallback}
                         alt={epTitle}
                         loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = posterFallback;
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -287,8 +338,8 @@ export default function AnimeEpisodeGuide({
           ) : (
             /* ── GRID VIEW ── */
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {episodeList.map((ep: any, index: number) => {
-                const epNum = ep.mal_id || index + 1;
+              {displayedEpisodes.map((ep: any, index: number) => {
+                const epNum = ep.mal_id || selectedRange * CHUNK_SIZE + index + 1;
                 const tmdbEp = tmdbEpisodes.find((t) => t.episodeNumber === epNum);
                 const epTitle = tmdbEp?.name || ep.title || `Episode ${epNum}`;
                 const stillImage = tmdbEp?.stillUrl || ep.images?.jpg?.image_url || null;
@@ -311,6 +362,9 @@ export default function AnimeEpisodeGuide({
                           src={stillImage || posterFallback}
                           alt={epTitle}
                           loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = posterFallback;
+                          }}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />

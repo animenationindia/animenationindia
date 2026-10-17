@@ -11,26 +11,19 @@ export const metadata: Metadata = {
   description: 'Track upcoming anime episodes and simulcast release times.',
 };
 
-export default async function SchedulePage() {
-  const now = new Date();
-  const currentDay = now.getDay();
-  const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;
-  
-  const startDate = new Date(now);
-  startDate.setDate(now.getDate() - distanceToMonday);
-  startDate.setHours(0, 0, 0, 0);
-  
-  const start = Math.floor(startDate.getTime() / 1000);
-  const end = start + 7 * 24 * 60 * 60 - 1;
+export const revalidate = 1800; // 30-minute edge CDN cache to avoid CPU limits
 
-  
+export default async function SchedulePage() {
+  const nowSec = Math.floor(Date.now() / 1000);
+  // Fetch past 3 days (Yesterday, etc.) through next 8 days (Today + full week ahead)
+  const start = nowSec - (3 * 86400);
+  const end = nowSec + (8 * 86400);
+
   const rawSchedule = await getScheduleAniList(start, end);
-  
-  // Clean data structure
   const schedule: AiringSchedule[] = rawSchedule || [];
 
   return (
-    <main className="bg-[#050716] min-h-screen pt-28 lg:pt-32 pb-24 relative overflow-hidden">
+    <main className="bg-[#050716] min-h-screen pt-28 sm:pt-32 lg:pt-36 pb-24 relative overflow-hidden">
       {/* Background glow */}
       <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#ff4dd2]/[0.03] blur-[160px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[5%] left-[-5%] w-[45%] h-[45%] bg-[#ff6400]/[0.03] blur-[150px] rounded-full pointer-events-none" />
