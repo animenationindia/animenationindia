@@ -202,7 +202,7 @@ function BrowseAllAnimeContent() {
 
       // ── PRIMARY: AniList GraphQL via Proxy or Direct ──
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
         let res = await fetch(`${backendUrl}/api/anilist/proxy`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -237,7 +237,7 @@ function BrowseAllAnimeContent() {
       if (mediaItems.length === 0) {
         try {
           usedMAL = true;
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
           const offset = (pageNum - 1) * 24;
 
           let malEndpoint = '';
@@ -292,7 +292,7 @@ function BrowseAllAnimeContent() {
         try {
           const sectionKey =
             currentFilters.format === 'TV' ? 'top_tv' : currentFilters.format === 'MOVIE' ? 'top_movies' : 'popular';
-          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
           const curRes = await fetch(`${backendUrl}/api/curated/${sectionKey}`);
           if (curRes.ok) {
             const curData = await curRes.json();

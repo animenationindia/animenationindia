@@ -15,7 +15,7 @@ const ADMIN_EMAILS = [
   'animenationindia.support@gmail.com',
 ];
 
-const SERVER_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5050';
+const SERVER_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || 'ani2026admin';
 
 export async function verifyIsAdmin(passcodeOverride?: string): Promise<{ isAdmin: boolean; user?: any }> {

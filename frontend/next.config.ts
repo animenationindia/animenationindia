@@ -114,7 +114,25 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/home',
+        source: '/:path(settings|profile|my-list|watchlist|admin)/:subpath*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/:path(settings|profile|my-list|watchlist|admin)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
+      {
+        source: '/:path(home|popular|upcoming|trending|ongoing|new|newest|schedule|browse|characters|character|genres|genre|top-movies|top-tv|trailers|news|read|manga|dubbed|simulcast|types)',
         headers: [
           {
             key: 'Cache-Control',
@@ -123,7 +141,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/:path(home|series|watch|popular|upcoming|trending|ongoing|new|newest|schedule|browse|characters|character|genres|genre|top-movies|top-tv|trailers|news|read)/:subpath*',
+        source: '/:path(home|series|watch|popular|upcoming|trending|ongoing|new|newest|schedule|browse|characters|character|genres|genre|top-movies|top-tv|trailers|news|read|manga|dubbed|simulcast|types)/:subpath*',
         headers: [
           {
             key: 'Cache-Control',

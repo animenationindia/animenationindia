@@ -28,7 +28,7 @@ export default function SongPlaylistModal({ isOpen, onClose, song }: SongPlaylis
       return;
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
     setLoading(true);
 
     fetch(`${backendUrl}/api/song-playlists/my-playlists`, {
@@ -47,7 +47,7 @@ export default function SongPlaylistModal({ isOpen, onClose, song }: SongPlaylis
   if (!isOpen || !song) return null;
 
   const token = typeof window !== 'undefined' ? (localStorage.getItem('token') || localStorage.getItem('user_token')) : null;
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
