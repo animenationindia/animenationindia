@@ -1,53 +1,39 @@
-/* eslint-disable @next/next/no-img-element */
-export const revalidate = 1800; // 30 minute cache
-import { Suspense } from 'react';
-import Link from 'next/link';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export const revalidate = 1800; // 30 minute edge cache
+import nextDynamic from 'next/dynamic';
 import Hero from '../../components/Hero';
-import SectionSlider from '../../components/SectionSlider'; 
-import AnimeCard from '../../components/AnimeCard';
+import SectionSlider from '../../components/SectionSlider';
 import NewEpisodesList from '../../components/NewEpisodesList';
 import HomeTrendingBanner from '../../components/HomeTrendingBanner';
 import HomeTopLists from '../../components/HomeTopLists';
 import TrailerSlider from '../../components/TrailerSlider';
 import HomeNewsSection from '../../components/HomeNewsSection';
-import HomeAnnouncementBanner from '../../components/HomeAnnouncementBanner';
-import SeasonalRomanceBanner from '../../components/SeasonalRomanceBanner';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { SliderSkeleton } from '../../components/SkeletonLoaders';
-import { sanitizeDescription } from '../../lib/sanitize';
-import { toEnglishTitle } from '../../lib/titleCleaner';
-import { 
-  getTodayReleasesAniList, 
-  getTopAnimeAniList,     
-  getUpcomingAnimeAniList,   
-  getPopularDubbedAniList,   
+import {
+  getTodayReleasesAniList,
+  getTopAnimeAniList,
+  getUpcomingAnimeAniList,
   getTopAiringAnimeAniList,
   getTrendingAnimeAniList,
-  getTopCharactersAniList,
-  getTopStaffAniList,
   getTopMoviesAniList,
   getTopTVSeriesAniList,
   getYearAwardsAniList,
   getNotForKidsAnimeAniList,
-  getKickstartJourneyAnimeAniList,
-  getShounenZoneAnimeAniList,
-  getSportsZoneAnimeAniList,
-  getSimilarToSAOAnimeAniList,
-  getFantasyZoneAnimeAniList,
-  getSupernaturalWorldAnimeAniList,
-  getSeasonalRomanceAnimeAniList,
-  getSciFiAnimeAniList,
-  getEvergreenAnimeAniList,
-  getSimilarToMHAAnimeAniList,
-  getHiddenGemsAnimeAniList,
-  fetchAniList,
-  fetchInBatches,
   type AiringSchedule
 } from '../../lib/api';
 import { getNews, getNewsByCategory } from '../../lib/getNews';
-import { getTMDBAnimeTrailers } from '../../lib/tmdb-api';
 import { getLiveAnimeTrailers } from '../../lib/trailers';
 import type { Metadata } from 'next';
+
+// Dynamic import for Below-the-fold sections to prevent Cloudflare Worker CPU & 50-subrequest limit exhaustion
+const ThemeZonesClient = nextDynamic(() => import('../../components/ThemeZonesClient'), {
+  loading: () => <SliderSkeleton title="Loading Theme Zones..." />,
+});
+
+const TopCharactersClient = nextDynamic(() => import('../../components/TopCharactersClient'), {
+  loading: () => <SliderSkeleton title="Loading Top Characters..." />,
+});
 
 export const metadata: Metadata = {
   title: 'Home - Anime Nation India',
@@ -66,120 +52,7 @@ const dedupe = (arr: any[]) => {
   });
 };
 
-// ─── Below-the-fold Async Streamed Sections ─────────────────────────────────
-
-async function ThemeZonesSection({
-  currentYear,
-  currentSeason,
-  latestAnnouncement,
-}: {
-  currentYear: number;
-  currentSeason: string;
-  latestAnnouncement: any;
-}) {
-  /* 
-    [DEV TEST INSTRUCTION]: To simulate an ErrorBoundary failure in dev mode, 
-    uncomment the line below:
-    // throw new Error("Simulated ThemeZonesSection Stream Error!");
-  */
-
-  const tasks = [
-    () => getKickstartJourneyAnimeAniList(),
-    () => getShounenZoneAnimeAniList(),
-    () => getPopularDubbedAniList(),
-    () => getSportsZoneAnimeAniList(),
-    () => getSimilarToSAOAnimeAniList(),
-    () => getFantasyZoneAnimeAniList(),
-    () => getSupernaturalWorldAnimeAniList(),
-    () => getSeasonalRomanceAnimeAniList(currentYear, currentSeason),
-    () => getSciFiAnimeAniList(),
-    () => getEvergreenAnimeAniList(),
-    () => getSimilarToMHAAnimeAniList(),
-    () => getHiddenGemsAnimeAniList(),
-  ];
-
-  const results = await Promise.all(tasks.map((fn) => fn().catch(() => [])));
-
-  const safeKickstartAnime = dedupe(results[0] || []);
-  const safeShounenAnime = dedupe(results[1] || []).slice(0, 20);
-  const safePopularDubbed = dedupe(results[2] || []).slice(0, 20);
-  const safeSportsAnime = dedupe(results[3] || []).slice(0, 20);
-  const safeSaoSimilarAnime = dedupe(results[4] || []).slice(0, 20);
-  const safeFantasyAnime = dedupe(results[5] || []).slice(0, 20);
-  const safeSupernaturalAnime = dedupe(results[6] || []).slice(0, 20);
-  const safeRomanceAnime = dedupe(results[7] || []);
-  const safeSciFiAnime = dedupe(results[8] || []).slice(0, 20);
-  const safeEvergreenAnime = dedupe(results[9] || []).slice(0, 25);
-  const safeMhaSimilarAnime = dedupe(results[10] || []).slice(0, 20);
-  const safeHiddenGemsAnime = dedupe(results[11] || []).slice(0, 20);
-
-  return (
-    <div className="flex flex-col gap-14">
-      <SectionSlider title="Kickstart Your Anime Journey" data={safeKickstartAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="Shounen Zone" data={safeShounenAnime as any} type="anime" viewAllLink="" />
-
-      {/* Announcement Banner placed under Shounen Zone */}
-      {latestAnnouncement && <HomeAnnouncementBanner announcement={latestAnnouncement} />}
-
-      {/* Popular Dubbed Anime with View All Link */}
-      <SectionSlider title="Popular Dubbed Anime" data={safePopularDubbed as any} type="anime" viewAllLink="/popular" />
-
-      <SectionSlider title="Sports & Competition" data={safeSportsAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="If You Liked Sword Art Online" data={safeSaoSimilarAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="Fantasy Worlds" data={safeFantasyAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="Supernatural & Mystery" data={safeSupernaturalAnime as any} type="anime" viewAllLink="" />
-
-      {/* 💖 Auto-Updating Featured Romance Spotlight Banner */}
-      {safeRomanceAnime.length > 0 && <SeasonalRomanceBanner animeList={safeRomanceAnime} />}
-
-      <SectionSlider title="Sci-Fi & Cyberpunk" data={safeSciFiAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="Evergreen Classics" data={safeEvergreenAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="If You Liked My Hero Academia" data={safeMhaSimilarAnime as any} type="anime" viewAllLink="" />
-      <SectionSlider title="Hidden Gems You Might Have Missed" data={safeHiddenGemsAnime as any} type="anime" viewAllLink="" />
-    </div>
-  );
-}
-
-async function TopCharactersSection() {
-  const results = await fetchInBatches(
-    [() => getTopCharactersAniList(1), () => getTopStaffAniList(1)],
-    2,
-    200
-  );
-
-  const safeTopCharacters = dedupe(results[0] || []);
-  const safeTopPeople = dedupe(results[1] || []);
-
-  if (safeTopCharacters.length === 0 && safeTopPeople.length === 0) return null;
-
-  return (
-    <div className="flex flex-col gap-14">
-      {safeTopCharacters.length > 0 && (
-        <SectionSlider title="Most Popular Anime Characters" data={safeTopCharacters as any} type="person" viewAllLink="/staff" />
-      )}
-      {safeTopPeople.length > 0 && (
-        <SectionSlider title="Top Anime Voice Actors & Creators" data={safeTopPeople as any} type="person" viewAllLink="/staff" />
-      )}
-    </div>
-  );
-}
-
-async function NewsSection({ news }: { news: any[] }) {
-  return (
-    <div className="flex flex-col gap-14">
-      <HomeNewsSection news={news} />
-    </div>
-  );
-}
-
-// ─── Main Home Server Component ──────────────────────────────────────────────
 export default async function Home() {
-  const startTime = Date.now();
-
-  const allNews = await getNews();
-  const announcements = getNewsByCategory(allNews, 'Announcements');
-  const latestAnnouncement = announcements[0] || allNews[0] || null;
-
   const currentYear = new Date().getFullYear();
   const getCurrentSeason = () => {
     const month = new Date().getMonth();
@@ -190,52 +63,47 @@ export default async function Home() {
   };
   const currentSeason = getCurrentSeason();
 
-  // Trailer query
-  const trailerQuery = `
-    query {
-      Page(page: 1, perPage: 25) {
-        media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
-          id
-          title { romaji english }
-          trailer { id site thumbnail }
-        }
-      }
-    }
-  `;
+  // Safely fetch above-the-fold data with individual error handling
+  const [
+    allNewsResult,
+    todayDataResult,
+    heroAnimeListResult,
+    trendingIndiaResult,
+    upcomingAnimeResult,
+    notForKidsAnimeResult,
+    topAnimeResult,
+    topMoviesResult,
+    topTVSeriesResult,
+    yearAwardsResult,
+    liveTrailersResult
+  ] = await Promise.all([
+    getNews().catch(() => []),
+    getTodayReleasesAniList(1).catch(() => null),
+    getTopAiringAnimeAniList().catch(() => []),
+    getTrendingAnimeAniList(12).catch(() => []),
+    getUpcomingAnimeAniList().catch(() => []),
+    getNotForKidsAnimeAniList().catch(() => []),
+    getTopAnimeAniList().catch(() => []),
+    getTopMoviesAniList().catch(() => []),
+    getTopTVSeriesAniList().catch(() => []),
+    getYearAwardsAniList(currentYear).catch(() => []),
+    getLiveAnimeTrailers({ filter: 'all', limit: 16 }).catch(() => [])
+  ]);
 
-  // Above-the-fold Tasks (Batch 1 & 2 for instant TTFB)
-  const aboveTheFoldTasks = [
-    () => getTodayReleasesAniList(1),
-    () => getTopAiringAnimeAniList(),
-    () => getTrendingAnimeAniList(12),
-    () => getUpcomingAnimeAniList(),
-    () => getNotForKidsAnimeAniList(),
-    () => getTopAnimeAniList(),
-    () => getTopMoviesAniList(),
-    () => getTopTVSeriesAniList(),
-    () => getYearAwardsAniList(currentYear),
-    () => getLiveAnimeTrailers({ filter: 'all', limit: 16 }),
-  ];
+  const allNews = Array.isArray(allNewsResult) ? allNewsResult : [];
+  const announcements = getNewsByCategory(allNews, 'Announcements');
+  const latestAnnouncement = announcements[0] || allNews[0] || null;
 
-  const results = await Promise.all(aboveTheFoldTasks.map((fn) => fn().catch(() => null)));
-
-  const todayData = results[0];
-  const heroAnimeList = results[1] || [];
-  const trendingIndia = results[2] || [];
-  const upcomingAnime = results[3] || [];
-  const notForKidsAnime = results[4] || [];
-  const topAnime = results[5] || [];
-  const topMovies = results[6] || [];
-  const topTVSeries = results[7] || [];
-  const yearAwards = results[8] || [];
-  const liveTrailers = results[9] || [];
-
-  const duration = Date.now() - startTime;
-  const succeededCount = results.filter(Boolean).length;
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Home Server Fetch] Initial Above-the-fold loaded in ${duration}ms | Succeeded: ${succeededCount}/${results.length} calls | Rate limit safe!`);
-  }
+  const todayData = todayDataResult;
+  const heroAnimeList = Array.isArray(heroAnimeListResult) ? heroAnimeListResult : [];
+  const trendingIndia = Array.isArray(trendingIndiaResult) ? trendingIndiaResult : [];
+  const upcomingAnime = Array.isArray(upcomingAnimeResult) ? upcomingAnimeResult : [];
+  const notForKidsAnime = Array.isArray(notForKidsAnimeResult) ? notForKidsAnimeResult : [];
+  const topAnime = Array.isArray(topAnimeResult) ? topAnimeResult : [];
+  const topMovies = Array.isArray(topMoviesResult) ? topMoviesResult : [];
+  const topTVSeries = Array.isArray(topTVSeriesResult) ? topTVSeriesResult : [];
+  const yearAwards = Array.isArray(yearAwardsResult) ? yearAwardsResult : [];
+  const liveTrailers = Array.isArray(liveTrailersResult) ? liveTrailersResult : [];
 
   const safeHeroAnimeList = dedupe(heroAnimeList);
   const safeTopAnime = dedupe(topAnime);
@@ -246,9 +114,8 @@ export default async function Home() {
   const safeYearAwards = dedupe(yearAwards);
   const safeNotForKidsAnime = dedupe(notForKidsAnime);
 
-  // Live Auto-Updating Trailers with deduplication
-  let trailersData = dedupe(Array.isArray(liveTrailers) ? liveTrailers : []);
-
+  // Live Auto-Updating Trailers with fallback
+  let trailersData = dedupe(liveTrailers);
   if (trailersData.length === 0 && safeHeroAnimeList.length > 0) {
     const listWithTrailers = safeHeroAnimeList
       .filter((a: any) => a.trailer && a.trailer.id)
@@ -262,10 +129,7 @@ export default async function Home() {
     }
   }
 
-  if (trailersData.length === 0) {
-    trailersData = await getLiveAnimeTrailers({ filter: 'all', limit: 16 });
-  }
-
+  // Today releases calculation with fallback
   let todayReleases = dedupe(
     (todayData?.airingSchedules || []).map((schedule: AiringSchedule) => ({
       ...schedule.media,
@@ -289,53 +153,67 @@ export default async function Home() {
       <main className="container mx-auto px-4 lg:px-12 w-full max-w-[1600px] mt-12">
         <div className="flex flex-col gap-14">
           {/* Official Anime Trailers */}
-          <TrailerSlider trailers={trailersData} />
+          {trailersData.length > 0 && <TrailerSlider trailers={trailersData} />}
 
           {/* 1. Trending Anime in India */}
-          <SectionSlider title="Trending Anime in India" data={safeTrendingIndia as any} type="anime" viewAllLink="/trending" />
+          {safeTrendingIndia.length > 0 && (
+            <SectionSlider title="Trending Anime in India" data={safeTrendingIndia as any} type="anime" viewAllLink="/trending" />
+          )}
 
           {/* 2. Just Updated (Slider) */}
-          <SectionSlider title="Just Updated" data={todayReleases as any} type="anime" viewAllLink="/newest" />
+          {todayReleases.length > 0 && (
+            <SectionSlider title="Just Updated" data={todayReleases as any} type="anime" viewAllLink="/newest" />
+          )}
 
           {/* 3. New Episodes (Crunchyroll Style List) */}
-          <NewEpisodesList episodes={todayReleases as any} />
+          {todayReleases.length > 0 && <NewEpisodesList episodes={todayReleases as any} />}
 
           {/* 4. Upcoming Seasonal Anime */}
-          <SectionSlider title="Upcoming Seasonal Anime" data={safeUpcomingAnime as any} type="anime" viewAllLink="/upcoming" />
+          {safeUpcomingAnime.length > 0 && (
+            <SectionSlider title="Upcoming Seasonal Anime" data={safeUpcomingAnime as any} type="anime" viewAllLink="/upcoming" />
+          )}
 
           {/* Anime Not For Kids */}
-          <SectionSlider title="Anime Not For Kids" data={safeNotForKidsAnime as any} type="anime" viewAllLink="" />
+          {safeNotForKidsAnime.length > 0 && (
+            <SectionSlider title="Anime Not For Kids" data={safeNotForKidsAnime as any} type="anime" viewAllLink="" />
+          )}
 
           {/* 5. Top Picks for You */}
-          <SectionSlider title="Top Picks for You" data={safeHeroAnimeList as any} type="anime" viewAllLink="/trending" />
+          {safeHeroAnimeList.length > 0 && (
+            <SectionSlider title="Top Picks for You" data={safeHeroAnimeList as any} type="anime" viewAllLink="/trending" />
+          )}
 
           {/* Dynamic Trending/Seasonal Banner */}
           {safeHeroAnimeList.length > 0 && <HomeTrendingBanner anime={safeHeroAnimeList[0]} />}
 
           {/* 6. All-Time Popular Anime */}
-          <SectionSlider title="All-Time Popular Anime" data={safeTopAnime as any} type="anime" viewAllLink="/popular" />
+          {safeTopAnime.length > 0 && (
+            <SectionSlider title="All-Time Popular Anime" data={safeTopAnime as any} type="anime" viewAllLink="/popular" />
+          )}
 
           {/* Top Movies, TV Series, and Year Awards */}
           <HomeTopLists topMovies={safeTopMovies} topTV={safeTopTVSeries} awards={safeYearAwards} year={currentYear} />
 
-          {/* ── Below-the-fold Async Streamed Components Wrapped in ErrorBoundary ── */}
+          {/* ── Below-the-fold Async Streamed Sections with Client Fetching to Protect Edge Runtime Limits ── */}
           <ErrorBoundary sectionName="Theme Zones">
-            <Suspense fallback={<SliderSkeleton title="Theme Zones Loading..." />}>
-              <ThemeZonesSection currentYear={currentYear} currentSeason={currentSeason} latestAnnouncement={latestAnnouncement} />
-            </Suspense>
+            <ThemeZonesClient
+              currentYear={currentYear}
+              currentSeason={currentSeason}
+              latestAnnouncement={latestAnnouncement}
+            />
           </ErrorBoundary>
 
           <ErrorBoundary sectionName="Top Characters & Creators">
-            <Suspense fallback={<SliderSkeleton title="Top Characters Loading..." />}>
-              <TopCharactersSection />
-            </Suspense>
+            <TopCharactersClient />
           </ErrorBoundary>
 
-          <ErrorBoundary sectionName="News & Articles">
-            <Suspense fallback={<SliderSkeleton title="News & Articles..." />}>
-              <NewsSection news={allNews} />
-            </Suspense>
-          </ErrorBoundary>
+          {allNews.length > 0 && (
+            <ErrorBoundary sectionName="News & Articles">
+              <div className="flex flex-col gap-14">
+                <HomeNewsSection news={allNews} />
+              </div>
+            </ErrorBoundary>
+          )}
         </div>
       </main>
     </div>

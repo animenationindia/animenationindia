@@ -114,7 +114,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/:path(series|watch|popular|upcoming|trending|ongoing|new|newest|schedule|browse|characters|character|genres|genre|top-movies|top-tv|trailers|news|read)/:subpath*',
+        source: '/home',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=1800, stale-while-revalidate=86400',
+          },
+        ],
+      },
+      {
+        source: '/:path(home|series|watch|popular|upcoming|trending|ongoing|new|newest|schedule|browse|characters|character|genres|genre|top-movies|top-tv|trailers|news|read)/:subpath*',
         headers: [
           {
             key: 'Cache-Control',

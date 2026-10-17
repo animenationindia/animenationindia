@@ -45,11 +45,6 @@ export async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<
   const primary = await tryFetch(BACKEND_BASE_URL);
   if (primary && primary.length > 0) return primary;
 
-  // Fallback to localhost:5000 if BACKEND_BASE_URL is not localhost
-  if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
-    const localFallback = await tryFetch('http://localhost:5050');
-    if (localFallback && localFallback.length > 0) return localFallback;
-  }
 
   return [];
 }
@@ -539,9 +534,6 @@ export async function fetchBFF<T>(endpoint: string, revalidate = 1800, timeoutMs
   };
 
   let data = await tryFetch(BACKEND_BASE_URL);
-  if (!data && !BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
-    data = await tryFetch('http://localhost:5000');
-  }
 
   if (data) {
     apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
@@ -925,10 +917,6 @@ export async function getTopAiringAnimeAniList(): Promise<AniListMedia[]> {
   const primary = await tryFetch(BACKEND_BASE_URL);
   if (primary && primary.length > 0) return primary;
 
-  if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
-    const localFallback = await tryFetch('http://localhost:5000');
-    if (localFallback && localFallback.length > 0) return localFallback;
-  }
 
   const query = `
     query {
@@ -3056,10 +3044,6 @@ export async function getSeasonalRomanceAnimeAniList(year?: number, season?: str
   const primary = await tryFetch(BACKEND_BASE_URL);
   if (primary && primary.length > 0) return primary;
 
-  if (!BACKEND_BASE_URL.includes('localhost') && !BACKEND_BASE_URL.includes('127.0.0.1')) {
-    const localFallback = await tryFetch('http://localhost:5000');
-    if (localFallback && localFallback.length > 0) return localFallback;
-  }
 
   return [
     {
