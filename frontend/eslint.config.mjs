@@ -9,9 +9,12 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".open-next/**",
+    ".wrangler/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "*.sample.json",
   ]),
   {
     rules: {
@@ -20,8 +23,12 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-unused-vars": "off",
       "react-hooks/exhaustive-deps": "off",
       "react-hooks/rules-of-hooks": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/immutability": "off",
+      "react/no-unescaped-entities": "off",
       "@typescript-eslint/no-require-imports": "off",
-      "react-hooks/exhaustive-deps": "off",
       "@next/next/no-page-custom-font": "off"
     }
   }

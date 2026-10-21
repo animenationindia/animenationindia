@@ -499,7 +499,7 @@ export default function MyListPage() {
 
   // Compute status counts for the current folder
   const statusCounts = useMemo(() => {
-    let counts = {
+    const counts = {
       all: baseFolderItems.length,
       watching: 0,
       plan_to_watch: 0,

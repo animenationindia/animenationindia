@@ -124,6 +124,13 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
     }
   }, [playbackSpeed, episodeNumber]);
 
+  const skipIntro = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 40;
+      setCurrentTime(40);
+    }
+  };
+
   // Auto Skip Intro Logic
   useEffect(() => {
     // Intro duration: 10s to 40s
@@ -226,13 +233,6 @@ export default function WatchVideoPlayer({ title, episodeNumber, onEnded, lights
     setIsPlaying(false);
     if (autoNext) {
       onEnded();
-    }
-  };
-
-  const skipIntro = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 40;
-      setCurrentTime(40);
     }
   };
 

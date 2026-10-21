@@ -241,7 +241,7 @@ export async function toggleUserReaction(
 
     if (existing.length > 0) {
       const current = existing[0];
-      let updatePayload: any = { updatedAt: new Date(), mediaType: normalizedMediaType };
+      const updatePayload: any = { updatedAt: new Date(), mediaType: normalizedMediaType };
 
       if (reactionType === 'watched') {
         updatePayload.isWatched = !current.isWatched;

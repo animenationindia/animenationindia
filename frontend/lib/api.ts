@@ -533,7 +533,7 @@ export async function fetchBFF<T>(endpoint: string, revalidate = 1800, timeoutMs
     return null;
   };
 
-  let data = await tryFetch(BACKEND_BASE_URL);
+  const data = await tryFetch(BACKEND_BASE_URL);
 
   if (data) {
     apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
