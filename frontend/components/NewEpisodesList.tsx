@@ -9,9 +9,9 @@ interface EpisodeData {
   id: number;
   idMal: number | null;
   title: {
-    english: string | null;
-    romaji: string;
-  };
+    english?: string | null;
+    romaji?: string | null;
+  } | string | null;
   coverImage?: {
     large?: string;
   };
@@ -60,8 +60,23 @@ export default function NewEpisodesList({ episodes }: { episodes: EpisodeData[] 
 
       {/* Grid of List Items */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-        {visibleEpisodes.map((ep, idx) => {
-          const title = ep?.title?.english || ep?.title?.romaji || 'New Episode';
+        {visibleEpisodes.map((ep: any, idx) => {
+          let rawTitle = '';
+          if (typeof ep?.title === 'string' && ep.title.trim()) {
+            rawTitle = ep.title.trim();
+          } else if (ep?.title && typeof ep.title === 'object') {
+            if (typeof ep.title.english === 'string' && ep.title.english.trim()) {
+              rawTitle = ep.title.english.trim();
+            } else if (typeof ep.title.romaji === 'string' && ep.title.romaji.trim()) {
+              rawTitle = ep.title.romaji.trim();
+            } else if (typeof ep.title.userPreferred === 'string' && ep.title.userPreferred.trim()) {
+              rawTitle = ep.title.userPreferred.trim();
+            }
+          }
+          if (!rawTitle && typeof ep?.name === 'string') {
+            rawTitle = ep.name.trim();
+          }
+          const title = rawTitle || 'New Episode';
           const isDub = title.toLowerCase().includes('dub');
           const formattedTitle = isDub ? title : `(Sub) ${title}`;
           const type = ep?.format === 'TV' ? 'Sub | Dub' : 'Subtitled';

@@ -131,19 +131,43 @@ export default async function Home() {
 
   // Today releases calculation with fallback
   let todayReleases = dedupe(
-    (todayData?.airingSchedules || []).map((schedule: AiringSchedule) => ({
-      ...schedule.media,
-      airingEpisode: schedule.episode,
-      airingAt: schedule.airingAt,
-    }))
+    (todayData?.airingSchedules || []).map((schedule: AiringSchedule) => {
+      const m = schedule.media || ({} as any);
+      const titleStr = typeof m.title === 'string'
+        ? m.title
+        : (m.title?.english || m.title?.romaji || 'New Episode');
+      return {
+        ...m,
+        title: typeof m.title === 'object' && m.title !== null
+          ? {
+              english: typeof m.title.english === 'string' ? m.title.english : titleStr,
+              romaji: typeof m.title.romaji === 'string' ? m.title.romaji : titleStr
+            }
+          : { english: titleStr, romaji: titleStr },
+        airingEpisode: schedule.episode,
+        airingAt: schedule.airingAt,
+      };
+    })
   );
 
   if (todayReleases.length === 0 && safeHeroAnimeList.length > 0) {
-    todayReleases = safeHeroAnimeList.map((anime: any, idx: number) => ({
-      ...anime,
-      airingEpisode: anime.episodes || (idx + 1),
-      airingAt: Math.floor(Date.now() / 1000) - idx * 3600,
-    }));
+    const baseNow = Math.floor(Date.now() / 1000);
+    todayReleases = safeHeroAnimeList.map((anime: any, idx: number) => {
+      const titleStr = typeof anime.title === 'string'
+        ? anime.title
+        : (anime.title?.english || anime.title?.romaji || 'New Episode');
+      return {
+        ...anime,
+        title: typeof anime.title === 'object' && anime.title !== null
+          ? {
+              english: typeof anime.title.english === 'string' ? anime.title.english : titleStr,
+              romaji: typeof anime.title.romaji === 'string' ? anime.title.romaji : titleStr
+            }
+          : { english: titleStr, romaji: titleStr },
+        airingEpisode: anime.episodes || (idx + 1),
+        airingAt: baseNow - idx * 3600,
+      };
+    });
   }
 
   return (

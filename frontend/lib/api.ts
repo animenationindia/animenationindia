@@ -677,7 +677,14 @@ export async function getTodayReleasesAniList(page = 1) {
             media: {
               id: item.mal_id,
               idMal: item.mal_id,
-              title: { english: item.title_english || item.title, romaji: item.title },
+              title: {
+                english: typeof item.title === 'string'
+                  ? (item.title_english || item.title)
+                  : (item.title?.english || item.title?.romaji || 'New Episode'),
+                romaji: typeof item.title === 'string'
+                  ? item.title
+                  : (item.title?.romaji || item.title?.english || 'New Episode')
+              },
               coverImage: {
                 extraLarge: item.images?.webp?.large_image_url || item.images?.jpg?.large_image_url,
                 large: item.images?.jpg?.large_image_url

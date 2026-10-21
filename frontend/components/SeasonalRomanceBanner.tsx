@@ -164,15 +164,19 @@ export default function SeasonalRomanceBanner({ animeList }: Props) {
                 {currentAnime.episodes} Episodes
               </span>
             )}
-            {currentAnime.genres && currentAnime.genres.slice(0, 3).map((g) => (
-              <Link
-                key={g}
-                href={`/genre/${encodeURIComponent(g.toLowerCase())}`}
-                className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-[#ff4dd2] text-gray-200 hover:text-black border border-white/15 hover:border-[#ff4dd2] transition-all backdrop-blur-md"
-              >
-                {g}
-              </Link>
-            ))}
+            {currentAnime.genres && currentAnime.genres.slice(0, 3).map((g: any, gIdx: number) => {
+              const genreName = typeof g === 'string' ? g : (g?.name ? String(g.name) : '');
+              if (!genreName) return null;
+              return (
+                <Link
+                  key={`${genreName}-${gIdx}`}
+                  href={`/genre/${encodeURIComponent(genreName.toLowerCase())}`}
+                  className="text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-[#ff4dd2] text-gray-200 hover:text-black border border-white/15 hover:border-[#ff4dd2] transition-all backdrop-blur-md"
+                >
+                  {genreName}
+                </Link>
+              );
+            })}
           </div>
 
           {/* 📝 Storyline Description */}

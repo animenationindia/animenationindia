@@ -273,15 +273,19 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
                       {/* 🏷️ Clickable Genre Pills */}
                       {anime.genres && anime.genres.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1.5 ml-1">
-                          {anime.genres.slice(0, 3).map((g) => (
-                            <Link
-                              key={g}
-                              href={`/genre/${encodeURIComponent(g.toLowerCase())}`}
-                              className="inline-flex items-center text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-[#ff4dd2] text-gray-200 hover:text-black border border-white/15 hover:border-[#ff4dd2] transition-all duration-300 backdrop-blur-md cursor-pointer hover:scale-105"
-                            >
-                              {g}
-                            </Link>
-                          ))}
+                          {anime.genres.slice(0, 3).map((g: any, gIdx: number) => {
+                            const genreName = typeof g === 'string' ? g : (g?.name ? String(g.name) : '');
+                            if (!genreName) return null;
+                            return (
+                              <Link
+                                key={`${genreName}-${gIdx}`}
+                                href={`/genre/${encodeURIComponent(genreName.toLowerCase())}`}
+                                className="inline-flex items-center text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-[#ff4dd2] text-gray-200 hover:text-black border border-white/15 hover:border-[#ff4dd2] transition-all duration-300 backdrop-blur-md cursor-pointer hover:scale-105"
+                              >
+                                {genreName}
+                              </Link>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
