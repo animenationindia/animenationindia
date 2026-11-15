@@ -80,7 +80,7 @@ export async function fetchInBatches<T>(
   return results;
 }
 
-export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 2500) {
+export async function fetchAniList(query: string, variables: any = {}, revalidate = GLOBAL_CACHE_TIME, timeoutMs = 6000) {
   const cacheKey = `anilist:${JSON.stringify(query)}:${JSON.stringify(variables)}`;
 
   // 1. Return from memory cache if fresh

@@ -178,17 +178,17 @@ app.post('/api/anilist/proxy', express.json({ limit: '2mb' }), async (req, res) 
   try {
     const { query, variables } = req.body;
     if (!query) {
-      return res.status(400).json({ error: 'GraphQL query is required' });
+      return res.status(400).json({ errors: [{ message: 'GraphQL query is required' }], data: null });
     }
 
-    const data = await anilistService.fetchAniList(query, variables);
+    const data = await anilistService.fetchAniList(query, variables || {});
     if (data) {
       return res.json(data);
     }
-    return res.status(502).json({ error: 'AniList Proxy upstream failed' });
+    return res.status(502).json({ errors: [{ message: 'AniList Proxy upstream failed or rate limited' }], data: null });
   } catch (err) {
     console.error('AniList Proxy Error:', err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ errors: [{ message: err.message || 'AniList Proxy Error' }], data: null });
   }
 });
 
@@ -707,13 +707,40 @@ app.get('/api/trending', async (req, res) => {
         };
       });
 
-      if (list.length > 0) return res.json({ data: list });
+      if (list.length > 0) {
+        TrendingAnime.deleteMany({}).then(() => TrendingAnime.insertMany(list.map((item, idx) => ({
+          mal_id: item.idMal || item.id,
+          title: item.title?.romaji || item.title?.english,
+          title_english: item.title?.english,
+          images: item.coverImage,
+          genres: item.genres,
+          score: item.averageScore
+        })))).catch(() => {});
+        return res.json({ data: list });
+      }
     }
 
     const anilistList = await anilistService.getTrending(20);
-    return res.json({ data: anilistList });
+    if (anilistList && anilistList.length > 0) {
+      TrendingAnime.deleteMany({}).then(() => TrendingAnime.insertMany(anilistList.map((item, idx) => ({
+        mal_id: item.idMal || item.id,
+        title: item.title?.romaji || item.title?.english,
+        title_english: item.title?.english,
+        images: item.coverImage,
+        genres: item.genres,
+        score: item.averageScore
+      })))).catch(() => {});
+      return res.json({ data: anilistList });
+    }
+    return res.json({ data: [] });
   } catch (error) { 
     console.error('Trending Fetch Error:', error);
+    try {
+      const dbFallback = await TrendingAnime.find({}).sort({ score: -1 }).limit(20).lean();
+      if (dbFallback && dbFallback.length > 0) {
+        return res.json({ data: dbFallback });
+      }
+    } catch {}
     res.status(500).json({ message: "Internal server error" }); 
   }
 });
@@ -807,6 +834,15 @@ app.get('/api/hero', async (req, res) => {
           if (items.length > 0) {
             heroMemoryCache.data = items;
             heroMemoryCache.timestamp = Date.now();
+            HeroAnime.deleteMany({}).then(() => HeroAnime.insertMany(items.map(it => ({
+              mal_id: it.idMal || it.id,
+              title: it.title?.romaji || it.title?.english,
+              title_english: it.title?.english,
+              images: it.coverImage,
+              genres: it.genres,
+              synopsis: it.description,
+              rating: it.format
+            })))).catch(() => {});
             return res.json(items);
           }
         }
@@ -868,7 +904,12 @@ app.get('/api/hero', async (req, res) => {
       console.warn('⚠️ /api/hero MAL Fallback failed:', malErr.message);
     }
 
-    // ─── 3. TERTIARY SOURCE: MongoDB Atlas Curated Collection ───
+    // ─── 3. TERTIARY SOURCE: MongoDB Atlas HeroAnime or Curated Collection ───
+    const fallbackHero = await HeroAnime.find({}).limit(10).lean().catch(() => []);
+    if (fallbackHero && fallbackHero.length > 0) {
+      return res.json(fallbackHero);
+    }
+
     const fallbackCurated = await CuratedAnime.find({ section: 'shounen' }).sort({ order: 1 }).limit(10).lean();
     if (fallbackCurated && fallbackCurated.length > 0) {
       return res.json(fallbackCurated);
@@ -968,15 +1009,43 @@ app.get('/api/curated/:sectionKey', async (req, res) => {
       return res.json({ success: true, count: cached.data.length, data: cached.data });
     }
 
-    const normalizedKey = sectionKey.replace(/_zone$/, '').replace(/_cyberpunk$/, '').replace(/^similar_/, 'similar_');
+    const cleanKey = String(sectionKey).toLowerCase().trim();
+    const aliasMap = {
+      'shounen-zone': 'shounen',
+      'shounen_zone': 'shounen',
+      'sports-zone': 'sports',
+      'sports_zone': 'sports',
+      'fantasy-zone': 'fantasy',
+      'fantasy_zone': 'fantasy',
+      'supernatural-zone': 'supernatural',
+      'supernatural_zone': 'supernatural',
+      'scifi-cyberpunk': 'scifi',
+      'scifi_cyberpunk': 'scifi',
+      'kickstart-journey': 'kickstart',
+      'kickstart_journey': 'kickstart',
+      'not-for-kids': 'not_for_kids',
+      'similar-sao': 'similar_sao',
+      'similar-mha': 'similar_mha',
+      'hidden-gems': 'hidden_gems'
+    };
+
+    const targetSection = aliasMap[cleanKey] || cleanKey
+      .replace(/[-_]zone$/, '')
+      .replace(/[-_]journey$/, '')
+      .replace(/[-_]cyberpunk$/, '')
+      .replace(/-/g, '_');
+
+    const searchKeys = Array.from(new Set([
+      cleanKey,
+      targetSection,
+      cleanKey.replace(/-/g, '_'),
+      cleanKey.replace(/_/g, '-')
+    ]));
 
     const animes = await CuratedAnime.find({
       $or: [
-        { section: sectionKey },
-        { section: normalizedKey },
-        { section: sectionKey.replace('sports_zone', 'sports') },
-        { section: sectionKey.replace('fantasy_zone', 'fantasy') },
-        { section: sectionKey.replace('scifi_cyberpunk', 'scifi') }
+        { section: { $in: searchKeys } },
+        { sectionKey: { $in: searchKeys } }
       ]
     }).sort({ order: 1, _id: 1 }).lean();
 
@@ -1938,24 +2007,6 @@ app.get('/api/browse/filter', async (req, res) => {
 // ==========================================
 // 🚀 UNIFIED BFF PROXY ROUTES 🚀
 // ==========================================
-
-// 1. High-Performance AniList GraphQL Proxy with In-Memory Caching & Retries
-app.post('/api/anilist/proxy', async (req, res) => {
-  try {
-    const { query, variables } = req.body;
-    if (!query) {
-      return res.status(400).json({ errors: [{ message: 'GraphQL query is required' }] });
-    }
-
-    const data = await anilistService.fetchAniList(query, variables || {});
-    return res.json(data);
-  } catch (err) {
-    return res.status(502).json({
-      errors: [{ message: err.message || 'AniList Proxy Error' }],
-      data: null
-    });
-  }
-});
 
 // 11. Anime Episodes List
 app.get('/api/anime/:id/episodes', async (req, res) => {

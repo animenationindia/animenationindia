@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from '@/lib/auth-client';
 import {
   getWatchlist,
@@ -65,10 +66,17 @@ interface WatchlistContextType {
 const WatchlistContext = createContext<WatchlistContextType | undefined>(undefined);
 
 export function WatchlistProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const { data: session } = useSession();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const promptSignIn = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      router.push(`/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+    }
+  }, [router]);
 
   const fetchWatchlist = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -202,9 +210,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         if (!res?.success) {
           // Guest mode disabled: Prompt login
-          if (typeof window !== 'undefined') {
-            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-          }
+          promptSignIn();
           return false;
         }
 
@@ -236,13 +242,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         dispatchWatchlistUpdated();
         return true;
       } catch (e) {
-        if (typeof window !== 'undefined') {
-          window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-        }
+        promptSignIn();
         return false;
       }
     },
-    []
+    [promptSignIn]
   );
 
   const removeFromWatchlist = useCallback(
@@ -252,9 +256,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       try {
         const res = await dbRemoveFromWatchlist(strId, mediaType.toLowerCase());
         if (!res?.success) {
-          if (typeof window !== 'undefined') {
-            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-          }
+          promptSignIn();
           return false;
         }
 
@@ -270,7 +272,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    []
+    [promptSignIn]
   );
 
   const updateStatus = useCallback(
@@ -281,9 +283,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       try {
         const res = await dbUpdateWatchlistStatus(strId, mediaType.toLowerCase(), normStatus.toLowerCase());
         if (!res?.success) {
-          if (typeof window !== 'undefined') {
-            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-          }
+          promptSignIn();
           return false;
         }
 
@@ -302,7 +302,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    []
+    [promptSignIn]
   );
 
   const updateProgress = useCallback(
@@ -313,9 +313,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       try {
         const res = await dbUpdateWatchlistProgress(strId, mediaType.toLowerCase(), validProgress);
         if (!res?.success) {
-          if (typeof window !== 'undefined') {
-            window.location.href = `/signin?callbackUrl=${encodeURIComponent(window.location.pathname)}`;
-          }
+          promptSignIn();
           return false;
         }
 

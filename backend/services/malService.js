@@ -17,11 +17,22 @@ const getClientIds = () => {
 };
 
 let keyIndex = 0;
+const keyCooldowns = new Map();
+
+const markKeyCooldown = (key, durationMs = 30000) => {
+  keyCooldowns.set(key, Date.now() + durationMs);
+};
+
 const getNextClientId = () => {
   const keys = getClientIds();
   if (keys.length === 0) return 'f6cd787eb297c144b5cebd2ef50026c3';
-  const selected = keys[keyIndex % keys.length];
-  keyIndex = (keyIndex + 1) % keys.length;
+
+  const now = Date.now();
+  const availableKeys = keys.filter(k => !keyCooldowns.has(k) || keyCooldowns.get(k) <= now);
+  const pool = availableKeys.length > 0 ? availableKeys : keys;
+
+  const selected = pool[keyIndex % pool.length];
+  keyIndex = (keyIndex + 1) % pool.length;
   return selected;
 };
 
@@ -60,12 +71,17 @@ async function fetchMAL(endpoint, ttlMs = DEFAULT_CACHE_TTL, timeoutMs = 12000) 
         });
 
         if (!res.ok) {
+          if (res.status === 429) {
+            markKeyCooldown(clientId, 30000); // 30s cooldown for rate limited key
+          } else if (res.status === 401 || res.status === 403) {
+            markKeyCooldown(clientId, 300000); // 5m cooldown for auth failure
+          }
           if (cached) return cached.data;
           const errText = await res.text().catch(() => '');
           if (res.status === 429 || res.status >= 500) {
             lastErr = new Error(`MAL API HTTP ${res.status}: ${errText || res.statusText}`);
             if (attempt < maxRetries) {
-              await new Promise(r => setTimeout(r, 500 * attempt));
+              await new Promise(r => setTimeout(r, 400 * attempt));
               continue;
             }
           }

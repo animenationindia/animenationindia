@@ -4,12 +4,33 @@
 
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
 
+const MAL_CLIENT_KEYS = Array.from(new Set([
+  process.env.MAL_CLIENT_ID_1,
+  process.env.MAL_CLIENT_ID_2,
+  process.env.MAL_CLIENT_ID_3,
+  process.env.MAL_CLIENT_ID_4,
+  process.env.MAL_CLIENT_ID_5,
+  process.env.MAL_CLIENT_ID,
+  'f6cd787eb297c144b5cebd2ef50026c3',
+  'eb96eb89798d1ae5ee6023fbcd288b72',
+  '2e7669466c4ae8f1bd7299ac1734186d',
+  'c76618fed5d76aa0de013620458f4c12',
+  'ced0f1b3b09d993444df028104c8138c'
+].filter(Boolean) as string[]));
+
+let frontendKeyIdx = 0;
+const getFrontendMalKey = () => {
+  const selected = MAL_CLIENT_KEYS[frontendKeyIdx % MAL_CLIENT_KEYS.length];
+  frontendKeyIdx = (frontendKeyIdx + 1) % MAL_CLIENT_KEYS.length;
+  return selected;
+};
+
 const malClientMemoryCache = new Map<string, { data: any; timestamp: number }>();
 const inFlightMalPromises = new Map<string, Promise<any>>();
 const MAL_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 /**
- * Generic fetcher for Official MyAnimeList API v2 via Backend BFF Proxy
+ * Generic fetcher for Official MyAnimeList API v2 via Backend BFF Proxy with direct resilient fallback
  */
 export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Promise<any> {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -27,7 +48,7 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
   }
 
   const executeFetch = async () => {
-    // Call Backend BFF Proxy (5-Key Round-Robin & Fast In-Memory Cache)
+    // 1. Primary: Backend BFF Proxy (5-Key Round-Robin & Fast In-Memory Cache)
     try {
       const proxyUrl = `${BACKEND_BASE_URL}/api/mal/proxy?endpoint=${encodeURIComponent(cleanEndpoint)}`;
       const proxyRes = await fetch(proxyUrl, {
@@ -46,7 +67,31 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
       console.warn(`[Official MAL Backend Proxy] Fetch failed for ${cleanEndpoint}:`, err?.message);
     }
 
-    return null;
+    // 2. Resilient Direct Fallback: Direct Official MAL API v2 with 5-Key Pool
+    try {
+      const clientId = getFrontendMalKey();
+      const directUrl = `https://api.myanimelist.net/v2${cleanEndpoint}`;
+      const directRes = await fetch(directUrl, {
+        headers: {
+          'X-MAL-CLIENT-ID': clientId,
+          'User-Agent': 'AnimeNationIndia/2.0 (https://www.animenationindia.online)',
+          'Accept': 'application/json'
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+        next: { revalidate: 600 }
+      });
+      if (directRes.ok) {
+        const data = await directRes.json();
+        if (data && (data.id || data.data || data.title)) {
+          malClientMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+          return data;
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[Official MAL Direct Fallback] Fetch failed for ${cleanEndpoint}:`, err?.message);
+    }
+
+    return cached ? cached.data : null;
   };
 
   const promise = executeFetch().finally(() => {
