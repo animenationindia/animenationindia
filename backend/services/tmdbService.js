@@ -6,6 +6,14 @@ const TMDB_KEY = process.env.TMDB_API_KEY || '2bca404e6766fc6ac7cb29ae38db027f';
 const memoryCache = new Map();
 const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
+const setBoundedCache = (map, key, val, maxSize = 300) => {
+  if (map.size >= maxSize) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, val);
+};
+
 async function getHeroBackdrop(title) {
   if (!title) return null;
   const cleanTitle = title.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').replace(/Season\s+\d+/i, '').trim();
@@ -43,7 +51,7 @@ async function getHeroBackdrop(title) {
       voteAverage: show.vote_average || null
     };
 
-    memoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    setBoundedCache(memoryCache, cacheKey, { data: result, timestamp: Date.now() });
     return result;
   } catch (err) {
     return null;

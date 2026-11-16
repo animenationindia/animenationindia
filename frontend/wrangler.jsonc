@@ -17,7 +17,9 @@
     "SUPPORT_EMAIL": "animenationindia.support@gmail.com",
     "GLOBAL_EMAIL": "animenationindia.global@gmail.com",
     "TMDB_API_KEY": "2bca404e6766fc6ac7cb29ae38db027f",
-    "MAL_CLIENT_ID": "f6cd787eb297c144b5cebd2ef50026c3"
+    "MAL_CLIENT_ID": "f6cd787eb297c144b5cebd2ef50026c3",
+    "GMAIL_WEBHOOK_URL": "https://script.google.com/macros/s/AKfycbxCAKTPZ3cGtI0SumtuFxFj4SvUkDIN9D3Xf7rbHB0HcFqEjTmO3aqJ_hPT7JDgfhyEGQ/exec",
+    "GMAIL_WEBHOOK_SECRET": "ANI_SECURE_AUTH_KEY_2026"
   },
   "observability": {
     "logs": {

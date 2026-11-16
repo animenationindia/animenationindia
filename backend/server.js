@@ -2,6 +2,15 @@ require('dotenv').config();
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 dns.setDefaultResultOrder('ipv4first');
+
+// 🛡️ Global Process Resilience Guards (Prevents Exit 134 / SIGABRT crashes)
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception:', err?.message || err, err?.stack || '');
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[CRITICAL] Unhandled Promise Rejection:', reason);
+});
 const express = require('express');
 const compression = require('compression');
 const mongoose = require('mongoose');
@@ -24,7 +33,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
   }
 });
 
@@ -530,10 +539,14 @@ async function syncScheduleRange(startEpoch, endEpoch) {
 }
 
 async function syncInitialSchedule() {
-  const nowSec = Math.floor(Date.now() / 1000);
-  const start = nowSec - (3 * 86400); // Past 3 days (Yesterday, etc.)
-  const end = nowSec + (8 * 86400);   // Next 8 days (Tomorrow, upcoming)
-  await syncScheduleRange(start, end);
+  try {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const start = nowSec - (3 * 86400); // Past 3 days (Yesterday, etc.)
+    const end = nowSec + (8 * 86400);   // Next 8 days (Tomorrow, upcoming)
+    await syncScheduleRange(start, end);
+  } catch (err) {
+    console.error('[Schedule Sync Error in Interval]:', err?.message || err);
+  }
 }
 
 // Auto-seed initial high-quality anime articles if collection is empty

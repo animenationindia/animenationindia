@@ -6,6 +6,11 @@ const ipMap = new Map<string, { count: number; resetTime: number }>();
 
 function checkRateLimit(ip: string, limit = 5, windowMs = 15 * 60 * 1000): { allowed: boolean; retryAfter?: number } {
   const now = Date.now();
+  if (ipMap.size > 200) {
+    for (const [k, v] of ipMap.entries()) {
+      if (now > v.resetTime) ipMap.delete(k);
+    }
+  }
   const record = ipMap.get(ip);
 
   if (!record || now > record.resetTime) {

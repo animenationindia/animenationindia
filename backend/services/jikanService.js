@@ -6,6 +6,14 @@ const memoryCache = new Map();
 const inFlightRequests = new Map();
 const DEFAULT_TTL = 30 * 60 * 1000; // 30 mins
 
+const setBoundedCache = (map, key, val, maxSize = 300) => {
+  if (map.size >= maxSize) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, val);
+};
+
 const TOP_CHARACTERS_LIST = [
   {
     id: 1,
@@ -173,7 +181,7 @@ async function fetchJikan(endpoint, ttlMs = DEFAULT_TTL, timeoutMs = 4000) {
 
     const data = await res.json();
     if (data) {
-      memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+      setBoundedCache(memoryCache, cacheKey, { data, timestamp: Date.now() });
     }
     return data;
   };
