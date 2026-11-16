@@ -5,6 +5,14 @@ const ANIMETHEMES_API_URL = 'https://api.animethemes.moe';
 const memoryCache = new Map();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
+const setBoundedCache = (map, key, val, maxSize = 300) => {
+  if (map.size >= maxSize) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, val);
+};
+
 async function getAnimeThemes(animeTitle, malId = null) {
   if (!animeTitle && !malId) return [];
   const queryKey = malId ? `mal:${malId}` : `title:${animeTitle.toLowerCase().trim()}`;
@@ -49,7 +57,7 @@ async function getAnimeThemes(animeTitle, malId = null) {
       };
     });
 
-    memoryCache.set(cacheKey, { data: themes, timestamp: Date.now() });
+    setBoundedCache(memoryCache, cacheKey, { data: themes, timestamp: Date.now() });
     return themes;
   } catch {
     return [];
