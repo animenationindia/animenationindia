@@ -15,16 +15,16 @@ export const metadata: Metadata = {
     'hd anime previews'
   ],
   alternates: {
-    canonical: 'https://animenationindia.com/trailers',
+    canonical: 'https://animenationindia.online/trailers',
   },
   openGraph: {
     title: 'Official Anime Trailers & Teasers HD | Anime Nation India',
     description: 'Watch the latest official anime trailers, seasonal teasers, and high-definition preview clips straight from Japan.',
-    url: 'https://animenationindia.com/trailers',
+    url: 'https://animenationindia.online/trailers',
     siteName: 'Anime Nation India',
     images: [
       {
-        url: 'https://animenationindia.com/og-trailers.jpg',
+        url: 'https://animenationindia.online/og-trailers.jpg',
         width: 1200,
         height: 630,
         alt: 'Anime Nation India Official Trailers',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Official Anime Trailers & Teasers HD | Anime Nation India',
     description: 'Watch the latest official anime trailers, seasonal teasers, and preview clips in HD straight from Japan.',
-    images: ['https://animenationindia.com/og-trailers.jpg'],
+    images: ['https://animenationindia.online/og-trailers.jpg'],
   },
 };
 
@@ -46,11 +46,11 @@ const jsonLd = {
   '@type': 'CollectionPage',
   name: 'Official Anime Trailers & Teasers HD | Anime Nation India',
   description: 'Watch the latest official anime trailers, seasonal teasers, and high-definition preview clips straight from Japan.',
-  url: 'https://animenationindia.com/trailers',
+  url: 'https://animenationindia.online/trailers',
   publisher: {
     '@type': 'Organization',
     name: 'Anime Nation India',
-    url: 'https://animenationindia.com',
+    url: 'https://animenationindia.online',
   },
 };
 

@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+ 
 import { Metadata } from 'next';
 import { getArticleBySlug, ArticleItem } from '../../../lib/articles';
 import { getNews, getNewsById } from '../../../lib/getNews';

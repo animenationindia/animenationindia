@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // lib/tmdb-api.ts
 import { logError } from './logger';
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY || '';
+const TMDB_API_KEY = process.env.TMDB_API_KEY || '2bca404e6766fc6ac7cb29ae38db027f';
 const TMDB_BASE_URL = 'https://api.tmdb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -34,10 +34,18 @@ export interface TMDBAnimeData {
   episodes?: TMDBEpisode[];
 }
 
-// In-Memory Fast Cache for TMDB (24-Hour memory cache)
+// In-Memory Fast Cache for TMDB (24-Hour memory cache, bounded to 200 entries)
 const tmdbMemoryCache = new Map<string, { data: any; timestamp: number }>();
 const tmdbInFlight = new Map<string, Promise<any>>();
 const TMDB_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function setBoundedCache<K, V>(map: Map<K, V>, key: K, value: V, maxSize = 200) {
+  if (map.size >= maxSize) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, value);
+}
 
 // Clean title for TMDB search (remove season brackets, formats, etc.)
 function cleanSearchQuery(title: string): string {
@@ -93,7 +101,7 @@ export async function getTMDBSeasonEpisodes(tmdbId: number, seasonNumber = 1): P
       airDate: ep.air_date,
       runtime: ep.runtime
     }));
-    tmdbMemoryCache.set(cacheKey, { data: episodes, timestamp: Date.now() });
+    setBoundedCache(tmdbMemoryCache, cacheKey, { data: episodes, timestamp: Date.now() });
     return episodes;
   } catch (err) {
     logError('getTMDBSeasonEpisodes', err);
@@ -238,7 +246,7 @@ export async function getTMDBAnimeData(title: string, year?: number): Promise<TM
         overview: details?.overview,
         episodes: season1Episodes
       };
-      tmdbMemoryCache.set(cacheKey, { data: result, timestamp: Date.now() });
+      setBoundedCache(tmdbMemoryCache, cacheKey, { data: result, timestamp: Date.now() });
       return result;
     } catch (error) {
       logError('getTMDBAnimeData', error);

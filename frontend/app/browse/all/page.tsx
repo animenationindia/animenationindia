@@ -334,7 +334,7 @@ function BrowseAllAnimeContent() {
     setAnimeList([]);
     setHasNextPage(true);
     fetchAnime(1, filters, filters.search);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [
     filters.search,
     filters.genre,
@@ -352,7 +352,7 @@ function BrowseAllAnimeContent() {
     if (page > 1) {
       fetchAnime(page, filters, filters.search);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [page]);
 
   return (

@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // lib/mal-api.ts
 // Official MyAnimeList (MAL) API v2 Integration
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
 
 const MAL_CLIENT_KEYS = Array.from(new Set([
   process.env.MAL_CLIENT_ID_1,
@@ -28,6 +28,14 @@ const getFrontendMalKey = () => {
 const malClientMemoryCache = new Map<string, { data: any; timestamp: number }>();
 const inFlightMalPromises = new Map<string, Promise<any>>();
 const MAL_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function setBoundedCache<K, V>(map: Map<K, V>, key: K, value: V, maxSize = 200) {
+  if (map.size >= maxSize) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, value);
+}
 
 /**
  * Generic fetcher for Official MyAnimeList API v2 via Backend BFF Proxy with direct resilient fallback
@@ -59,7 +67,7 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
       if (proxyRes.ok) {
         const data = await proxyRes.json();
         if (data && (data.id || data.data || data.title)) {
-          malClientMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+          setBoundedCache(malClientMemoryCache, cacheKey, { data, timestamp: Date.now() });
           return data;
         }
       }
@@ -83,7 +91,7 @@ export async function fetchOfficialMAL(endpoint: string, timeoutMs = 5000): Prom
       if (directRes.ok) {
         const data = await directRes.json();
         if (data && (data.id || data.data || data.title)) {
-          malClientMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+          setBoundedCache(malClientMemoryCache, cacheKey, { data, timestamp: Date.now() });
           return data;
         }
       }

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 export const revalidate = 1800; // 30 minute edge cache
 import nextDynamic from 'next/dynamic';
 import Hero from '../../components/Hero';

@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+ 
 // components/PersonCard.tsx
 import { memo } from 'react';
 import { Heart } from 'lucide-react';

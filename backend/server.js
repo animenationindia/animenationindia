@@ -226,15 +226,33 @@ app.get('/api/mal/proxy', async (req, res) => {
   }
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
+// MongoDB Connection with Enterprise Resilience & Reconnection Listeners
+mongoose.connection.on('connected', () => {
+  console.log('🔥 MongoDB Atlas Connected Successfully!');
+});
+mongoose.connection.on('error', (err) => {
+  console.error('⚠️ MongoDB Connection Error:', err.message);
+});
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB Disconnected. Auto-reconnecting...');
+});
+mongoose.connection.on('reconnected', () => {
+  console.log('🔄 MongoDB Reconnected Successfully!');
+});
+
+mongoose.connect(process.env.MONGODB_URI, {
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  serverSelectionTimeoutMS: 8000,
+  socketTimeoutMS: 45000,
+  family: 4
+})
   .then(() => {
-    console.log('🔥 MongoDB Atlas Connected Successfully!');
     seedInitialArticles();
     syncInitialSchedule();
     setInterval(syncInitialSchedule, 60 * 60 * 1000); // Hourly schedule refresh
   })
-  .catch((err) => console.error('MongoDB Error: ', err));
+  .catch((err) => console.error('Initial MongoDB Connection Error: ', err.message));
 
 // ==========================================
 // MONGODB SCHEMAS
@@ -1369,7 +1387,7 @@ app.get('/api/schedule', async (req, res) => {
             { upsert: true }
           ).catch(() => {});
         }
-      })();
+      })().catch(err => console.error('[Schedule Background Upsert Error]:', err.message));
 
       return res.json({
         success: true,

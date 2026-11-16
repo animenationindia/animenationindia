@@ -1,4 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
+ 
+export const revalidate = 86400; // 24-hour Edge CDN cache
 import { cache } from 'react';
 import { getPersonDetailsJikan } from '../../../lib/api';
 import { sanitizeDescription } from '../../../lib/sanitize';

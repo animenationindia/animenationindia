@@ -1,3 +1,4 @@
+export const revalidate = 1800; // 30-minute Edge CDN cache
 import { Metadata } from 'next';
 import { getPastMonthReleasesAniList, type AiringSchedule } from '../../../lib/api';
 import CategoryLayout from '../../../components/CategoryLayout';

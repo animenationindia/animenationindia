@@ -1,3 +1,4 @@
+export const revalidate = 3600; // 1-hour Edge CDN cache
 import { getFilteredAnimeAniList } from '../../lib/api';
 import CategoryLayout from '../../components/CategoryLayout';
 

@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+ 
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -492,7 +492,7 @@ export default function SearchPageClient({ initialQuery, initialGenres, initialF
   // ── Initial load ──
   useEffect(() => {
     doSearch(initialQuery, initialGenres ? initialGenres.split(',') : [], initialFormat, initialStatus, initialYear, initialSort || 'POPULARITY_DESC', initialPage, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // ── Close suggestions on outside click ──

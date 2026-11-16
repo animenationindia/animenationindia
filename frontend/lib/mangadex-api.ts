@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // lib/mangadex-api.ts
 // Free & Open MangaDex API for Real Chapter Tracking & External Reading Links
 
@@ -13,6 +13,14 @@ export interface MangaChapter {
 
 const mangadexCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+function setBoundedCache<K, V>(map: Map<K, V>, key: K, value: V, maxSize = 200) {
+  if (map.size >= maxSize) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, value);
+}
 
 /**
  * Search MangaDex by title and return MangaDex UUID
@@ -43,7 +51,7 @@ export async function searchMangaDexId(title: string): Promise<string | null> {
       const json = await res.json();
       if (json.data && json.data.length > 0) {
         const mangaId = json.data[0].id;
-        mangadexCache.set(cacheKey, { data: mangaId, timestamp: Date.now() });
+        setBoundedCache(mangadexCache, cacheKey, { data: mangaId, timestamp: Date.now() });
         return mangaId;
       }
     }
@@ -103,7 +111,7 @@ export async function getMangaDexChapters(title: string, limit = 60): Promise<Ma
           return parseFloat(b.chapter) - parseFloat(a.chapter);
         });
 
-        mangadexCache.set(cacheKey, { data: sorted, timestamp: Date.now() });
+        setBoundedCache(mangadexCache, cacheKey, { data: sorted, timestamp: Date.now() });
         return sorted;
       }
     }

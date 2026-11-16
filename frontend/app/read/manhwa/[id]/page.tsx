@@ -1,3 +1,4 @@
+export const revalidate = 86400; // 24-hour Edge CDN cache
 import { Metadata } from 'next';
 import ReadDetailsContainer from '@/components/ReadDetailsContainer';
 import { getMangaFullDetails } from '@/lib/api';

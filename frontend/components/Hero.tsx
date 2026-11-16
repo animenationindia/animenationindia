@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+ 
 'use client';
 
 import Link from 'next/link';
@@ -77,7 +77,7 @@ export default function Hero({ animeList }: { animeList: HeroAnime[] }) {
       const newLogoMap: Record<number, string> = {};
       const newBackdropMap: Record<number, string> = {};
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://animenationindia.onrender.com');
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
 
       await Promise.all(topItems.map(async (anime) => {
         const title = toEnglishTitle(anime.title.english || anime.title.romaji);

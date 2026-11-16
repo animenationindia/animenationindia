@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
 
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const dns = require("node:dns");
   dns.setDefaultResultOrder("ipv4first");
 } catch {
@@ -16,6 +16,15 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   serverExternalPackages: [],
+  outputFileTracingExcludes: {
+    '*': [
+      './node_modules/@swc/core*/**',
+      './node_modules/esbuild*/**',
+      './node_modules/webpack*/**',
+      './node_modules/rollup*/**',
+      './node_modules/sharp*/**',
+    ],
+  },
   compress: true,
   reactStrictMode: true,
   turbopack: {},

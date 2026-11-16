@@ -6,17 +6,33 @@ export async function GET() {
   try {
     const res = await fetch(`${BACKEND_URL}/api/news/feed.xml`, {
       headers: { 'Accept': 'application/xml' },
-      next: { revalidate: 600 }
+      next: { revalidate: 600 },
+      signal: AbortSignal.timeout(3000)
     });
-    const xml = await res.text();
-    return new Response(xml, {
+    if (res.ok) {
+      const xml = await res.text();
+      return new Response(xml, {
+        headers: {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Cache-Control': 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400',
+        },
+      });
+    }
+    throw new Error(`Upstream returned ${res.status}`);
+  } catch (error) {
+    const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Anime Nation India News</title>
+    <link>https://www.animenationindia.online</link>
+    <description>Latest Anime News, Trailers &amp; Updates</description>
+  </channel>
+</rss>`;
+    return new Response(fallbackXml, {
       headers: {
         'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=600, s-maxage=600',
+        'Cache-Control': 'public, max-age=300',
       },
     });
-  } catch (error) {
-    console.error('Error proxying /news/feed.xml:', error);
-    return new Response('Error loading feed', { status: 500 });
   }
 }

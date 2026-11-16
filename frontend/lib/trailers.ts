@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { logError } from './logger';
 
 export interface TrailerItem {
@@ -29,6 +29,14 @@ const TRAILER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes memory cache for live fr
 const trailerSearchCache = new Map<string, { data: TrailerItem[]; timestamp: number }>();
 const inFlightSearchPromises = new Map<string, Promise<TrailerItem[]>>();
 const SEARCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes search cache for zero API pressure
+
+function setBoundedCache<K, V>(map: Map<K, V>, key: K, value: V, maxSize = 200) {
+  if (map.size >= maxSize) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, value);
+}
 
 export const VERIFIED_CURATED_TRAILERS: TrailerItem[] = [
   {
@@ -195,7 +203,7 @@ export async function getLiveAnimeTrailers({
 
           if (valid.length > 0) {
             const finalData = valid.slice(0, limit);
-            trailerMemoryCache.set(cacheKey, { data: finalData, timestamp: Date.now() });
+            setBoundedCache(trailerMemoryCache, cacheKey, { data: finalData, timestamp: Date.now() });
             return finalData;
           }
         }
@@ -234,7 +242,7 @@ export async function getLiveAnimeTrailers({
 
         if (validMal.length > 0) {
           const finalData = validMal.slice(0, limit);
-          trailerMemoryCache.set(cacheKey, { data: finalData, timestamp: Date.now() });
+          setBoundedCache(trailerMemoryCache, cacheKey, { data: finalData, timestamp: Date.now() });
           return finalData;
         }
       }
@@ -325,7 +333,7 @@ export async function searchLiveAnimeTrailers(searchQuery: string): Promise<Trai
             }));
 
           if (valid.length > 0) {
-            trailerSearchCache.set(cacheKey, { data: valid, timestamp: Date.now() });
+            setBoundedCache(trailerSearchCache, cacheKey, { data: valid, timestamp: Date.now() });
             return valid;
           }
         }
@@ -359,7 +367,7 @@ export async function searchLiveAnimeTrailers(searchQuery: string): Promise<Trai
           }));
 
         if (validMal.length > 0) {
-          trailerSearchCache.set(cacheKey, { data: validMal, timestamp: Date.now() });
+          setBoundedCache(trailerSearchCache, cacheKey, { data: validMal, timestamp: Date.now() });
           return validMal;
         }
       }
@@ -371,7 +379,7 @@ export async function searchLiveAnimeTrailers(searchQuery: string): Promise<Trai
       return t.includes(cacheKey);
     });
 
-    trailerSearchCache.set(cacheKey, { data: curatedMatches, timestamp: Date.now() });
+    setBoundedCache(trailerSearchCache, cacheKey, { data: curatedMatches, timestamp: Date.now() });
     return curatedMatches;
   };
 

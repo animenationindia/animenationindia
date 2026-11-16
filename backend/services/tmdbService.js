@@ -8,7 +8,7 @@ const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours
 
 async function getHeroBackdrop(title) {
   if (!title) return null;
-  const cleanTitle = title.replace(/(.*?)/g, '').replace(/[.*?]/g, '').replace(/Season d+/i, '').trim();
+  const cleanTitle = title.replace(/\(.*?\)/g, '').replace(/\[.*?\]/g, '').replace(/Season\s+\d+/i, '').trim();
   const cacheKey = `tmdb:${cleanTitle.toLowerCase()}`;
 
   const cached = memoryCache.get(cacheKey);

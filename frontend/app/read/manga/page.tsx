@@ -1,3 +1,4 @@
+export const revalidate = 1800; // 30-minute Edge CDN cache
 import { Metadata } from 'next';
 import ReadCategoryPage, { ReadCategoryConfig } from '@/components/ReadCategoryPage';
 

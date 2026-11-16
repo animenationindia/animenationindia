@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // lib/api.ts
 import { logError } from './logger';
 import { DEFAULT_GENRES_LIST } from './genres-data';
@@ -51,10 +51,18 @@ export async function fetchCuratedSectionFromAtlas(sectionKey: string): Promise<
 
 export const GLOBAL_CACHE_TIME = 21600; // 6 hours in seconds
 
-// 🚀 High-Speed In-Memory LRU/TTL Cache (5-Minute Memory Cache)
+// 🚀 High-Speed In-Memory LRU/TTL Cache (5-Minute Memory Cache, max 200 items for Workers free tier)
 const apiMemoryCache = new Map<string, { data: any; timestamp: number }>();
 const inFlightPromises = new Map<string, Promise<any>>();
 const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function setBoundedCache<K, V>(map: Map<K, V>, key: K, value: V, maxSize = 200) {
+  if (map.size >= maxSize) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey !== undefined) map.delete(oldestKey);
+  }
+  map.set(key, value);
+}
 
 export async function fetchInBatches<T>(
   tasks: (() => Promise<T>)[],
@@ -153,7 +161,7 @@ export async function fetchAniList(query: string, variables: any = {}, revalidat
       }
 
       if (data && data.data) {
-        apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+        setBoundedCache(apiMemoryCache, cacheKey, { data, timestamp: Date.now() });
       }
       return data;
     } catch (error: any) {
@@ -536,7 +544,7 @@ export async function fetchBFF<T>(endpoint: string, revalidate = 1800, timeoutMs
   const data = await tryFetch(BACKEND_BASE_URL);
 
   if (data) {
-    apiMemoryCache.set(cacheKey, { data, timestamp: Date.now() });
+    setBoundedCache(apiMemoryCache, cacheKey, { data, timestamp: Date.now() });
     return data;
   }
 

@@ -1,5 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
+ 
 // app/manga/[id]/page.tsx
+export const revalidate = 86400; // 24-hour Edge CDN caching to prevent Cloudflare Worker CPU limits
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import {

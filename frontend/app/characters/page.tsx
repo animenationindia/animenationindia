@@ -1,3 +1,4 @@
+export const revalidate = 3600; // 1-hour Edge CDN cache
 import { getTopCharactersAniList } from '../../lib/api';
 import PersonCard from '../../components/PersonCard';
 import Link from 'next/link';

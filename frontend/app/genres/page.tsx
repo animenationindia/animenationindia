@@ -1,3 +1,4 @@
+export const revalidate = 3600; // 1-hour Edge CDN cache
 import { Metadata } from 'next';
 import GenresContent from '../../components/GenresContent';
 import { getJikanGenres } from '../../lib/api';

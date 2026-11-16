@@ -6,6 +6,14 @@ const memoryCache = new Map();
 const negativeCache = new Map(); // Tracks 404/invalid queries (24-hour negative cache)
 const inFlightRequests = new Map();
 const DEFAULT_TTL = 2 * 60 * 60 * 1000; // 2 hours default TTL
+
+const setBoundedCache = (map, key, val, maxSize = 1000) => {
+  if (map.size >= maxSize) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, val);
+};
 const malService = require('./malService');
 
 let anilistBlockedUntil = 0;
@@ -84,12 +92,12 @@ async function fetchAniList(query, variables = {}, ttlMs = DEFAULT_TTL, timeoutM
 
       const data = await res.json();
       if (data && data.data) {
-        memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+        setBoundedCache(memoryCache, cacheKey, { data, timestamp: Date.now() });
         return data;
       } else if (data && data.errors && data.errors.length > 0) {
         const is404 = data.errors.some(e => e.status === 404 || (e.message && e.message.toLowerCase().includes('not found')));
         if (is404) {
-          negativeCache.set(cacheKey, Date.now());
+          setBoundedCache(negativeCache, cacheKey, Date.now(), 500);
           return null;
         }
         return cached ? cached.data : null;

@@ -40,6 +40,14 @@ const memoryCache = new Map();
 const inFlightRequests = new Map();
 const DEFAULT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
+const setBoundedCache = (map, key, val, maxSize = 1000) => {
+  if (map.size >= maxSize) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, val);
+};
+
 async function fetchMAL(endpoint, ttlMs = DEFAULT_CACHE_TTL, timeoutMs = 12000) {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const cacheKey = `mal:${cleanEndpoint}`;
@@ -90,7 +98,7 @@ async function fetchMAL(endpoint, ttlMs = DEFAULT_CACHE_TTL, timeoutMs = 12000) 
 
         const data = await res.json();
         if (data) {
-          memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+          setBoundedCache(memoryCache, cacheKey, { data, timestamp: Date.now() });
         }
         return data;
       } catch (err) {
