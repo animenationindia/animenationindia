@@ -2,7 +2,10 @@
 // lib/mal-api.ts
 // Official MyAnimeList (MAL) API v2 Integration
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
+const BACKEND_BASE_URL = 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? 'https://animenationindia.onrender.com'
+    : (process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animenationindia.onrender.com');
 
 const MAL_CLIENT_KEYS = Array.from(new Set([
   process.env.MAL_CLIENT_ID_1,

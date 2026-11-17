@@ -20,7 +20,10 @@ export {
 };
 
 const ANILIST_API_URL = 'https://graphql.anilist.co';
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
+const BACKEND_BASE_URL = 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? 'https://animenationindia.onrender.com'
+    : (process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animenationindia.onrender.com');
 const ANILIST_PROXY_URL = `${BACKEND_BASE_URL}/api/anilist/proxy`;
 
 // ─── Curated Sections Helper (Loaded from MongoDB Atlas with 1-Hour ISR) ─────

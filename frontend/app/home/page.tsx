@@ -19,8 +19,12 @@ const HomeTrailersClient = nextDynamic(() => import('../../components/HomeTraile
   loading: () => <SliderSkeleton title="Loading Official Trailers..." />,
 });
 
-const HomeCuratedSlidersClient = nextDynamic(() => import('../../components/HomeCuratedSlidersClient'), {
-  loading: () => <SliderSkeleton title="Loading Curated Anime..." />,
+const HomeUpcomingSlidersClient = nextDynamic(() => import('../../components/HomeUpcomingSlidersClient'), {
+  loading: () => <SliderSkeleton title="Loading Upcoming Seasonal Anime..." />,
+});
+
+const HomePopularSlidersClient = nextDynamic(() => import('../../components/HomePopularSlidersClient'), {
+  loading: () => <SliderSkeleton title="Loading All-Time Popular Anime..." />,
 });
 
 const ThemeZonesClient = nextDynamic(() => import('../../components/ThemeZonesClient'), {
@@ -144,7 +148,12 @@ export default async function Home() {
           {/* 3. New Episodes (Crunchyroll Style List) */}
           {todayReleases.length > 0 && <NewEpisodesList episodes={todayReleases as any} />}
 
-          {/* 4. Top Picks for You */}
+          {/* 4. Upcoming Seasonal Anime & Anime Not For Kids (Client Streamed) */}
+          <ErrorBoundary sectionName="Upcoming & Curated">
+            <HomeUpcomingSlidersClient />
+          </ErrorBoundary>
+
+          {/* 5. Top Picks for You */}
           {safeHeroAnimeList.length > 0 && (
             <SectionSlider title="Top Picks for You" data={safeHeroAnimeList as any} type="anime" viewAllLink="/trending" />
           )}
@@ -152,9 +161,9 @@ export default async function Home() {
           {/* Dynamic Trending/Seasonal Banner */}
           {safeHeroAnimeList.length > 0 && <HomeTrendingBanner anime={safeHeroAnimeList[0]} />}
 
-          {/* Curated Sliders + Top Lists (Client Streamed) */}
-          <ErrorBoundary sectionName="Curated Sliders">
-            <HomeCuratedSlidersClient currentYear={currentYear} />
+          {/* 6. All-Time Popular Anime & Top Lists (Client Streamed) */}
+          <ErrorBoundary sectionName="Popular & Top Lists">
+            <HomePopularSlidersClient currentYear={currentYear} />
           </ErrorBoundary>
 
           {/* ── Below-the-fold Async Streamed Sections with Client Fetching to Protect Edge Runtime Limits ── */}
@@ -162,7 +171,6 @@ export default async function Home() {
             <ThemeZonesClient
               currentYear={currentYear}
               currentSeason={currentSeason}
-              latestAnnouncement={null}
             />
           </ErrorBoundary>
 

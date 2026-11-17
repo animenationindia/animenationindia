@@ -21,7 +21,10 @@ export interface TrailerItem {
   score?: number;
 }
 
-const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5050' : 'https://animenationindia.onrender.com');
+const BACKEND_BASE_URL = 
+  (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? 'https://animenationindia.onrender.com'
+    : (process.env.NEXT_PUBLIC_BACKEND_URL || 'https://animenationindia.onrender.com');
 const trailerMemoryCache = new Map<string, { data: TrailerItem[]; timestamp: number }>();
 const inFlightTrailerPromises = new Map<string, Promise<TrailerItem[]>>();
 const TRAILER_CACHE_TTL = 30 * 60 * 1000; // 30 minutes memory cache for live freshness

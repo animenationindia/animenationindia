@@ -36,7 +36,7 @@ const dedupe = (arr: any[]) => {
 interface ThemeZonesClientProps {
   currentYear: number;
   currentSeason: string;
-  latestAnnouncement: any;
+  latestAnnouncement?: any;
 }
 
 export default function ThemeZonesClient({
@@ -44,6 +44,7 @@ export default function ThemeZonesClient({
   currentSeason,
   latestAnnouncement,
 }: ThemeZonesClientProps) {
+  const [announcement, setAnnouncement] = useState<any>(latestAnnouncement || null);
   const [data, setData] = useState<{
     kickstart: any[];
     shounen: any[];
@@ -60,6 +61,20 @@ export default function ThemeZonesClient({
   } | null>(null);
 
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!announcement) {
+      fetch('/api/news')
+        .then((res) => res.json())
+        .then((json) => {
+          if (json?.news && Array.isArray(json.news) && json.news.length > 0) {
+            const ann = json.news.find((n: any) => n.categories?.some((c: string) => c.toLowerCase() === 'announcements')) || json.news[0];
+            setAnnouncement(ann);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [announcement]);
 
   useEffect(() => {
     let isMounted = true;
@@ -133,7 +148,7 @@ export default function ThemeZonesClient({
       )}
 
       {/* Announcement Banner placed under Shounen Zone */}
-      {latestAnnouncement && <HomeAnnouncementBanner announcement={latestAnnouncement} />}
+      {announcement && <HomeAnnouncementBanner announcement={announcement} />}
 
       {/* Popular Dubbed Anime with View All Link */}
       {data.popularDubbed.length > 0 && (
